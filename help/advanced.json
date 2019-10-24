@@ -1,0 +1,32 @@
+{
+    "title": ":user: advanced help",
+    "color": 16767488,
+    "url": "https:\/\/www.botnix.org",
+    "thumbnail": {
+        "url": "https:\/\/www.botnix.org\/images\/botnix.png"
+    },
+    "footer": {
+        "link": "https;\/\/www.botnix.org\/",
+        "text": "Powered by Botnix 2.0 with the infobot and discord modules",
+        "icon_url": "https:\/\/www.botnix.org\/images\/botnix.png"
+    },
+    "fields": [
+        {
+            "name": "Literal responses",
+            "value": "\nMore advanced commands are available, such as if you want the bot to literally say some text, rather than reformatting it, you can for example type:\n```@:user:, twitch is <reply> twitch is a streaming service.```\nIf you want the bot to tell you what is literally defined in the database for a fact you can type\n```@:user: literal <keyword>```",
+            "inline": false
+        },
+        {
+            "name": "Variables",
+            "value": "You can use special keywords, which will be replaced:\n```<who>``` the nickname (not as a mention) of the user talking to the bot.\n```<me>``` the bot's current nickname.\n```<random>``` the nickname (not as a mention) of a *random* user on the current discord server.\n```<date>``` the date the bot learned the fact it is responding with\n```<now>``` the current date and time.\n```<list:(comma separated list)>``` Select one response from a comma separated list, e.g. ``<list:apple,orange,pear>`` will return one of apple, orange or pear. Other variables may be values in the list.\n```<sequence>``` Returns the number of messages spoken by the user\n",
+            "inline": false
+        },
+        {
+            "name": "Randomised Responses",
+            "value": "You can separate multiple responses with a pipe symbol ``|`` and the bot will pick one at random when responding. for example:\n```@:user: roll a dice is <reply>one|<reply>two|<reply>three|<reply>four|<reply>five|<reply>six```",
+            "inline": false
+        }
+    ],
+    "description": ""
+}
+
