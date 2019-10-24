@@ -18,6 +18,7 @@ Queue outputs;
 
 std::mutex input_mutex;
 std::mutex output_mutex;
+std::mutex channel_hash_mutex;
 
 rapidjson::Document config;
 
@@ -46,7 +47,11 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 
 	std::cout << "<" << message.author.username << "> " << message.content << std::endl;
 
-	rapidjson::Document settings = getSettings(message.channelID, this);
+	rapidjson::Document settings;
+	do {
+		std::lock_guard<std::mutex> input_lock(channel_hash_mutex);
+		settings = getSettings(this, message.channelID);
+	} while (false);
 
 	if (message.author.ID != this->getID()) {
 		do {
@@ -65,7 +70,11 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 }
 
 void Bot::onChannel(SleepyDiscord::Channel channel) {
-	getSettings(channel);
+	do {
+		std::lock_guard<std::mutex> hash_lock(channel_hash_mutex);
+		channelList[std::string(channel.ID)] = channel;
+	} while (false);
+	getSettings(this, channel);
 }
 
 
@@ -87,7 +96,7 @@ int main(int argc, char** argv) {
 	Bot client(token, SleepyDiscord::USER_CONTROLED_THREADS);
 	client.setup();
 	std::thread infobot(infobot_socket, &input_mutex, &output_mutex, &inputs, &outputs, &config);
-	std::thread responses(send_responses, &client, &output_mutex, &outputs);
+	std::thread responses(send_responses, &client, &output_mutex, &channel_hash_mutex, &outputs);
 	client.run();
 }
 

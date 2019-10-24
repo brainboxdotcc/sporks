@@ -1,35 +1,35 @@
+#include "bot.h"
 #include "config.h"
 #include "database.h"
-#include "bot.h"
 #include <string>
 #include <iostream>
 #include <unordered_map>
 #include <cstdint>
+#include <mutex>
 
 using namespace SleepyDiscord;
 
-typedef std::unordered_map<std::string, Channel> ChannelCache;
+std::mutex config_sql_mutex;
 
-ChannelCache channelcache;
-
-rapidjson::Document getSettings(const std::string &channel_id, Bot* bot)
+rapidjson::Document getSettings(Bot* bot, const std::string &channel_id)
 {
 	Channel channel;
 
-	ChannelCache::iterator iter = channelcache.find(channel_id);
-	if (iter != channelcache.end()) {
+	ChannelCache::iterator iter = bot->channelList.find(channel_id);
+	if (iter != bot->channelList.end()) {
 		channel = iter->second;
 	} else {
 		const Channel& c = bot->getChannel(Snowflake<Channel>(channel_id)).cast();
-		channelcache[channel_id] = c;
+		bot->channelList[channel_id] = c;
 		channel = c;
 	}
 
-	return getSettings(channel);
+	return getSettings(bot, channel);
 }
 
-rapidjson::Document getSettings(const Channel& channel)
+rapidjson::Document getSettings(Bot* bot, const Channel& channel)
 {
+	std::lock_guard<std::mutex> sql_lock(config_sql_mutex);
 	rapidjson::Document settings;
 	std::string cid = std::string(channel.ID);
 
@@ -69,7 +69,7 @@ rapidjson::Document getSettings(const Channel& channel)
 namespace settings {
 
 	bool IsLearningDisabled(const rapidjson::Document& settings) {
-		return (settings.IsObject() && settings["learningdisabled"].IsBool() && settings["learningdisabled"].GetBool() == true);
+		return (settings.IsObject() && settings.HasMember("learningdisabled") && settings["learningdisabled"].IsBool() && settings["learningdisabled"].GetBool() == true);
 	}
 
 	bool IsLearningEnabled(const rapidjson::Document& settings) {
@@ -77,12 +77,12 @@ namespace settings {
 	}
 
 	bool IsTalkative(const rapidjson::Document& settings) {
-		return (settings.IsObject() && settings["talkative"].IsBool() && settings["talkative"].GetBool() == true);
+		return (settings.IsObject() && settings.HasMember("talkative") && settings["talkative"].IsBool() && settings["talkative"].GetBool() == true);
 	}
 
 	std::vector<uint64_t> GetIgnoreList(const rapidjson::Document& settings) {
 		std::vector<uint64_t> ignores;
-		if (!settings.IsObject() || !settings["ignores"].IsArray()) {
+		if (settings.IsObject() && settings.HasMember("ignores") && settings["ignores"].IsArray()) {
 			for (size_t i = 0; i < settings["ignores"].Size(); ++i) {
 				ignores.push_back(settings["ignores"][i].GetInt64());
 			}
