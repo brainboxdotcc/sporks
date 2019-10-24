@@ -43,9 +43,13 @@ void Bot::onServer(SleepyDiscord::Server server) {
 	}
 }
 
-void Bot::onMessage(SleepyDiscord::Message message) {
+void Bot::onReady(SleepyDiscord::Ready ready) {
+	std::cout << "Retrieving ready data\n";
+	this->user = ready.user;
+	std::cout << "Ready! Online as " << this->user.username <<"#" << this->user.discriminator << "(" << std::string(this->getID()) << ")\n";
+}
 
-	std::cout << "<" << message.author.username << "> " << message.content << std::endl;
+void Bot::onMessage(SleepyDiscord::Message message) {
 
 	rapidjson::Document settings;
 	do {
@@ -54,12 +58,30 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 	} while (false);
 
 	if (message.author.ID != this->getID()) {
+
+		/* Replace all mentions with raw nicknames */
+		std::string mentions_removed = message.content;
+		for (auto m = message.mentions.begin(); m != message.mentions.end(); ++m) {
+			mentions_removed = ReplaceString(mentions_removed, std::string("<@") + std::string(m->ID) + ">", m->username);
+		}
+
+		std::cout << "<" << message.author.username << "> " << mentions_removed << std::endl;
+
+		std::string botusername = this->user.username;
+
+		/* Remove bot's nickname from start of message, if it's there */
+		while (mentions_removed.substr(0, botusername.length()) == botusername) {
+			mentions_removed = mentions_removed.substr(botusername.length(), mentions_removed.length());
+			std::cout << "Username stripped, new line: '" << mentions_removed << "'\n";
+		}
+
+		QueueItem query;
+		query.message = mentions_removed;
+		query.channelID = message.channelID;
+		query.username = message.author.username;
+		query.mentioned = message.isMentioned(this->getID());
 		do {
 			std::lock_guard<std::mutex> input_lock(input_mutex);
-			QueueItem query;
-			query.message = message.content;
-			query.channelID = message.channelID;
-			query.username = message.author.username;
 			inputs.push(query);
 		} while (false);
 	
@@ -93,10 +115,19 @@ int main(int argc, char** argv) {
 		exit(2);
 	}
 
-	Bot client(token, SleepyDiscord::USER_CONTROLED_THREADS);
-	client.setup();
-	std::thread infobot(infobot_socket, &input_mutex, &output_mutex, &inputs, &outputs, &config);
-	std::thread responses(send_responses, &client, &output_mutex, &channel_hash_mutex, &outputs);
-	client.run();
+	while (true) {
+		::sleep(2);
+		Bot client(token, SleepyDiscord::USER_CONTROLED_THREADS);
+		client.setup();
+		std::thread infobot(infobot_socket, &client, &input_mutex, &output_mutex, &channel_hash_mutex, &inputs, &outputs, &config);
+		std::thread responses(send_responses, &client, &output_mutex, &channel_hash_mutex, &outputs);
+	
+		try {
+			client.run();
+		}
+		catch (const SleepyDiscord::ErrorCode &e) {
+			std::cout << "Oof! #" << e << std::endl;
+		}
+	}
 }
 

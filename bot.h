@@ -14,15 +14,15 @@ class Bot : public SleepyDiscord::DiscordClient {
 public:
 	std::vector<SleepyDiscord::Server> serverList;
 	ChannelCache channelList;
+	SleepyDiscord::User user;
 
 	using SleepyDiscord::DiscordClient::DiscordClient;
 
 	void setup();
 
+	void onReady(SleepyDiscord::Ready ready) override;
 	void onServer(SleepyDiscord::Server server) override;
-
 	void onChannel(SleepyDiscord::Channel channel) override;
-
 	void onMessage(SleepyDiscord::Message message) override;
 };
 

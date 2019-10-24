@@ -24,7 +24,7 @@ void send_responses(Bot* client, std::mutex* output_mutex, std::mutex* channel_h
 				channel = client->channelList.find(done.front().channelID)->second;
 				channel_settings = getSettings(client, channel);
 			} while (false);
-			if (settings::IsTalkative(channel_settings)) {
+			if (done.front().mentioned || settings::IsTalkative(channel_settings)) {
 				client->sendMessage(channel.ID, done.front().message);
 			}
 			done.pop();

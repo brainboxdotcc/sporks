@@ -1,3 +1,4 @@
+#include "bot.h"
 #include "includes.h"
 #include "readline.h"
 #include "queue.h"
@@ -8,7 +9,7 @@
 #include <sstream>
 #include <thread>
 
-void infobot_socket(std::mutex *input_mutex, std::mutex *output_mutex, Queue *inputs, Queue *outputs, rapidjson::Document* config)
+void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mutex, std::mutex *channel_hash_mutex, Queue *inputs, Queue *outputs, rapidjson::Document* config)
 {
 	int sockfd = 0;
 	struct sockaddr_in serv_addr;
@@ -30,6 +31,7 @@ void infobot_socket(std::mutex *input_mutex, std::mutex *output_mutex, Queue *in
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 					writeLine(sockfd, (*config)["telnetpass"].GetString());
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+					std::cout << "Socket link to botnix is UP, and ready for queries" << std::endl;
 					while (true) {
 						/* Process anything in the inputs queue */
 						std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -40,8 +42,22 @@ void infobot_socket(std::mutex *input_mutex, std::mutex *output_mutex, Queue *in
 							std::lock_guard<std::mutex> input_lock(*input_mutex);
 							if (!inputs->empty()) {
 								query = inputs->front();
+								SleepyDiscord::Channel channel;
+								rapidjson::Document channel_settings;
+								do {
+									std::lock_guard<std::mutex> hash_lock(*channel_hash_mutex);
+									channel = client->channelList.find(query.channelID)->second;
+									channel_settings = getSettings(client, channel);
+
+								} while(false);
+								has_item = query.mentioned || settings::IsLearningEnabled(channel_settings);
+								if (query.mentioned) {
+									std::cout << "mentioned\n";
+								}
+								if (settings::IsLearningEnabled(channel_settings)) {
+									std::cout << "learning enabled\n";
+								}
 								inputs->pop();
-								has_item = true;
 							}
 						} while(false);
 						if (has_item) {

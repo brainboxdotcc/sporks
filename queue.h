@@ -9,6 +9,7 @@ class QueueItem
 	  std::string channelID;
 	  std::string username;
 	  std::string message;
+	  bool mentioned;
 };
 
 typedef std::queue<QueueItem> Queue;
