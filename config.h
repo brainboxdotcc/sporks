@@ -8,8 +8,8 @@
 #include "sleepy_discord/rapidjson/document.h"
 #include "sleepy_discord/rapidjson/istreamwrapper.h"
 
-rapidjson::Document getSettings(class Bot* bot, const std::string &channel_id);
-rapidjson::Document getSettings(class Bot* bot, const SleepyDiscord::Channel& channel);
+rapidjson::Document getSettings(class Bot* bot, const std::string &channel_id, const std::string& guild_id);
+rapidjson::Document getSettings(class Bot* bot, const SleepyDiscord::Channel& channel, const std::string& guild_id);
 
 namespace settings {
         bool IsLearningDisabled(const rapidjson::Document& settings);

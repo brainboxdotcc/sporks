@@ -7,6 +7,7 @@ class QueueItem
 {
   public:
 	  std::string channelID;
+	  std::string serverID;
 	  std::string username;
 	  std::string message;
 	  bool mentioned;

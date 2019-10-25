@@ -8,3 +8,4 @@ std::string ReplaceString(std::string subject, const std::string& search, const 
 	}
 	return subject;
 }
+

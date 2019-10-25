@@ -11,7 +11,7 @@ using namespace SleepyDiscord;
 
 std::mutex config_sql_mutex;
 
-rapidjson::Document getSettings(Bot* bot, const std::string &channel_id)
+rapidjson::Document getSettings(Bot* bot, const std::string &channel_id, const std::string& guild_id)
 {
 	Channel channel;
 
@@ -24,10 +24,10 @@ rapidjson::Document getSettings(Bot* bot, const std::string &channel_id)
 		channel = c;
 	}
 
-	return getSettings(bot, channel);
+	return getSettings(bot, channel, guild_id);
 }
 
-rapidjson::Document getSettings(Bot* bot, const Channel& channel)
+rapidjson::Document getSettings(Bot* bot, const Channel& channel, const std::string& guild_id)
 {
 	std::lock_guard<std::mutex> sql_lock(config_sql_mutex);
 	rapidjson::Document settings;
@@ -36,13 +36,15 @@ rapidjson::Document getSettings(Bot* bot, const Channel& channel)
 	/* Retrieve from db */
 	db::resultset r = db::query("SELECT settings, parent_id, name FROM infobot_discord_settings WHERE id = ?", {cid});
 
-	std::string guild_id = std::string(channel.serverID);
 	std::string parent_id = std::string(channel.parentID);
 	std::string name = channel.name;
+	if (parent_id == "") {
+		parent_id = "NULL";
+	}
 
 	if (channel.type == 0) {	/* Channel type: TEXT */
 		name = std::string("#") + name;
-	}	
+	}
 
 	if (r.empty()) {
 		/* No settings for this channel, create an entry */
@@ -51,11 +53,13 @@ rapidjson::Document getSettings(Bot* bot, const Channel& channel)
 
 	} else if (name != r[0].find("name")->second || parent_id != r[0].find("parent_id")->second) {
 		/* Data has changed, run update query */
-		db::query("UPDATE infobot_discord_settings SET parent_id = ?, name = ? WHERE id = ?", {parent_id, name, name, cid});
+		db::query("UPDATE infobot_discord_settings SET parent_id = ?, name = '?' WHERE id = ?", {parent_id, name, cid});
 	}
+
 	db::row row = r[0];
 	std::string json = row.find("settings")->second;
 	settings.Parse(json.c_str());
+
 	if (settings.IsObject()) {
 		return settings;
 	} else {

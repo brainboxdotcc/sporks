@@ -65,7 +65,7 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 								do {
 									std::lock_guard<std::mutex> hash_lock(*channel_hash_mutex);
 									channel = client->channelList.find(query.channelID)->second;
-									channel_settings = getSettings(client, channel);
+									channel_settings = getSettings(client, channel, query.serverID);
 
 								} while(false);
 
@@ -93,6 +93,8 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 								resp.username = query.username;
 								resp.message = text;
 								resp.channelID = query.channelID;
+								resp.serverID = query.serverID;
+								resp.mentioned = query.mentioned;
 								do {
 									 std::lock_guard<std::mutex> output_lock(*output_mutex);
 									 outputs->push(resp);
@@ -103,6 +105,9 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 				}
 				catch (const std::exception &e) {
 					std::cout << "Infobot socket: caught connection exception\n";
+				}
+				catch (SleepyDiscord::ErrorCode e) {
+					std::cout << "Infobot thread Oof! #" << e << std::endl;
 				}
 			} else {
 				std::cout << "Infobot socket: connection failure\n";

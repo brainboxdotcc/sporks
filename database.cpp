@@ -39,6 +39,7 @@ namespace db {
 		}
 
 		int result = mysql_query(&connection, querystring.c_str());
+		//std::cout << "SQL: " << querystring << std::endl;
 
 		if (result == 0) {
 			MYSQL_RES *a_res = mysql_use_result(&connection);
@@ -63,6 +64,8 @@ namespace db {
 				}
 				mysql_free_result(a_res);
 			}
+		} else {
+			std::cout << "SQL error: " << mysql_errno(&connection) << " on query: " << querystring << std::endl;
 		}
 		return rv;
 	}

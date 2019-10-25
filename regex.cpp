@@ -2,13 +2,14 @@
 #include <pcre.h>
 #include <string>
 #include <vector>
+#include <iostream>
 #include "string.h"
 
 regex_exception::regex_exception(const std::string &_message) : std::exception(), message(_message) {
 }
 
 PCRE::PCRE(const std::string &match, bool case_insensitive) {
-	compiled_regex = pcre_compile("^SporksDev\\s+", case_insensitive ? PCRE_CASELESS : 0, &pcre_error, &pcre_error_ofs, NULL);
+	compiled_regex = pcre_compile(match.c_str(), case_insensitive ? PCRE_CASELESS : 0, &pcre_error, &pcre_error_ofs, NULL);
 	if (!compiled_regex) {
 		throw new regex_exception(pcre_error);
 	}
@@ -20,21 +21,18 @@ bool PCRE::Match(const std::string &comparison) {
 
 bool PCRE::Match(const std::string &comparison, std::vector<std::string>& matches) {
 	/* Match twice: first to find out how many matches there are, and again to capture them all */
-	int matchcount = pcre_exec(compiled_regex, NULL, comparison.c_str(), comparison.length(), 0, 0, NULL, 0);
 	matches.clear();
-	if (matchcount > 0) {
-		char* data = new char[comparison.length() + 1];
-		int matcharr[matchcount];
-		pcre_exec(compiled_regex, NULL, comparison.c_str(), comparison.length(), 0, 0, matcharr, matchcount);
-		for (int i = 0; i < matchcount; ++i) {
-			/* Ugly char ops */
-			sprintf(data, "%.*s", matcharr[2*i+1] - matcharr[2*i], comparison.c_str() + matcharr[2*i]);
-			matches.push_back(data);
-		}
-		delete[] data;
-
+	int matcharr[90];
+	int matchcount = pcre_exec(compiled_regex, NULL, comparison.c_str(), comparison.length(), 0, 0, matcharr, 90);
+	if (matchcount == 0) {
+		throw new regex_exception("Not enough room in matcharr");
 	}
-	return matchcount > -1;
+	for (int i = 0; i < matchcount; ++i) {
+		/* Ugly char ops */
+		matches.push_back(std::string(comparison.c_str() + matcharr[2*i], (size_t)(matcharr[2*i+1] - matcharr[2*i])));
+		std::cout << matches[matches.size() - 1] << std::endl;
+	}
+	return matchcount > 0;
 }
 
 PCRE::~PCRE()
