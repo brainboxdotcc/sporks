@@ -30,7 +30,6 @@ bool PCRE::Match(const std::string &comparison, std::vector<std::string>& matche
 	for (int i = 0; i < matchcount; ++i) {
 		/* Ugly char ops */
 		matches.push_back(std::string(comparison.c_str() + matcharr[2*i], (size_t)(matcharr[2*i+1] - matcharr[2*i])));
-		std::cout << matches[matches.size() - 1] << std::endl;
 	}
 	return matchcount > 0;
 }

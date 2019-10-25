@@ -33,6 +33,12 @@ rapidjson::Document getSettings(Bot* bot, const Channel& channel, const std::str
 	rapidjson::Document settings;
 	std::string cid = std::string(channel.ID);
 
+	/* DM channel */
+	if (channel.name == "") {
+		settings.Parse("{}");
+		return settings;
+	}
+
 	/* Retrieve from db */
 	db::resultset r = db::query("SELECT settings, parent_id, name FROM infobot_discord_settings WHERE id = ?", {cid});
 

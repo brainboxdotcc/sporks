@@ -13,6 +13,7 @@
 #include "config.h"
 #include "regex.h"
 #include "stringops.h"
+#include "help.h"
 
 Queue inputs;
 Queue outputs;
@@ -25,7 +26,7 @@ rapidjson::Document config;
 
 void Bot::setup() {
 	this->setShardID(0, 0);
-	message_match = new PCRE("^SporksDev (\\d) (\\d)", true);
+	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
 }
 
 void Bot::onServer(SleepyDiscord::Server server) {
@@ -63,7 +64,6 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 			mentions_removed = ReplaceString(mentions_removed, std::string("<@") + std::string(m->ID) + ">", m->username);
 			/* Note: I know there's a message::isMentioned(), but we're looping here anyway so might as well roll this into one */
 			if (m->ID == this->getID()) {
-				std::cout << "Bot was mentioned!\n";
 				mentioned = true;
 			}
 		}
@@ -77,20 +77,24 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 			mentions_removed = trim(mentions_removed.substr(botusername.length(), mentions_removed.length()));
 		}
 
-		QueueItem query;
-		query.message = mentions_removed;
-		query.channelID = message.channelID;
-		query.serverID = message.serverID;
-		query.username = message.author.username;
-		query.mentioned = mentioned;
-		do {
-			std::lock_guard<std::mutex> input_lock(input_mutex);
-			inputs.push(query);
-		} while (false);
-	
-		std::vector<std::string> m;
-		if (message_match->Match(message.content, m)) {
-			sendMessage(message.channelID, "Matched regex m[1]=" + m[1] + " m[2]=" + m[2]);
+		std::vector<std::string> param;
+		if (mentioned && helpmessage->Match(mentions_removed, param)) {
+			std::string section = "basic";
+			if (param.size() > 2) {
+				section = param[2];
+			}
+			GetHelp(this, section, message.channelID, botusername, std::string(this->getID()), message.author.username, message.author.ID);
+		} else {
+			QueueItem query;
+			query.message = mentions_removed;
+			query.channelID = message.channelID;
+			query.serverID = message.serverID;
+			query.username = message.author.username;
+			query.mentioned = mentioned;
+			do {
+				std::lock_guard<std::mutex> input_lock(input_mutex);
+				inputs.push(query);
+			} while (false);
 		}
 	}
 }
