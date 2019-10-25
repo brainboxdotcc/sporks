@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 3.6)
 project(bot)
-add_executable(bot main.cpp readline.cpp database.cpp infobot.cpp response.cpp stringops.cpp config.cpp)
+add_executable(bot main.cpp readline.cpp database.cpp infobot.cpp response.cpp stringops.cpp config.cpp regex.cpp)
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=c++11 -pthread")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=c++11 -pthread -O3")
 link_libraries("-lpcre -lmysqlclient")
 
 add_subdirectory(deps/sleepy-discord)

@@ -2,7 +2,6 @@
 #include "bot.h"
 #include "includes.h"
 #include "readline.h"
-#include <pcre.h>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -12,6 +11,7 @@
 #include "infobot.h"
 #include "response.h"
 #include "config.h"
+#include "regex.h"
 
 Queue inputs;
 Queue outputs;
@@ -24,15 +24,7 @@ rapidjson::Document config;
 
 void Bot::setup() {
 	this->setShardID(0, 0);
-
-	const char* pcre_error;
-	int pcre_error_ofs;
-
-	message_match = pcre_compile("^SporksDev\\s+", PCRE_CASELESS, &pcre_error, &pcre_error_ofs, NULL);
-	if (!message_match) {
-		std::cout << "Error compiling regex" << std::endl;
-		exit(0);
-	}
+	message_match = new PCRE("^SporksDev\\s+", true);
 }
 
 void Bot::onServer(SleepyDiscord::Server server) {
@@ -85,7 +77,7 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 			inputs.push(query);
 		} while (false);
 	
-		if (pcre_exec(message_match, NULL, message.content.c_str(), message.content.length(), 0, 0, NULL, 0) > -1) {
+		if (message_match->Match(message.content)) {
 			sendMessage(message.channelID, "Matched regex");
 		}
 	}

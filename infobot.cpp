@@ -5,9 +5,24 @@
 #include "infobot.h"
 #include "config.h"
 #include "stringops.h"
+#include "regex.h"
 #include <iostream>
 #include <sstream>
 #include <thread>
+
+std::string core_nickname;
+
+void set_core_nickname(const std::string &coredata)
+{
+	std::size_t pos = coredata.find("nick => '");
+	if (pos != std::string::npos) {
+		core_nickname = coredata.substr(pos + 9, coredata.length());
+		std::size_t end = core_nickname.find("'");
+		if (end != std::string::npos) {
+			core_nickname = core_nickname.substr(0, end);
+		}
+	}
+}
 
 void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mutex, std::mutex *channel_hash_mutex, Queue *inputs, Queue *outputs, rapidjson::Document* config)
 {
@@ -15,7 +30,6 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 	struct sockaddr_in serv_addr;
 	char recvbuffer[32768];
 	std::string response;
-	std::string coredata;
 	while (true) {
 		std::cout << "Connecting to infobot via telnet...\n";
 		if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) >= 0) {
@@ -32,6 +46,10 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 					writeLine(sockfd, (*config)["telnetpass"].GetString());
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 					std::cout << "Socket link to botnix is UP, and ready for queries" << std::endl;
+					writeLine(sockfd, ".DR identify");
+					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+					set_core_nickname(recvbuffer);
 					while (true) {
 						/* Process anything in the inputs queue */
 						std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -50,18 +68,17 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 									channel_settings = getSettings(client, channel);
 
 								} while(false);
+
+								/* Process the input through infobot.pm if:
+								 * A) the bot is directly mentioned, or,
+								 * B) Learning is enabled for the channel (default for all channels)
+								 */
 								has_item = query.mentioned || settings::IsLearningEnabled(channel_settings);
-								if (query.mentioned) {
-									std::cout << "mentioned\n";
-								}
-								if (settings::IsLearningEnabled(channel_settings)) {
-									std::cout << "learning enabled\n";
-								}
 								inputs->pop();
 							}
 						} while(false);
 						if (has_item) {
-							writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " Sporks " + query.message);
+							writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + query.message);
 							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							std::stringstream response(recvbuffer);
 							std::string text;
@@ -69,7 +86,7 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 							response >> found;
 							std::getline(response, text);
 							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
-							coredata = recvbuffer;
+							set_core_nickname(recvbuffer);
 
 							if (found && text != "*NOTHING*") {
 								QueueItem resp;

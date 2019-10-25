@@ -1,7 +1,6 @@
 #pragma once
 
 #include "sleepy_discord/sleepy_discord.h"
-#include <pcre.h>
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -10,7 +9,7 @@ typedef std::unordered_map<std::string, SleepyDiscord::Channel> ChannelCache;
 
 class Bot : public SleepyDiscord::DiscordClient {
 	
-	pcre* message_match;
+	class PCRE* message_match;
 public:
 	std::vector<SleepyDiscord::Server> serverList;
 	ChannelCache channelList;
