@@ -7,6 +7,7 @@
 #include "queue.h"
 #include "config.h"
 #include "stringops.h"
+#include "status.h"
 
 void send_responses(Bot* client, std::mutex* output_mutex, std::mutex* channel_hash_mutex, Queue* outputs) {
 	PCRE statsreply("Since (.+?), there have been (\\d+) modifications and (\\d+) questions. I have been alive for (.+?), I currently know (\\d+)");
@@ -35,6 +36,7 @@ void send_responses(Bot* client, std::mutex* output_mutex, std::mutex* channel_h
 						std::vector<std::string> m;
 						if (statsreply.Match(done.front().message, m)) {
 							/* Handle status reply */
+							ShowStatus(client, m, done.front().channelID);
 						} else {
 							/* Anything else */
 							std::string message = done.front().message;
