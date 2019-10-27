@@ -1,10 +1,12 @@
 #include "database.h"
 #include <mysql.h>
 #include <iostream>
+#include <mutex>
 
 namespace db {
 
 	MYSQL connection;
+	std::mutex db_mutex;
 
 	bool connect(const std::string &host, const std::string &user, const std::string &pass, const std::string &db, int port) {
 		return mysql_real_connect(&connection, host.c_str(), user.c_str(), pass.c_str(), db.c_str(), port, NULL, CLIENT_MULTI_RESULTS | CLIENT_MULTI_STATEMENTS);
@@ -16,6 +18,9 @@ namespace db {
 	}
 
 	resultset query(const std::string &format, std::vector<std::string> parameters) {
+
+		std::lock_guard<std::mutex> db_lock(db_mutex);
+
 		resultset rv;
 
 		for (unsigned int i = 0; i < parameters.size(); ++i) {

@@ -6,6 +6,7 @@
 #include <sstream>
 #include <fstream>
 #include <mutex>
+#include <queue>
 #include "database.h"
 #include "queue.h"
 #include "infobot.h"
@@ -21,6 +22,9 @@ Queue outputs;
 std::mutex input_mutex;
 std::mutex output_mutex;
 std::mutex channel_hash_mutex;
+
+std::queue<SleepyDiscord::User> usercache;
+std::mutex user_cache_mutex;
 
 rapidjson::Document config;
 
@@ -39,8 +43,34 @@ void Bot::onServer(SleepyDiscord::Server server) {
 			channelList[std::string(i->ID)] = *i;
 	        	getSettings(this, *i, server.ID);
 		}
+	} while (false);
+	for (auto i = server.members.begin(); i != server.members.end(); ++i) {
+		std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
+		usercache.push(i->user);
 	}
-	while (false);
+}
+
+void SaveCachedUsers() {
+	SleepyDiscord::User u;
+	while (true) {
+		if (!usercache.empty()) {
+			do {
+				std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
+				u = usercache.front();
+				usercache.pop();
+			} while (false);
+			std::string userid = u.ID;
+			std::string bot = u.bot ? "1" : "0";
+			db::query("REPLACE INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?)", {userid, u.username, u.discriminator, bot});
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+}
+
+void Bot::onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) {
+	std::string userid = member.user.ID;
+	std::string bot = member.user.bot ? "1" : "0";
+	db::query("REPLACE INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?)", {userid, member.user.username, member.user.discriminator, bot});
 }
 
 void Bot::onReady(SleepyDiscord::Ready ready) {
@@ -127,11 +157,11 @@ int main(int argc, char** argv) {
 	}
 
 	while (true) {
-		::sleep(2);
 		Bot client(token, SleepyDiscord::USER_CONTROLED_THREADS);
 		client.setup();
 		std::thread infobot(infobot_socket, &client, &input_mutex, &output_mutex, &channel_hash_mutex, &inputs, &outputs, &config);
 		std::thread responses(send_responses, &client, &output_mutex, &channel_hash_mutex, &outputs);
+		std::thread userqueue(SaveCachedUsers);
 	
 		try {
 			client.run();
@@ -139,6 +169,8 @@ int main(int argc, char** argv) {
 		catch (SleepyDiscord::ErrorCode e) {
 			std::cout << "Oof! #" << e << std::endl;
 		}
+
+		::sleep(5);
 	}
 }
 

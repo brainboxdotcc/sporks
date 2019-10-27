@@ -22,6 +22,7 @@ public:
 
 	void onReady(SleepyDiscord::Ready ready) override;
 	void onServer(SleepyDiscord::Server server) override;
+	void onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) override;
 	void onChannel(SleepyDiscord::Channel channel) override;
 	void onMessage(SleepyDiscord::Message message) override;
 };
