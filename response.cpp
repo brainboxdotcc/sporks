@@ -39,7 +39,12 @@ void send_responses(Bot* client, std::mutex* output_mutex, std::mutex* channel_h
 							ShowStatus(client, m, done.front().channelID);
 						} else {
 							/* Anything else */
-							std::string message = done.front().message;
+							std::string message = trim(done.front().message);
+
+							/* Translate IRC actions */
+							if (message.substr(0, 8) == "\001ACTION ") {
+								message = "*" + message.substr(8, message.length() - 9) + "*";
+							}
 
 							/* Sanitise by putting <> around all but the first url in the message to stop embed spam */
 							size_t urls_matched = 0;
