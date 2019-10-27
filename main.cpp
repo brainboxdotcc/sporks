@@ -27,6 +27,7 @@ rapidjson::Document config;
 void Bot::setup() {
 	this->setShardID(0, 0);
 	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
+	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
 }
 
 void Bot::onServer(SleepyDiscord::Server server) {
@@ -84,6 +85,8 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 				section = param[2];
 			}
 			GetHelp(this, section, message.channelID, botusername, std::string(this->getID()), message.author.username, message.author.ID);
+		} else if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
+			/* Config command */
 		} else {
 			QueueItem query;
 			query.message = mentions_removed;

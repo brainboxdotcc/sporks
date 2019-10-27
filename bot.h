@@ -10,6 +10,7 @@ typedef std::unordered_map<std::string, SleepyDiscord::Channel> ChannelCache;
 class Bot : public SleepyDiscord::DiscordClient {
 	
 	class PCRE* helpmessage;
+	class PCRE* configmessage;
 public:
 	std::vector<SleepyDiscord::Server> serverList;
 	ChannelCache channelList;
