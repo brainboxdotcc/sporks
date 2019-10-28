@@ -52,6 +52,7 @@ void Bot::onServer(SleepyDiscord::Server server) {
 
 void SaveCachedUsers() {
 	SleepyDiscord::User u;
+	time_t last_message = time(NULL);
 	while (true) {
 		if (!usercache.empty()) {
 			do {
@@ -63,7 +64,13 @@ void SaveCachedUsers() {
 			std::string bot = u.bot ? "1" : "0";
 			db::query("REPLACE INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?)", {userid, u.username, u.discriminator, bot});
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		if (time(NULL) > last_message) {
+			if (usercache.size() > 0) {
+				std::cout << "User cache size: " << usercache.size() << std::endl;
+			}
+			last_message = time(NULL) + 60;
+		}
 	}
 }
 
