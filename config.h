@@ -19,4 +19,5 @@ namespace settings {
         std::string GetIgnoreList(const rapidjson::Document& settings, bool as_json);
 };
 
-void DoConfig(class Bot* bot, const std::vector<std::string> &param, const std::string &channelID, SleepyDiscord::User issuer);
+void DoConfig(class Bot* bot, const std::vector<std::string> &param, const std::string &channelID, SleepyDiscord::Message message);
+bool HasPermission(class Bot* bot, const std::string &channelID, SleepyDiscord::Message message);

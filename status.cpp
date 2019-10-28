@@ -21,8 +21,8 @@ void ShowStatus(Bot* bot, const std::vector<std::string> &matches, const std::st
 
 	size_t servers = bot->serverList.size();
 	size_t users = 0;
-	for (size_t i = 0; i < bot->serverList.size(); ++i) {
-		users += bot->serverList[i].members.size();
+	for (auto i = bot->serverList.begin(); i != bot->serverList.end(); ++i) {
+		users += i->second.members.size();
 	}
 
 	QueueStats qs = bot->GetQueueStats();

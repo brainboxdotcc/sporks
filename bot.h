@@ -8,6 +8,7 @@
 typedef std::unordered_map<std::string, SleepyDiscord::Channel> ChannelCache;
 typedef std::unordered_map<std::string, SleepyDiscord::User> UserCache;
 typedef std::unordered_map<std::string, std::vector<std::string>> RandomNickCache;
+typedef std::unordered_map<std::string, SleepyDiscord::Server> BotServerCache;
 
 struct QueueStats {
 	size_t inputs;
@@ -20,7 +21,7 @@ class Bot : public SleepyDiscord::DiscordClient {
 	class PCRE* helpmessage;
 	class PCRE* configmessage;
 public:
-	std::vector<SleepyDiscord::Server> serverList;
+	BotServerCache serverList;
 	ChannelCache channelList;
 	UserCache userList;
 	RandomNickCache nickList;

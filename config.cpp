@@ -16,7 +16,7 @@ using namespace SleepyDiscord;
 std::mutex config_sql_mutex;
 
 void DoConfigSet(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::User issuer);
-void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::User issuer);
+void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::Message message);
 void DoConfigShow(class Bot* bot, const std::string &channelID, SleepyDiscord::User issuer);
 
 rapidjson::Document getSettings(Bot* bot, const std::string &channel_id, const std::string& guild_id)
@@ -123,20 +123,26 @@ namespace settings {
 	}
 };
 
-void DoConfig(class Bot* bot, const std::vector<std::string> &param, const std::string &channelID, SleepyDiscord::User issuer) {
+void DoConfig(class Bot* bot, const std::vector<std::string> &param, const std::string &channelID, SleepyDiscord::Message message) {
+
+	if (!HasPermission(bot, channelID, message)) {
+		GetHelp(bot, "access-denied", channelID, bot->user.username, std::string(bot->getID()), message.author.username, message.author.ID, false);
+		return;
+	}
+
 	if (param.size() < 3) {
-		GetHelp(bot, "missing-parameters", channelID, bot->user.username, std::string(bot->getID()), issuer.username, issuer.ID, false);
+		GetHelp(bot, "missing-parameters", channelID, bot->user.username, std::string(bot->getID()), message.author.username, message.author.ID, false);
 		return;
 	}
 	std::stringstream tokens(trim(param[2]));
 	std::string subcommand;
 	tokens >> subcommand;
 	if (subcommand == "show") {
-		DoConfigShow(bot, channelID, issuer);
+		DoConfigShow(bot, channelID, message.author);
 	} else if (subcommand == "ignore") {
-		DoConfigIgnore(bot, tokens, channelID, issuer);
+		DoConfigIgnore(bot, tokens, channelID, message);
 	} else if (subcommand == "set") {
-		DoConfigSet(bot, tokens, channelID, issuer);
+		DoConfigSet(bot, tokens, channelID, message.author);
 	}
 }
 
@@ -158,7 +164,7 @@ void DoConfigSet(class Bot* bot, std::stringstream &param, const std::string &ch
 		return;
 	}
 	if (variable != "talkative" && variable != "learn") {
-		GetHelp(bot, "missing-set-var-or-value", channelID, bot->user.username, std::string(bot->getID()), issuer.username, issuer.ID, false);
+		GetHelp(bot, "invalid-set-var-or-value", channelID, bot->user.username, std::string(bot->getID()), issuer.username, issuer.ID, false);
 		return;
 	}
 	bool state = (setting == "yes" || setting == "true" || setting == "on" || setting == "1");
@@ -182,7 +188,95 @@ void DoConfigSet(class Bot* bot, std::stringstream &param, const std::string &ch
 	EmbedSimple(bot, "Setting **'" + variable + "'** " + (outstate ? "enabled" : "disabled") + " on <#" + channelID + ">", channelID);
 }
 
-void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::User issuer) {
+std::string ToJSON(std::vector<uint64_t> list) {
+	std::string ret = "[";
+	for (auto i = list.begin(); i != list.end(); ++i) {
+		ret += std::to_string(*i) + ",";
+	}
+	ret = ret.substr(0, ret.length() - 1) + "]";
+	return ret;
+}
+
+bool HasPermission(class Bot* bot, const std::string &channelID, SleepyDiscord::Message message) {
+	std::string serverID = message.serverID;
+	BotServerCache::iterator s = bot->serverList.find(serverID);
+	if (s != bot->serverList.end()) {
+		if (s->second.ownerID == message.author.ID) {
+			/* Server owner */
+			return true;
+		}
+		for (auto serverrole = s->second.roles.begin(); serverrole != s->second.roles.end(); ++serverrole) {
+			for (auto memberrole = message.member.roles.begin(); memberrole != message.member.roles.end(); ++memberrole) {
+				/* Manage messages or administrator permission */
+				if (serverrole->ID == *memberrole) {
+					if ((serverrole->permissions & SleepyDiscord::Permission::MANAGE_MESSAGES) || (serverrole->permissions & SleepyDiscord::Permission::ADMINISTRATOR)) {
+						return true;
+					}
+				}
+			}
+		}
+	}
+	return false;
+}
+
+void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::Message message) {
+	rapidjson::Document csettings = getSettings(bot, channelID, "");
+	std::string operation;
+	param >> operation;
+	std::string userlist;
+	std::vector<uint64_t> currentlist = settings::GetIgnoreList(csettings);
+	std::vector<uint64_t> mentions;
+	for (auto i = message.mentions.begin(); i != message.mentions.end(); ++i) {
+		if (i->ID != bot->getID()) {
+			mentions.push_back(from_string<uint64_t>(i->ID, std::dec));
+			userlist += " " + i->username;
+		}
+	}
+	if (operation == "add") {
+		for (auto i = mentions.begin(); i != mentions.end(); ++i) {
+			currentlist.push_back(*i);
+		}
+		std::string json = json::createJSON({
+			{ "talkative", json::boolean(settings::IsTalkative(csettings)) },
+			{ "learningdisabled", json::boolean(settings::IsLearningDisabled(csettings)) },
+			{ "ignores", ToJSON(currentlist) },
+		});
+		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, channelID});
+		EmbedSimple(bot, std::string("Added **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** to the ignore list for <#" + channelID + ">: " + userlist, channelID);
+	} else if (operation == "del") {
+		std::vector<uint64_t> newlist;
+		for (auto i = currentlist.begin(); i != currentlist.end(); ++i) {
+			bool preserve = true;
+			for (auto j = mentions.begin(); j != mentions.end(); ++j) {
+				if (*j == *i) {
+					preserve = false;
+					break;
+				}
+			}
+			if (preserve) {
+				newlist.push_back(*i);
+			}
+		}
+		currentlist = newlist;
+		std::string json = json::createJSON({
+			{ "talkative", json::boolean(settings::IsTalkative(csettings)) },
+			{ "learningdisabled", json::boolean(settings::IsLearningDisabled(csettings)) },
+			{ "ignores", ToJSON(currentlist) },
+		});
+		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, channelID});
+		EmbedSimple(bot, std::string("Deleted **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** from the ignore list for <#" + channelID + ">: " + userlist, channelID);
+	} else if (operation == "list") {
+		std::stringstream s;
+		if (currentlist.empty()) {
+			s << "**Ignore list for <#" << channelID << "> is empty!**";
+		} else {
+			s << "**Ignore list for <#" << channelID << ">**\\n\\n";
+			for (auto i = currentlist.begin(); i != currentlist.end(); ++i) {
+				s << "<@" << *i << "> (" << *i << ")\\n";
+			}
+		}
+		EmbedSimple(bot, s.str(), channelID);
+	}
 }
 
 void DoConfigShow(class Bot* bot, const std::string &channelID, SleepyDiscord::User issuer) {

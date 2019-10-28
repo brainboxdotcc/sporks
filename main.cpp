@@ -45,8 +45,8 @@ void Bot::setup() {
 }
 
 void Bot::onServer(SleepyDiscord::Server server) {
-	serverList.push_back(server);
 	std::string serverID = server.ID;
+	serverList[serverID] = server;
 	std::cout << "Adding server #" << std::string(server.ID) << ": " << server.name << "\n";
 	do {
 		std::lock_guard<std::mutex> hash_lock(channel_hash_mutex);
@@ -95,8 +95,8 @@ void UpdatePresence(Bot* bot) {
 	while (true) {
 		size_t servers = bot->serverList.size();
 		size_t users = 0;
-		for (size_t i = 0; i < bot->serverList.size(); ++i) {
-			users += bot->serverList[i].members.size();
+		for (auto i = bot->serverList.begin(); i != bot->serverList.end(); ++i) {
+			users += i->second.members.size();
 		}
 		db::resultset rs_fact = db::query("SELECT count(key_word) AS total FROM infobot", std::vector<std::string>());
 		bot->updateStatus(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts on " + Comma(servers) + " servers, " + Comma(users) + " total users", 0, SleepyDiscord::Status::online, false, 3);
@@ -155,7 +155,7 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 			GetHelp(this, section, message.channelID, botusername, std::string(this->getID()), message.author.username, message.author.ID);
 		} else if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
 			/* Config command */
-			DoConfig(this, param, message.channelID, message.author);
+			DoConfig(this, param, message.channelID, message);
 		} else {
 			QueueItem query;
 			query.message = mentions_removed;
