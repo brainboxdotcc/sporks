@@ -124,7 +124,15 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 		settings = getSettings(this, message.channelID, message.serverID);
 	} while (false);
 
-	if (message.author.ID != this->getID()) {
+	/* Ignore self, and bots */
+	if (message.author.ID != this->getID() && message.author.bot == false) {
+
+		/* Ignore anyone on ignore list */
+		std::vector<uint64_t> ignorelist = settings::GetIgnoreList(settings);
+		if (std::find(ignorelist.begin(), ignorelist.end(), from_string<uint64_t>(message.author.ID, std::dec)) != ignorelist.end()) {
+			std::cout << "Message " << std::string(message.ID) << " dropped, user on channel ignore list" << std::endl;
+			return;
+		}
 
 		/* Replace all mentions with raw nicknames */
 		bool mentioned = false;
