@@ -15,5 +15,8 @@ namespace settings {
         bool IsLearningDisabled(const rapidjson::Document& settings);
         bool IsLearningEnabled(const rapidjson::Document& settings);
         bool IsTalkative(const rapidjson::Document& settings);
-        std::vector<uint64_t> GetIgnoreList(const rapidjson::Document& settings);
+	std::vector<uint64_t> GetIgnoreList(const rapidjson::Document& settings);
+        std::string GetIgnoreList(const rapidjson::Document& settings, bool as_json);
 };
+
+void DoConfig(class Bot* bot, const std::vector<std::string> &param, const std::string &channelID, SleepyDiscord::User issuer);

@@ -28,6 +28,16 @@ std::mutex user_cache_mutex;
 
 rapidjson::Document config;
 
+QueueStats Bot::GetQueueStats() {
+	QueueStats q;
+
+	q.inputs = inputs.size();
+	q.outputs = outputs.size();
+	q.users = userqueue.size();
+
+	return q;
+}
+
 void Bot::setup() {
 	this->setShardID(0, 0);
 	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
@@ -68,7 +78,7 @@ void SaveCachedUsers() {
 			} while (false);
 			std::string userid = u.ID;
 			std::string bot = u.bot ? "1" : "0";
-			db::query("REPLACE INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?)", {userid, u.username, u.discriminator, bot});
+			db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, u.username, u.discriminator, u.avatar, bot, u.username, u.discriminator, u.avatar});
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		if (time(NULL) > last_message) {
@@ -80,10 +90,24 @@ void SaveCachedUsers() {
 	}
 }
 
+void UpdatePresence(Bot* bot) {
+	std::this_thread::sleep_for(std::chrono::seconds(30));
+	while (true) {
+		size_t servers = bot->serverList.size();
+		size_t users = 0;
+		for (size_t i = 0; i < bot->serverList.size(); ++i) {
+			users += bot->serverList[i].members.size();
+		}
+		db::resultset rs_fact = db::query("SELECT count(key_word) AS total FROM infobot", std::vector<std::string>());
+		bot->updateStatus(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts on " + Comma(servers) + " servers, " + Comma(users) + " total users", 0, SleepyDiscord::Status::online, false, 3);
+		std::this_thread::sleep_for(std::chrono::seconds(120));
+	}
+}
+
 void Bot::onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) {
 	std::string userid = member.user.ID;
 	std::string bot = member.user.bot ? "1" : "0";
-	db::query("REPLACE INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?)", {userid, member.user.username, member.user.discriminator, bot});
+	db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, member.user.username, member.user.discriminator, member.user.avatar, bot, member.user.username, member.user.discriminator, member.user.avatar});
 	this->userList[userid] = member.user;
 }
 
@@ -131,6 +155,7 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 			GetHelp(this, section, message.channelID, botusername, std::string(this->getID()), message.author.username, message.author.ID);
 		} else if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
 			/* Config command */
+			DoConfig(this, param, message.channelID, message.author);
 		} else {
 			QueueItem query;
 			query.message = mentions_removed;
@@ -175,7 +200,8 @@ int main(int argc, char** argv) {
 		client.setup();
 		std::thread infobot(infobot_socket, &client, &input_mutex, &output_mutex, &channel_hash_mutex, &inputs, &outputs, &config);
 		std::thread responses(send_responses, &client, &output_mutex, &channel_hash_mutex, &outputs);
-		std::thread userqueue(SaveCachedUsers);
+		std::thread userqueueupdate(SaveCachedUsers);
+		std::thread presenceupdate(UpdatePresence, &client);
 	
 		try {
 			client.run();

@@ -1,15 +1,23 @@
 #include "bot.h"
 #include "config.h"
 #include "database.h"
+#include "stringops.h"
+#include "help.h"
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <unordered_map>
 #include <cstdint>
 #include <mutex>
+#include <stdlib.h>
 
 using namespace SleepyDiscord;
 
 std::mutex config_sql_mutex;
+
+void DoConfigSet(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::User issuer);
+void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::User issuer);
+void DoConfigShow(class Bot* bot, const std::string &channelID, SleepyDiscord::User issuer);
 
 rapidjson::Document getSettings(Bot* bot, const std::string &channel_id, const std::string& guild_id)
 {
@@ -99,4 +107,103 @@ namespace settings {
 		}
 		return ignores;
 	}
+
+	std::string GetIgnoreList(const rapidjson::Document& settings, bool as_json) {
+		std::string json = "[";
+		if (settings.IsObject() && settings.HasMember("ignores") && settings["ignores"].IsArray()) {
+			for (size_t i = 0; i < settings["ignores"].Size(); ++i) {
+				json.append(std::to_string(settings["ignores"][i].GetInt64()));
+				if (i != settings["ignores"].Size() - 1) {
+					json.append(",");
+				}
+			}
+		}
+		json.append("]");
+		return json;
+	}
 };
+
+void DoConfig(class Bot* bot, const std::vector<std::string> &param, const std::string &channelID, SleepyDiscord::User issuer) {
+	if (param.size() < 3) {
+		GetHelp(bot, "missing-parameters", channelID, bot->user.username, std::string(bot->getID()), issuer.username, issuer.ID, false);
+		return;
+	}
+	std::stringstream tokens(trim(param[2]));
+	std::string subcommand;
+	tokens >> subcommand;
+	if (subcommand == "show") {
+		DoConfigShow(bot, channelID, issuer);
+	} else if (subcommand == "ignore") {
+		DoConfigIgnore(bot, tokens, channelID, issuer);
+	} else if (subcommand == "set") {
+		DoConfigSet(bot, tokens, channelID, issuer);
+	}
+}
+
+void EmbedSimple(Bot* bot, const std::string &message, const std::string &channelID) {
+	std::stringstream s;
+	s << "{\"color\":16767488, \"description\": \"" << message << "\"}";
+	SleepyDiscord::Embed embed(s.str());
+	bot->sendMessage(channelID, "", embed, false);
+}
+
+void DoConfigSet(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::User issuer) {
+	std::string variable;
+	std::string setting;
+	param >> variable >> setting;
+	variable = lowercase(variable);
+	setting = lowercase(setting);
+	if (variable == "" || setting == "") {
+		GetHelp(bot, "missing-set-var-or-value", channelID, bot->user.username, std::string(bot->getID()), issuer.username, issuer.ID, false);
+		return;
+	}
+	if (variable != "talkative" && variable != "learn") {
+		GetHelp(bot, "missing-set-var-or-value", channelID, bot->user.username, std::string(bot->getID()), issuer.username, issuer.ID, false);
+		return;
+	}
+	bool state = (setting == "yes" || setting == "true" || setting == "on" || setting == "1");
+	rapidjson::Document csettings = getSettings(bot, channelID, "");
+
+	bool talkative = (variable == "talkative" ? state : settings::IsTalkative(csettings));
+	bool learningdisabled = (variable == "learn" ? !state : settings::IsLearningDisabled(csettings));
+	bool outstate = state;
+	if (variable == "learn") {
+		outstate = !state;
+	}
+
+	std::string json = json::createJSON({
+		{ "talkative", json::boolean(talkative) },
+		{ "learningdisabled", json::boolean(learningdisabled) },
+		{ "ignores", settings::GetIgnoreList(csettings, true) }
+	});
+
+	db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, channelID});
+
+	EmbedSimple(bot, "Setting **'" + variable + "'** " + (outstate ? "enabled" : "disabled") + " on <#" + channelID + ">", channelID);
+}
+
+void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::User issuer) {
+}
+
+void DoConfigShow(class Bot* bot, const std::string &channelID, SleepyDiscord::User issuer) {
+	rapidjson::Document csettings = getSettings(bot, channelID, "");
+	std::stringstream s;
+	const statusfield statusfields[] = {
+		statusfield("Talk without being mentioned?", settings::IsTalkative(csettings) ? "Yes" : "No"),
+		statusfield("Learn from this channel?", settings::IsLearningEnabled(csettings) ? "Yes" : "No"),
+		statusfield("Ignored users", Comma(settings::GetIgnoreList(csettings).size())),
+		statusfield("", "")
+	};
+	s << "{\"title\":\"Settings for this channel\",\"color\":16767488,";
+	s << "\"footer\":{\"link\":\"https;\\/\\/www.botnix.org\\/\",\"text\":\"Powered by Botnix 2.0 with the infobot and discord modules\",\"icon_url\":\"https:\\/\\/www.botnix.org\\/images\\/botnix.png\"},\"fields\":[";
+	for (int i = 0; statusfields[i].name != ""; ++i) {
+		s << "{\"name\":\"" +  statusfields[i].name + "\",\"value\":\"" + statusfields[i].value + "\", \"inline\": false}";
+		if (statusfields[i + 1].name != "") {
+			s << ",";
+		}
+	}
+	s << "],\"description\":\"For help on changing these settings, type ``@" << bot->user.username << " help config``.\"}";
+	SleepyDiscord::Embed embed(s.str());
+	bot->sendMessage(channelID, "", embed, false);
+}
+

@@ -1,6 +1,23 @@
 #pragma once
 
 #include <string>
+#include <iomanip>
+#include <locale>
+#include <algorithm>
+
+template <typename T> std::basic_string<T> lowercase(const std::basic_string<T>& s)
+{
+    std::basic_string<T> s2 = s;
+    std::transform(s2.begin(), s2.end(), s2.begin(), tolower);
+    return std::move(s2);
+}
+
+template <typename T> std::basic_string<T> uppercase(const std::basic_string<T>& s)
+{
+    std::basic_string<T> s2 = s;
+    std::transform(s2.begin(), s2.end(), s2.begin(), toupper);
+    return std::move(s2);
+}
 
 std::string ReplaceString(std::string subject, const std::string& search, const std::string& replace);
 
@@ -22,4 +39,20 @@ inline std::string ltrim(std::string s)
 inline std::string trim(std::string s)
 {
 	return ltrim(rtrim(s));
+}
+
+template<class T> std::string Comma(T value)
+{
+	std::stringstream ss;
+	ss.imbue(std::locale(""));
+	ss << std::fixed << value;
+	return ss.str();
+}
+
+template <typename T> T from_string(const std::string &s, std::ios_base & (*f)(std::ios_base&))
+{
+	T t;
+	std::istringstream iss(s);
+	iss >> f, iss >> t;
+	return t;
 }

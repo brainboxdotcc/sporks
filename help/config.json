@@ -1,0 +1,36 @@
+{
+    "title": ":user: configuration help",
+    "color": 16767488,
+    "url": "https:\/\/www.botnix.org",
+    "thumbnail": {
+        "url": "https:\/\/www.botnix.org\/images\/botnix.png"
+    },
+    "footer": {
+        "link": "https;\/\/www.botnix.org\/",
+        "text": "Powered by Botnix 2.0 with the infobot and discord modules",
+        "icon_url": "https:\/\/www.botnix.org\/images\/botnix.png"
+    },
+    "fields": [
+        {
+            "name": "Showing configuration",
+            "value": "Configuration of :user: is on a per-channel basis. Anyone with **manage messages** permission for the channel can set the channel specific configuration for :user:. To show the current configuration issue the command: ```@:user: config show```",
+            "inline": false
+        },
+        {
+            "name": "Making the bot chatty",
+            "value": "It is possible to make the bot talkative, meaning that it will respond in the channel to any phrase it recognises, regardless of if it is being addressed. This can be very noisy. Note that :user: will still ignore other bots. To enable this mode tyoe: ```@:user: config set talkative on``` and to disable it type: ```@:user: config set talkative off```",
+            "inline": false
+        },
+        {
+            "name": "Learning mode",
+            "value": "By default :user: will learn from channels as it idles in them. If you wish to disable this feature, e.g. for your ultra-secret, ultra-private channels, you can do so with: ```@:user: config set learn off``` or to re-enable it you can issue the command: ```@:user: config set learn on```",
+            "inline": false
+        },
+        {
+            "name": "Ignoring users",
+            "value": "Each channel has an ignore list of users. You can add to, show and remove this list using ``@:user: config ignore``. To add a user to the ignore list: ```@:user: config ignore add @username``` and to remove a user: ```@:user: ignore del @username```. If you wish to list the current entries in the list, simply issue the following command: ```@:user: config ignore list```",
+            "inline": false
+        }
+    ],
+    "description": ""
+} 
