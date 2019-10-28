@@ -24,6 +24,20 @@ void set_core_nickname(const std::string &coredata)
 	}
 }
 
+
+
+int random(int min, int max)
+{
+	static bool first = true;
+	if (first) {
+		srand(time(NULL));
+		first = false;
+	}
+	return min + rand() % (( max + 1 ) - min);
+}
+
+
+
 void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mutex, std::mutex *channel_hash_mutex, Queue *inputs, Queue *outputs, rapidjson::Document* config)
 {
 	int sockfd = 0;
@@ -78,6 +92,8 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 							}
 						} while(false);
 						if (has_item) {
+							writeLine(sockfd, std::string(".RN ") + client->nickList[query.serverID][random(0, client->nickList[query.serverID].size() - 1)]);
+							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + query.message);
 							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							std::stringstream response(recvbuffer);

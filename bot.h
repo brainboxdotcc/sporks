@@ -6,6 +6,8 @@
 #include <unordered_map>
 
 typedef std::unordered_map<std::string, SleepyDiscord::Channel> ChannelCache;
+typedef std::unordered_map<std::string, SleepyDiscord::User> UserCache;
+typedef std::unordered_map<std::string, std::vector<std::string>> RandomNickCache;
 
 class Bot : public SleepyDiscord::DiscordClient {
 	
@@ -14,6 +16,8 @@ class Bot : public SleepyDiscord::DiscordClient {
 public:
 	std::vector<SleepyDiscord::Server> serverList;
 	ChannelCache channelList;
+	UserCache userList;
+	RandomNickCache nickList;
 	SleepyDiscord::User user;
 
 	using SleepyDiscord::DiscordClient::DiscordClient;

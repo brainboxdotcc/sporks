@@ -23,7 +23,7 @@ std::mutex input_mutex;
 std::mutex output_mutex;
 std::mutex channel_hash_mutex;
 
-std::queue<SleepyDiscord::User> usercache;
+std::queue<SleepyDiscord::User> userqueue;
 std::mutex user_cache_mutex;
 
 rapidjson::Document config;
@@ -36,6 +36,7 @@ void Bot::setup() {
 
 void Bot::onServer(SleepyDiscord::Server server) {
 	serverList.push_back(server);
+	std::string serverID = server.ID;
 	std::cout << "Adding server #" << std::string(server.ID) << ": " << server.name << "\n";
 	do {
 		std::lock_guard<std::mutex> hash_lock(channel_hash_mutex);
@@ -44,9 +45,14 @@ void Bot::onServer(SleepyDiscord::Server server) {
 	        	getSettings(this, *i, server.ID);
 		}
 	} while (false);
+	this->nickList[serverID] = std::vector<std::string>();
 	for (auto i = server.members.begin(); i != server.members.end(); ++i) {
-		std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
-		usercache.push(i->user);
+		do {
+			std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
+			userqueue.push(i->user);
+		} while (false);
+		this->userList[std::string(i->ID)] = *i;
+		this->nickList[serverID].push_back(i->user.username);
 	}
 }
 
@@ -54,11 +60,11 @@ void SaveCachedUsers() {
 	SleepyDiscord::User u;
 	time_t last_message = time(NULL);
 	while (true) {
-		if (!usercache.empty()) {
+		if (!userqueue.empty()) {
 			do {
 				std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
-				u = usercache.front();
-				usercache.pop();
+				u = userqueue.front();
+				userqueue.pop();
 			} while (false);
 			std::string userid = u.ID;
 			std::string bot = u.bot ? "1" : "0";
@@ -66,8 +72,8 @@ void SaveCachedUsers() {
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		if (time(NULL) > last_message) {
-			if (usercache.size() > 0) {
-				std::cout << "User cache size: " << usercache.size() << std::endl;
+			if (userqueue.size() > 0) {
+				std::cout << "User queue size: " << userqueue.size() << std::endl;
 			}
 			last_message = time(NULL) + 60;
 		}
@@ -78,6 +84,7 @@ void Bot::onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, Sle
 	std::string userid = member.user.ID;
 	std::string bot = member.user.bot ? "1" : "0";
 	db::query("REPLACE INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?)", {userid, member.user.username, member.user.discriminator, bot});
+	this->userList[userid] = member.user;
 }
 
 void Bot::onReady(SleepyDiscord::Ready ready) {
