@@ -7,6 +7,8 @@
 #include <fstream>
 #include <mutex>
 #include <queue>
+#include <stdlib.h>
+#include <getopt.h>
 #include "database.h"
 #include "config.h"
 #include "regex.h"
@@ -181,7 +183,10 @@ void Bot::onMessage(const SleepyDiscord::Message &message) {
 		while (mentions_removed.substr(0, botusername.length()) == botusername) {
 			mentions_removed = trim(mentions_removed.substr(botusername.length(), mentions_removed.length()));
 		}
+		/* Remove linefeeds, they mess with botnix */
+		mentions_removed = trim(ReplaceString(mentions_removed, "\r\n", " "));
 
+		/* Hard coded commands, help/config */
 		std::vector<std::string> param;
 		if (mentioned && helpmessage->Match(mentions_removed, param)) {
 			std::string section = "basic";
@@ -193,6 +198,7 @@ void Bot::onMessage(const SleepyDiscord::Message &message) {
 			/* Config command */
 			DoConfig(this, param, message.channelID, message);
 		} else {
+			/* Everything else goes to the input queue to be processed by botnix */
 			QueueItem query;
 			query.message = mentions_removed;
 			query.channelID = message.channelID;
@@ -208,35 +214,83 @@ void Bot::onMessage(const SleepyDiscord::Message &message) {
 }
 
 void Bot::onChannel(const SleepyDiscord::Channel &channel) {
+
+	/* Cache the channel to unordered_map */
 	do {
 		std::lock_guard<std::mutex> hash_lock(channel_hash_mutex);
 		channelList[std::string(channel.ID)] = channel;
 	} while (false);
+
+	/* This just causes creation of the settings in SQL if they don't exist */
 	getSettings(this, channel, channel.serverID);
 }
 
 
 int main(int argc, char** argv) {
 
-	bool dev = (argc >= 2 && strcmp(argv[1], "--dev") == 0);
+	int dev = 0;	/* Note: getopt expects ints, this is actually treated as bool */
+	uint32_t shard_id = 0;
+	uint32_t max_shards = 0;
+
+	/* Parse command line parameters using getopt() */
+	struct option longopts[] =
+	{
+		{ "dev",       no_argument,        &dev,    1  },
+		{ "shardid",   required_argument,  NULL,   'i' },
+		{ "numshards", required_argument,  NULL,   'n' },
+		{ 0, 0, 0, 0 }
+	};
+
+	/* Yes, getopt is ugly, but what you gonna do... */
+	int index;
+	char arg;
+	while ((arg = getopt_long_only(argc, argv, ":i:n", longopts, &index)) != -1) {
+		switch (arg) {
+			case 'i':
+				/* Shard ID was set */
+				shard_id = atoi(optarg);
+			break;
+			case 'n':
+				/* Number of shards was set */
+				max_shards = atoi(optarg);
+			break;
+			case 0:
+				/* getopt_long_only() set an int variable, just keep going */
+			break;
+			case '?':
+			default:
+				std::cerr << "Unknown parameter '" << argv[optind - 1] << "'" << std::endl;
+				std::cerr << "Usage: %s [--dev] [--shardid <n>] [--numshards <n>]" << std::endl;
+				exit(1);
+			break;
+		}
+	}
+
+
+	/* Get the correct token from config file for either development or production environment */
 	std::string token = (dev ? Bot::GetConfig("devtoken") : Bot::GetConfig("livetoken"));
 
+	/* Connect to SQL database */
 	if (!db::connect(Bot::GetConfig("dbhost"), Bot::GetConfig("dbuser"), Bot::GetConfig("dbpass"), Bot::GetConfig("dbname"), from_string<uint32_t>(Bot::GetConfig("dbport"), std::dec))) {
 		std::cerr << "Database connection failed\n";
 		exit(2);
 	}
 
+	/* It's go time! */
 	while (true) {
-		Bot client(token, 0, 0, dev);
+		Bot client(token, shard_id, max_shards, dev);
 	
 		try {
+			/* Actually connect and start the event loop */
 			client.run();
 		}
 		catch (SleepyDiscord::ErrorCode e) {
+			/* sleepy_discord throws these on websocket error. ew. */
 			std::cout << "Oof! #" << e << std::endl;
 		}
 
-		::sleep(5);
+		/* Reconnection delay to prevent hammering discord */
+		::sleep(30);
 	}
 }
 
