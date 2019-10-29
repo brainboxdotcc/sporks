@@ -28,7 +28,8 @@ QueueStats Bot::GetQueueStats() {
 Bot::Bot(const std::string &token, uint32_t shard_id, uint32_t max_shards, bool development) : SleepyDiscord::DiscordClient(token, SleepyDiscord::USER_CONTROLED_THREADS), dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), ShardID(shard_id), MaxShards(max_shards) {
 
 	this->setShardID(ShardID, MaxShards);
-	this->DisablePresenceUpdates();
+	//FIXME: This is disabled until it can store last 'S'
+	//this->DisablePresenceUpdates();
 
 	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
