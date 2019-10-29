@@ -388,7 +388,16 @@ namespace SleepyDiscord {
 		return !key[i] ? 0 : (hash(key, i + 1) * 31) + key[i] - 'A';
 	}
 
+	void BaseDiscordClient::DisablePresenceUpdates() {
+		DisablePresenceUpdateEvents = true;
+	}
+
 	void BaseDiscordClient::processMessage(const std::string &message) {
+		if (DisablePresenceUpdateEvents) {
+			if (message.substr(0, 27) == "{\"t\":\"PRESENCE_UPDATE\",\"s\":") {
+				return;
+			}
+		}
 		rapidjson::Document document;
 		document.Parse(message.c_str(), message.length());
 		//json::Values values = json::getValues(message.c_str(),

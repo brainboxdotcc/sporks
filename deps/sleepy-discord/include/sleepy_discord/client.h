@@ -70,6 +70,8 @@ namespace SleepyDiscord {
 		BaseDiscordClient(const std::string _token) { start(_token); }
 		~BaseDiscordClient();
 
+		void DisablePresenceUpdates();
+
 		using RequestCallback = std::function<void(Response)>;
 		Response request(const RequestMethod method, Route path, const std::string jsonParameters = ""/*,
 			cpr::Parameters httpParameters = cpr::Parameters{}*/, const std::initializer_list<Part>& multipartParameters = {},
@@ -389,6 +391,8 @@ namespace SleepyDiscord {
 		}
 
 	protected:
+		bool DisablePresenceUpdateEvents;
+
 		//Rest events
 		virtual void onDepletedRequestSupply(const Route::Bucket& bucket, time_t timeTilReset);
 		virtual void onExceededRateLimit(bool global, std::time_t timeTilRetry, RequestMode mode, Request request);

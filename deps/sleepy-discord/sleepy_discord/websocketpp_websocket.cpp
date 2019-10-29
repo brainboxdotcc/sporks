@@ -22,6 +22,7 @@ namespace SleepyDiscord {
 	WebsocketppDiscordClient::WebsocketppDiscordClient(const std::string token, const char numOfThreads) :
 		_thread(nullptr), maxNumOfThreads(numOfThreads)
 	{
+		DisablePresenceUpdateEvents = false;
 		init();
 		setScheduleHandler<WebsocketppScheduleHandler>(this_client);
 		start(token, numOfThreads);
