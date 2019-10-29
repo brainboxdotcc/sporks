@@ -9,24 +9,24 @@
 #include "stringops.h"
 #include "status.h"
 
-void Bot::OutputThread(std::mutex* output_mutex, std::mutex* channel_hash_mutex, Queue* outputs) {
+void Bot::OutputThread() {
 	PCRE statsreply("Since (.+?), there have been (\\d+) modifications and (\\d+) questions. I have been alive for (.+?), I currently know (\\d+)");
 	PCRE url_sanitise("^https?://", true);
 	while (!this->terminate) {
 		try {
 			std::queue<QueueItem> done;
 			do {
-				std::lock_guard<std::mutex> output_lock(*output_mutex);
-				while (!outputs->empty()) {
-					done.push(outputs->front());
-					outputs->pop();
+				std::lock_guard<std::mutex> output_lock(this->output_mutex);
+				while (!outputs.empty()) {
+					done.push(outputs.front());
+					outputs.pop();
 				}
 			} while (false);
 			while (!done.empty()) {
 				SleepyDiscord::Channel channel;
 				rapidjson::Document channel_settings;
 				do {
-					std::lock_guard<std::mutex> hash_lock(*channel_hash_mutex);
+					std::lock_guard<std::mutex> hash_lock(this->channel_hash_mutex);
 					channel = this->channelList.find(done.front().channelID)->second;
 					channel_settings = getSettings(this, channel, done.front().serverID);
 				} while (false);

@@ -35,7 +35,7 @@ int random(int min, int max)
 	return min + rand() % (( max + 1 ) - min);
 }
 
-void Bot::InputThread(std::mutex *input_mutex, std::mutex *output_mutex, std::mutex *channel_hash_mutex, Queue *inputs, Queue *outputs)
+void Bot::InputThread()
 {
 	int sockfd = 0;
 	struct sockaddr_in serv_addr;
@@ -67,13 +67,13 @@ void Bot::InputThread(std::mutex *input_mutex, std::mutex *output_mutex, std::mu
 						bool has_item = false;
 						/* Block to encapsulate lock_guard for input queue */
 						do {
-							std::lock_guard<std::mutex> input_lock(*input_mutex);
-							if (!inputs->empty()) {
-								query = inputs->front();
+							std::lock_guard<std::mutex> input_lock(this->input_mutex);
+							if (!inputs.empty()) {
+								query = inputs.front();
 								SleepyDiscord::Channel channel;
 								rapidjson::Document channel_settings;
 								do {
-									std::lock_guard<std::mutex> hash_lock(*channel_hash_mutex);
+									std::lock_guard<std::mutex> hash_lock(this->channel_hash_mutex);
 									channel = this->channelList.find(query.channelID)->second;
 									channel_settings = getSettings(this, channel, query.serverID);
 
@@ -84,7 +84,7 @@ void Bot::InputThread(std::mutex *input_mutex, std::mutex *output_mutex, std::mu
 								 * B) Learning is enabled for the channel (default for all channels)
 								 */
 								has_item = query.mentioned || settings::IsLearningEnabled(channel_settings);
-								inputs->pop();
+								inputs.pop();
 							}
 						} while(false);
 						if (has_item) {
@@ -108,8 +108,8 @@ void Bot::InputThread(std::mutex *input_mutex, std::mutex *output_mutex, std::mu
 								resp.serverID = query.serverID;
 								resp.mentioned = query.mentioned;
 								do {
-									 std::lock_guard<std::mutex> output_lock(*output_mutex);
-									 outputs->push(resp);
+									 std::lock_guard<std::mutex> output_lock(this->output_mutex);
+									 outputs.push(resp);
 								} while (false);
 							}
 

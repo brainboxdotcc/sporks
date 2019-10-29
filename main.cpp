@@ -13,16 +13,6 @@
 #include "stringops.h"
 #include "help.h"
 
-Queue inputs;
-Queue outputs;
-
-std::mutex input_mutex;
-std::mutex output_mutex;
-std::mutex channel_hash_mutex;
-
-std::queue<SleepyDiscord::User> userqueue;
-std::mutex user_cache_mutex;
-
 QueueStats Bot::GetQueueStats() {
 	QueueStats q;
 
@@ -33,7 +23,7 @@ QueueStats Bot::GetQueueStats() {
 	return q;
 }
 
-Bot::Bot(const std::string &token, uint32_t shard_id, uint32_t max_shards) : SleepyDiscord::DiscordClient(token, SleepyDiscord::USER_CONTROLED_THREADS), terminate(false), ShardID(shard_id), MaxShards(max_shards) {
+Bot::Bot(const std::string &token, uint32_t shard_id, uint32_t max_shards, bool development) : SleepyDiscord::DiscordClient(token, SleepyDiscord::USER_CONTROLED_THREADS), dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), ShardID(shard_id), MaxShards(max_shards) {
 
 	this->setShardID(ShardID, MaxShards);
 	this->DisablePresenceUpdates();
@@ -41,8 +31,18 @@ Bot::Bot(const std::string &token, uint32_t shard_id, uint32_t max_shards) : Sle
 	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
 
-	thr_input = new std::thread(&Bot::InputThread, this, &input_mutex, &output_mutex, &channel_hash_mutex, &inputs, &outputs);
-	thr_output = new std::thread(&Bot::OutputThread, this, &output_mutex, &channel_hash_mutex, &outputs);
+	thr_input = new std::thread(&Bot::InputThread, this);
+	thr_output = new std::thread(&Bot::OutputThread, this);
+	thr_userqueue = new std::thread(&Bot::SaveCachedUsersThread, this);
+	thr_presence = new std::thread(&Bot::UpdatePresenceThread, this);
+}
+
+void Bot::DisposeThread(std::thread* t) {
+	if (t) {
+		t->join();
+		delete t;
+	}
+
 }
 
 Bot::~Bot() {
@@ -51,11 +51,10 @@ Bot::~Bot() {
 
 	terminate = true;
 
-	thr_input->join();
-	thr_output->join();
-
-	delete thr_input;
-	delete thr_output;
+	DisposeThread(thr_input);
+	DisposeThread(thr_output);
+	DisposeThread(thr_userqueue);
+	DisposeThread(thr_presence);
 }
 
 std::string Bot::GetConfig(const std::string &name) {
@@ -92,10 +91,10 @@ void Bot::onServer(const SleepyDiscord::Server &server) {
 	}
 }
 
-void SaveCachedUsers() {
+void Bot::SaveCachedUsersThread() {
 	SleepyDiscord::User u;
 	time_t last_message = time(NULL);
-	while (true) {
+	while (!this->terminate) {
 		if (!userqueue.empty()) {
 			do {
 				std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
@@ -118,16 +117,17 @@ void SaveCachedUsers() {
 	}
 }
 
-void UpdatePresence(Bot* bot) {
+void Bot::UpdatePresenceThread() {
 	std::this_thread::sleep_for(std::chrono::seconds(30));
 	while (true) {
-		size_t servers = bot->serverList.size();
+		size_t servers = serverList.size();
 		size_t users = 0;
-		for (auto i = bot->serverList.begin(); i != bot->serverList.end(); ++i) {
+		for (auto i = serverList.begin(); i != serverList.end(); ++i) {
 			users += i->second.members.size();
 		}
 		db::resultset rs_fact = db::query("SELECT count(key_word) AS total FROM infobot", std::vector<std::string>());
-		bot->updateStatus(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts on " + Comma(servers) + " servers, " + Comma(users) + " total users", 0, SleepyDiscord::Status::online, false, 3);
+		updateStatus(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts on " + Comma(servers) + " servers, " + Comma(users) + " total users", 0, SleepyDiscord::Status::online, false, 3);
+		db::query("INSERT INTO infobot_discord_counts (shard_id, dev, user_count, server_count) VALUES('?','?','?','?') ON DUPLICATE KEY UPDATE user_count = '?', server_count = '?', dev = '?'", {std::to_string(ShardID), std::to_string((uint32_t)dev), std::to_string(users), std::to_string(servers), std::to_string(users), std::to_string(servers), std::to_string((uint32_t)dev)});
 		std::this_thread::sleep_for(std::chrono::seconds(120));
 	}
 }
@@ -218,7 +218,8 @@ void Bot::onChannel(const SleepyDiscord::Channel &channel) {
 
 int main(int argc, char** argv) {
 
-	std::string token = (argc >= 2 && strcmp(argv[1], "--dev") == 0) ? Bot::GetConfig("devtoken") : Bot::GetConfig("livetoken");
+	bool dev = (argc >= 2 && strcmp(argv[1], "--dev") == 0);
+	std::string token = (dev ? Bot::GetConfig("devtoken") : Bot::GetConfig("livetoken"));
 
 	if (!db::connect(Bot::GetConfig("dbhost"), Bot::GetConfig("dbuser"), Bot::GetConfig("dbpass"), Bot::GetConfig("dbname"), from_string<uint32_t>(Bot::GetConfig("dbport"), std::dec))) {
 		std::cerr << "Database connection failed\n";
@@ -226,9 +227,7 @@ int main(int argc, char** argv) {
 	}
 
 	while (true) {
-		Bot client(token, 0, 0);
-		std::thread userqueueupdate(SaveCachedUsers);
-		std::thread presenceupdate(UpdatePresence, &client);
+		Bot client(token, 0, 0, dev);
 	
 		try {
 			client.run();
