@@ -6,7 +6,7 @@
 #endif
 
 namespace SleepyDiscord {
-	void BaseDiscordClient::onReady(Ready readyData) {
+	void BaseDiscordClient::onReady(const Ready &readyData) {
 
 	}
 
@@ -75,7 +75,7 @@ namespace SleepyDiscord {
 
 	}
 
-	void BaseDiscordClient::onPresenceUpdate(PresenceUpdate presenseUpdate) {
+	void BaseDiscordClient::onPresenceUpdate(const PresenceUpdate &presenseUpdate) {
 
 	}
 
@@ -135,7 +135,7 @@ namespace SleepyDiscord {
 
 	}
 
-	void BaseDiscordClient::onMessage(Message message) {
+	void BaseDiscordClient::onMessage(const Message &message) {
 		
 	}
 
@@ -147,11 +147,11 @@ namespace SleepyDiscord {
 
 	}
 
-	void BaseDiscordClient::onServer(Server jsonMessage) {
+	void BaseDiscordClient::onServer(const Server &jsonMessage) {
 	
 	}
 
-	void BaseDiscordClient::onChannel(Channel channel) {
+	void BaseDiscordClient::onChannel(const Channel &channel) {
 
 	}
 

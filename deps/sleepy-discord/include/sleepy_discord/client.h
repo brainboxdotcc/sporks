@@ -435,7 +435,7 @@ namespace SleepyDiscord {
 		* event that hasn't been added
 		*/
 		//TODO: use references, using them now will break other's code
-		virtual void onReady             (Ready              readyData  );
+		virtual void onReady             (const Ready       &readyData  );
 		virtual void onResumed           (                              );
 		virtual void onDeleteServer      (UnavailableServer server      );
 		virtual void onEditServer        (Server            server      );
@@ -452,7 +452,7 @@ namespace SleepyDiscord {
 		virtual void onDeleteChannel     (Channel            channel    );
 		virtual void onEditChannel       (Channel            channel    );
 		virtual void onPinMessage        (Snowflake<Channel> channelID, std::string lastPinTimestamp);
-		virtual void onPresenceUpdate    (PresenceUpdate     presenseUpdate);
+		virtual void onPresenceUpdate    (const PresenceUpdate  &presenseUpdate);
 		virtual void onEditUser          (User               user       );
 		virtual void onEditUserNote      (const json::Value& jsonMessage);
 		virtual void onEditUserSettings  (const json::Value& jsonMessage);
@@ -467,9 +467,9 @@ namespace SleepyDiscord {
 		virtual void onReaction          (Snowflake<User> userID, Snowflake<Channel> channelID, Snowflake<Message> messageID, Emoji emoji);
 		virtual void onDeleteReaction    (Snowflake<User> userID, Snowflake<Channel> channelID, Snowflake<Message> messageID, Emoji emoji);
 		virtual void onDeleteAllReaction (Snowflake<Server> serverID, Snowflake<Channel> channelID, Snowflake<Message> messageID);
-		virtual void onMessage           (Message            message    );
-		virtual void onServer            (Server             server     );
-		virtual void onChannel           (Channel            channel    );
+		virtual void onMessage           (const Message      &message   );
+		virtual void onServer            (const Server       &server    );
+		virtual void onChannel           (const Channel      &channel   );
 		virtual void onDispatch          (const json::Value& jsonMessage);
 
 		//websocket stuff
