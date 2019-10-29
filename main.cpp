@@ -8,9 +8,6 @@
 #include <mutex>
 #include <queue>
 #include "database.h"
-#include "queue.h"
-#include "infobot.h"
-#include "response.h"
 #include "config.h"
 #include "regex.h"
 #include "stringops.h"
@@ -26,8 +23,6 @@ std::mutex channel_hash_mutex;
 std::queue<SleepyDiscord::User> userqueue;
 std::mutex user_cache_mutex;
 
-rapidjson::Document config;
-
 QueueStats Bot::GetQueueStats() {
 	QueueStats q;
 
@@ -38,10 +33,41 @@ QueueStats Bot::GetQueueStats() {
 	return q;
 }
 
-void Bot::setup() {
-	this->setShardID(0, 0);
+Bot::Bot(const std::string &token, uint32_t shard_id, uint32_t max_shards) : SleepyDiscord::DiscordClient(token, SleepyDiscord::USER_CONTROLED_THREADS), terminate(false), ShardID(shard_id), MaxShards(max_shards) {
+
+	this->setShardID(ShardID, MaxShards);
+	this->DisablePresenceUpdates();
+
 	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
+
+	thr_input = new std::thread(&Bot::InputThread, this, &input_mutex, &output_mutex, &channel_hash_mutex, &inputs, &outputs);
+	thr_output = new std::thread(&Bot::OutputThread, this, &output_mutex, &channel_hash_mutex, &outputs);
+}
+
+Bot::~Bot() {
+	delete helpmessage;
+	delete configmessage;
+
+	terminate = true;
+
+	thr_input->join();
+	thr_output->join();
+
+	delete thr_input;
+	delete thr_output;
+}
+
+std::string Bot::GetConfig(const std::string &name) {
+	rapidjson::Document config;
+	std::ifstream configfile("../config.json");
+	rapidjson::IStreamWrapper wrapper(configfile);
+	config.ParseStream(wrapper);
+	if (!config.IsObject()) {
+		std::cerr << "../config.json not found, or doesn't contain an object" << std::endl;
+		exit(1);
+	}
+	return config[name.c_str()].GetString();
 }
 
 void Bot::onServer(const SleepyDiscord::Server &server) {
@@ -52,7 +78,7 @@ void Bot::onServer(const SleepyDiscord::Server &server) {
 		std::lock_guard<std::mutex> hash_lock(channel_hash_mutex);
 		for (auto i = server.channels.begin(); i != server.channels.end(); ++i) {
 			channelList[std::string(i->ID)] = *i;
-	        	getSettings(this, *i, server.ID);
+			getSettings(this, *i, server.ID);
 		}
 	} while (false);
 	this->nickList[serverID] = std::vector<std::string>();
@@ -79,8 +105,10 @@ void SaveCachedUsers() {
 			std::string userid = u.ID;
 			std::string bot = u.bot ? "1" : "0";
 			db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, u.username, u.discriminator, u.avatar, bot, u.username, u.discriminator, u.avatar});
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		} else {
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		if (time(NULL) > last_message) {
 			if (userqueue.size() > 0) {
 				std::cout << "User queue size: " << userqueue.size() << std::endl;
@@ -189,25 +217,16 @@ void Bot::onChannel(const SleepyDiscord::Channel &channel) {
 
 
 int main(int argc, char** argv) {
-	std::ifstream configfile("../config.json");
-	rapidjson::IStreamWrapper wrapper(configfile);
-	config.ParseStream(wrapper);
-	if (!config.IsObject()) {
-		std::cerr << "../config.json not found, or doesn't contain an object" << std::endl;
-		exit(1);
-	}
-	std::string token = (argc >= 2 && strcmp(argv[1], "--dev") == 0) ? config["devtoken"].GetString() : config["livetoken"].GetString();
 
-	if (!db::connect(config["dbhost"].GetString(), config["dbuser"].GetString(), config["dbpass"].GetString(), config["dbname"].GetString(), config["dbport"].GetInt())) {
+	std::string token = (argc >= 2 && strcmp(argv[1], "--dev") == 0) ? Bot::GetConfig("devtoken") : Bot::GetConfig("livetoken");
+
+	if (!db::connect(Bot::GetConfig("dbhost"), Bot::GetConfig("dbuser"), Bot::GetConfig("dbpass"), Bot::GetConfig("dbname"), from_string<uint32_t>(Bot::GetConfig("dbport"), std::dec))) {
 		std::cerr << "Database connection failed\n";
 		exit(2);
 	}
 
 	while (true) {
-		Bot client(token, SleepyDiscord::USER_CONTROLED_THREADS);
-		client.setup();
-		std::thread infobot(infobot_socket, &client, &input_mutex, &output_mutex, &channel_hash_mutex, &inputs, &outputs, &config);
-		std::thread responses(send_responses, &client, &output_mutex, &channel_hash_mutex, &outputs);
+		Bot client(token, 0, 0);
 		std::thread userqueueupdate(SaveCachedUsers);
 		std::thread presenceupdate(UpdatePresence, &client);
 	

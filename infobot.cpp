@@ -2,7 +2,6 @@
 #include "includes.h"
 #include "readline.h"
 #include "queue.h"
-#include "infobot.h"
 #include "config.h"
 #include "stringops.h"
 #include "regex.h"
@@ -36,28 +35,26 @@ int random(int min, int max)
 	return min + rand() % (( max + 1 ) - min);
 }
 
-
-
-void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mutex, std::mutex *channel_hash_mutex, Queue *inputs, Queue *outputs, rapidjson::Document* config)
+void Bot::InputThread(std::mutex *input_mutex, std::mutex *output_mutex, std::mutex *channel_hash_mutex, Queue *inputs, Queue *outputs)
 {
 	int sockfd = 0;
 	struct sockaddr_in serv_addr;
 	char recvbuffer[32768];
 	std::string response;
-	while (true) {
+	while (!this->terminate) {
 		std::cout << "Connecting to infobot via telnet...\n";
 		if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) >= 0) {
 			memset(&serv_addr, 0, sizeof(serv_addr));
 			serv_addr.sin_family = AF_INET;
-			serv_addr.sin_port = htons((*config)["telnetport"].GetInt());
+			serv_addr.sin_port = htons(from_string<uint32_t>(Bot::GetConfig("telnetport"), std::dec));
 			inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
-			if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) >= 0) {
+			if (::connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) >= 0) {
 				try {
 					/* Log into botnix */
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
-					writeLine(sockfd, (*config)["telnetuser"].GetString());
+					writeLine(sockfd, Bot::GetConfig("telnetuser"));
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
-					writeLine(sockfd, (*config)["telnetpass"].GetString());
+					writeLine(sockfd, Bot::GetConfig("telnetpass"));
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 					std::cout << "Socket link to botnix is UP, and ready for queries" << std::endl;
 					writeLine(sockfd, ".DR identify");
@@ -66,7 +63,6 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 					set_core_nickname(recvbuffer);
 					while (true) {
 						/* Process anything in the inputs queue */
-						std::this_thread::sleep_for(std::chrono::milliseconds(10));
 						QueueItem query;
 						bool has_item = false;
 						/* Block to encapsulate lock_guard for input queue */
@@ -78,8 +74,8 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 								rapidjson::Document channel_settings;
 								do {
 									std::lock_guard<std::mutex> hash_lock(*channel_hash_mutex);
-									channel = client->channelList.find(query.channelID)->second;
-									channel_settings = getSettings(client, channel, query.serverID);
+									channel = this->channelList.find(query.channelID)->second;
+									channel_settings = getSettings(this, channel, query.serverID);
 
 								} while(false);
 
@@ -92,7 +88,7 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 							}
 						} while(false);
 						if (has_item) {
-							writeLine(sockfd, std::string(".RN ") + client->nickList[query.serverID][random(0, client->nickList[query.serverID].size() - 1)]);
+							writeLine(sockfd, std::string(".RN ") + this->nickList[query.serverID][random(0, this->nickList[query.serverID].size() - 1)]);
 							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + query.message);
 							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
@@ -116,6 +112,10 @@ void infobot_socket(Bot* client, std::mutex *input_mutex, std::mutex *output_mut
 									 outputs->push(resp);
 								} while (false);
 							}
+
+							std::this_thread::sleep_for(std::chrono::milliseconds(10));
+						} else {
+							std::this_thread::sleep_for(std::chrono::milliseconds(500));
 						}
 					}
 				}

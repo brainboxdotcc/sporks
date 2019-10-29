@@ -9,12 +9,11 @@
 #include "stringops.h"
 #include "status.h"
 
-void send_responses(Bot* client, std::mutex* output_mutex, std::mutex* channel_hash_mutex, Queue* outputs) {
+void Bot::OutputThread(std::mutex* output_mutex, std::mutex* channel_hash_mutex, Queue* outputs) {
 	PCRE statsreply("Since (.+?), there have been (\\d+) modifications and (\\d+) questions. I have been alive for (.+?), I currently know (\\d+)");
 	PCRE url_sanitise("^https?://", true);
-	while (true) {
+	while (!this->terminate) {
 		try {
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			std::queue<QueueItem> done;
 			do {
 				std::lock_guard<std::mutex> output_lock(*output_mutex);
@@ -28,15 +27,15 @@ void send_responses(Bot* client, std::mutex* output_mutex, std::mutex* channel_h
 				rapidjson::Document channel_settings;
 				do {
 					std::lock_guard<std::mutex> hash_lock(*channel_hash_mutex);
-					channel = client->channelList.find(done.front().channelID)->second;
-					channel_settings = getSettings(client, channel, done.front().serverID);
+					channel = this->channelList.find(done.front().channelID)->second;
+					channel_settings = getSettings(this, channel, done.front().serverID);
 				} while (false);
 				if (done.front().mentioned || settings::IsTalkative(channel_settings)) {
 					try {
 						std::vector<std::string> m;
 						if (statsreply.Match(done.front().message, m)) {
 							/* Handle status reply */
-							ShowStatus(client, m, done.front().channelID);
+							ShowStatus(this, m, done.front().channelID);
 						} else {
 							/* Anything else */
 							std::string message = trim(done.front().message);
@@ -58,7 +57,7 @@ void send_responses(Bot* client, std::mutex* output_mutex, std::mutex* channel_h
 									urls_matched++;
 								}
 							}
-							client->sendMessage(channel.ID, message);
+							this->sendMessage(channel.ID, message);
 						}
 					}
 					catch (SleepyDiscord::ErrorCode e) {
@@ -67,6 +66,7 @@ void send_responses(Bot* client, std::mutex* output_mutex, std::mutex* channel_h
 				}
 				done.pop();
 			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 		catch (SleepyDiscord::ErrorCode e) {
 			std::cout << "Response Oof! #" << e << std::endl;
