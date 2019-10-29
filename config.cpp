@@ -219,6 +219,7 @@ bool HasPermission(class Bot* bot, const std::string &channelID, SleepyDiscord::
 	return false;
 }
 
+/* Add, amend and show channel ignore list */
 void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::Message message) {
 	rapidjson::Document csettings = getSettings(bot, channelID, "");
 	std::string operation;
@@ -232,9 +233,15 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string 
 			userlist += " " + i->username;
 		}
 	}
+	/* Add ignore entries */
 	if (operation == "add") {
 		for (auto i = mentions.begin(); i != mentions.end(); ++i) {
-			currentlist.push_back(*i);
+			if (*i != from_string<uint64_t>(message.author.ID, std::dec)) {
+				currentlist.push_back(*i);
+			} else {
+				EmbedSimple(bot, "Foolish human, you can't ignore yourself!", channelID);
+				return;
+			}
 		}
 		std::string json = json::createJSON({
 			{ "talkative", json::boolean(settings::IsTalkative(csettings)) },
@@ -244,6 +251,7 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string 
 		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, channelID});
 		EmbedSimple(bot, std::string("Added **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** to the ignore list for <#" + channelID + ">: " + userlist, channelID);
 	} else if (operation == "del") {
+		/* Remove ignore entries */
 		std::vector<uint64_t> newlist;
 		for (auto i = currentlist.begin(); i != currentlist.end(); ++i) {
 			bool preserve = true;
@@ -266,6 +274,7 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string 
 		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, channelID});
 		EmbedSimple(bot, std::string("Deleted **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** from the ignore list for <#" + channelID + ">: " + userlist, channelID);
 	} else if (operation == "list") {
+		/* List ignore entries */
 		std::stringstream s;
 		if (currentlist.empty()) {
 			s << "**Ignore list for <#" << channelID << "> is empty!**";
@@ -279,6 +288,7 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string 
 	}
 }
 
+/* Show current channel configuration */
 void DoConfigShow(class Bot* bot, const std::string &channelID, SleepyDiscord::User issuer) {
 	rapidjson::Document csettings = getSettings(bot, channelID, "");
 	std::stringstream s;
