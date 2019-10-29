@@ -31,10 +31,10 @@ public:
 
 	void setup();
 	QueueStats GetQueueStats();
-	void onReady(SleepyDiscord::Ready ready) override;
-	void onServer(SleepyDiscord::Server server) override;
+	void onReady(const SleepyDiscord::Ready &ready) override;
+	void onServer(const SleepyDiscord::Server &server) override;
 	void onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) override;
-	void onChannel(SleepyDiscord::Channel channel) override;
-	void onMessage(SleepyDiscord::Message message) override;
+	void onChannel(const SleepyDiscord::Channel &channel) override;
+	void onMessage(const SleepyDiscord::Message &message) override;
 };
 

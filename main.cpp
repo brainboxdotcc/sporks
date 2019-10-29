@@ -44,7 +44,7 @@ void Bot::setup() {
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
 }
 
-void Bot::onServer(SleepyDiscord::Server server) {
+void Bot::onServer(const SleepyDiscord::Server &server) {
 	std::string serverID = server.ID;
 	serverList[serverID] = server;
 	std::cout << "Adding server #" << std::string(server.ID) << ": " << server.name << "\n";
@@ -61,7 +61,7 @@ void Bot::onServer(SleepyDiscord::Server server) {
 			std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
 			userqueue.push(i->user);
 		} while (false);
-		this->userList[std::string(i->ID)] = *i;
+		this->userList[std::string(i->ID)] = i->user;
 		this->nickList[serverID].push_back(i->user.username);
 	}
 }
@@ -111,12 +111,12 @@ void Bot::onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, Sle
 	this->userList[userid] = member.user;
 }
 
-void Bot::onReady(SleepyDiscord::Ready ready) {
+void Bot::onReady(const SleepyDiscord::Ready &ready) {
 	this->user = ready.user;
 	std::cout << "Ready! Online as " << this->user.username <<"#" << this->user.discriminator << " (" << std::string(this->getID()) << ")\n";
 }
 
-void Bot::onMessage(SleepyDiscord::Message message) {
+void Bot::onMessage(const SleepyDiscord::Message &message) {
 
 	rapidjson::Document settings;
 	do {
@@ -179,7 +179,7 @@ void Bot::onMessage(SleepyDiscord::Message message) {
 	}
 }
 
-void Bot::onChannel(SleepyDiscord::Channel channel) {
+void Bot::onChannel(const SleepyDiscord::Channel &channel) {
 	do {
 		std::lock_guard<std::mutex> hash_lock(channel_hash_mutex);
 		channelList[std::string(channel.ID)] = channel;
