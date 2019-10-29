@@ -9,7 +9,7 @@ Botnix Discord Connector, C++ verison
 
 ## Database
 
-You should have a database configured with the mysql schemas from the [https://github.com/braindigitalis/botnix](botnix repository). This will include discord-specific tables.
+You should have a database configured with the mysql schemas from the [botnix repository](https://github.com/braindigitalis/botnix). This will include discord-specific tables.
 
 ## Configuration
 
