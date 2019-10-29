@@ -233,6 +233,12 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string 
 			userlist += " " + i->username;
 		}
 	}
+
+	if (mentions.size() == 0 && operation != "list") {
+		EmbedSimple(bot, "You need to refer to the users to add or remove using mentions.", channelID);
+		return;
+	}
+
 	/* Add ignore entries */
 	if (operation == "add") {
 		for (auto i = mentions.begin(); i != mentions.end(); ++i) {
