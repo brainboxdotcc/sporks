@@ -57,7 +57,8 @@ void Bot::OutputThread() {
 									urls_matched++;
 								}
 							}
-							this->sendMessage(channel.ID, message);
+							if (message != "*NOTHING*")
+								this->sendMessage(channel.ID, message);
 						}
 					}
 					catch (SleepyDiscord::ErrorCode e) {
