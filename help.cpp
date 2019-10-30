@@ -1,4 +1,3 @@
-#include "sleepy_discord/sleepy_discord.h"
 #include "bot.h"
 #include "help.h"
 #include <string>
@@ -6,11 +5,8 @@
 #include <fstream>
 #include <streambuf>
 #include "stringops.h"
-#include "sleepy_discord/rapidjson/rapidjson.h"
-#include "sleepy_discord/rapidjson/document.h"
-#include "sleepy_discord/rapidjson/istreamwrapper.h"
 
-void GetHelp(Bot* bot, const std::string &section, const std::string &channelID, const std::string &botusername, const std::string &botid, const std::string &author, const std::string &authorid, bool dm) {
+void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std::string &botusername, int64_t botid, const std::string &author, int64_t authorid, bool dm) {
 
 	bool found = true;
 	rapidjson::Document helpdoc;

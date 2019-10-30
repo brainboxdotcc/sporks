@@ -11,38 +11,28 @@
 #include <mutex>
 #include <stdlib.h>
 
-using namespace SleepyDiscord;
-
 std::mutex config_sql_mutex;
 
-void DoConfigSet(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::User issuer);
-void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::Message message);
-void DoConfigShow(class Bot* bot, const std::string &channelID, SleepyDiscord::User issuer);
+void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::user &issuer);
+void DoConfigIgnore(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::gateway::objects::message &message);
+void DoConfigShow(class Bot* bot, int64_t channelID, const aegis::user &issuer);
 
-rapidjson::Document getSettings(Bot* bot, const std::string &channel_id, const std::string& guild_id)
-{
-	Channel channel;
-
-	ChannelCache::iterator iter = bot->channelList.find(channel_id);
-	if (iter != bot->channelList.end()) {
-		channel = iter->second;
-	} else {
-		const Channel& c = bot->getChannel(Snowflake<Channel>(channel_id)).cast();
-		bot->channelList[channel_id] = c;
-		channel = c;
-	}
-
-	return getSettings(bot, channel, guild_id);
-}
-
-rapidjson::Document getSettings(Bot* bot, const Channel& channel, const std::string& guild_id)
+rapidjson::Document getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 {
 	std::lock_guard<std::mutex> sql_lock(config_sql_mutex);
 	rapidjson::Document settings;
-	std::string cid = std::string(channel.ID);
+	std::string cid = std::to_string(channel_id);
+
+	aegis::channel* channel = bot->core.find_channel(channel_id);
+
+	if (!channel) {
+		std::cout << "WTF, find_channel returned nullptr!\n";
+		settings.Parse("{}");
+		return settings;
+	}
 
 	/* DM channel */
-	if (channel.name == "") {
+	if (channel->get_type() == 1) {
 		settings.Parse("{}");
 		return settings;
 	}
@@ -50,19 +40,25 @@ rapidjson::Document getSettings(Bot* bot, const Channel& channel, const std::str
 	/* Retrieve from db */
 	db::resultset r = db::query("SELECT settings, parent_id, name FROM infobot_discord_settings WHERE id = ?", {cid});
 
-	std::string parent_id = std::string(channel.parentID);
-	std::string name = channel.name;
+	/*std::string parent_id = std::to_string(channel->parent_id.get());
+	  FIXME doesnt aegis have parent_id?!
+		https://docs.aegisbot.io/structaegis_1_1gateway_1_1objects_1_1channel.html
+		parent_id is here, in the channel object type from GUILD_CREATE. We may have to cache it.
+	 * */
+	std::string parent_id = "";
+
+	std::string name = channel->get_name();
 	if (parent_id == "") {
 		parent_id = "NULL";
 	}
 
-	if (channel.type == 0) {	/* Channel type: TEXT */
+	if (channel->get_type() == 0) {	/* Channel type: TEXT */
 		name = std::string("#") + name;
 	}
 
 	if (r.empty()) {
 		/* No settings for this channel, create an entry */
-		db::query("INSERT INTO infobot_discord_settings (id, parent_id, guild_id, name, settings) VALUES(?, ?, ?, '?', '?')", {cid, parent_id, guild_id, name, std::string("{}")});
+		db::query("INSERT INTO infobot_discord_settings (id, parent_id, guild_id, name, settings) VALUES(?, ?, ?, '?', '?')", {cid, parent_id, std::to_string(guild_id), name, std::string("{}")});
 		r = db::query("SELECT settings FROM infobot_discord_settings WHERE id = ?", {cid});
 
 	} else if (name != r[0].find("name")->second || parent_id != r[0].find("parent_id")->second) {
@@ -123,48 +119,48 @@ namespace settings {
 	}
 };
 
-void DoConfig(class Bot* bot, const std::vector<std::string> &param, const std::string &channelID, SleepyDiscord::Message message) {
+void DoConfig(class Bot* bot, const std::vector<std::string> &param, int64_t channelID, const aegis::gateway::objects::message& message) {
 
 	if (!HasPermission(bot, channelID, message)) {
-		GetHelp(bot, "access-denied", channelID, bot->user.username, std::string(bot->getID()), message.author.username, message.author.ID, false);
+		GetHelp(bot, "access-denied", channelID, bot->user.username, bot->getID(), message.author.username, message.get_user().get_id().get(), false);
 		return;
 	}
 
 	if (param.size() < 3) {
-		GetHelp(bot, "missing-parameters", channelID, bot->user.username, std::string(bot->getID()), message.author.username, message.author.ID, false);
+		GetHelp(bot, "missing-parameters", channelID, bot->user.username, bot->getID(), message.author.username, message.get_user().get_id().get(), false);
 		return;
 	}
 	std::stringstream tokens(trim(param[2]));
 	std::string subcommand;
 	tokens >> subcommand;
 	if (subcommand == "show") {
-		DoConfigShow(bot, channelID, message.author);
+		DoConfigShow(bot, channelID, message.get_user());
 	} else if (subcommand == "ignore") {
 		DoConfigIgnore(bot, tokens, channelID, message);
 	} else if (subcommand == "set") {
-		DoConfigSet(bot, tokens, channelID, message.author);
+		DoConfigSet(bot, tokens, channelID, message.get_user());
 	}
 }
 
-void EmbedSimple(Bot* bot, const std::string &message, const std::string &channelID) {
+void EmbedSimple(Bot* bot, const std::string &message, int64_t channelID) {
 	std::stringstream s;
 	s << "{\"color\":16767488, \"description\": \"" << message << "\"}";
-	SleepyDiscord::Embed embed(s.str());
-	bot->sendMessage(channelID, "", embed, false);
+	//SleepyDiscord::Embed embed(s.str());
+	//bot->sendMessage(channelID, "", embed, false);
 }
 
-void DoConfigSet(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::User issuer) {
+void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::user& issuer) {
 	std::string variable;
 	std::string setting;
 	param >> variable >> setting;
 	variable = lowercase(variable);
 	setting = lowercase(setting);
 	if (variable == "" || setting == "") {
-		GetHelp(bot, "missing-set-var-or-value", channelID, bot->user.username, std::string(bot->getID()), issuer.username, issuer.ID, false);
+		GetHelp(bot, "missing-set-var-or-value", channelID, bot->user.username, bot->getID(), issuer.get_username(), issuer.get_id().get(), false);
 		return;
 	}
 	if (variable != "talkative" && variable != "learn") {
-		GetHelp(bot, "invalid-set-var-or-value", channelID, bot->user.username, std::string(bot->getID()), issuer.username, issuer.ID, false);
+		GetHelp(bot, "invalid-set-var-or-value", channelID, bot->user.username, bot->getID(), issuer.get_username(), issuer.get_id().get(), false);
 		return;
 	}
 	bool state = (setting == "yes" || setting == "true" || setting == "on" || setting == "1");
@@ -197,7 +193,7 @@ std::string ToJSON(std::vector<uint64_t> list) {
 	return ret;
 }
 
-bool HasPermission(class Bot* bot, const std::string &channelID, SleepyDiscord::Message message) {
+bool HasPermission(class Bot* bot, int64_t channelID, const aegis::gateway::objects::message &message) {
 	std::string serverID = message.serverID;
 	BotServerCache::iterator s = bot->serverList.find(serverID);
 	if (s != bot->serverList.end()) {
@@ -220,7 +216,7 @@ bool HasPermission(class Bot* bot, const std::string &channelID, SleepyDiscord::
 }
 
 /* Add, amend and show channel ignore list */
-void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string &channelID, SleepyDiscord::Message message) {
+void DoConfigIgnore(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::gateway::objects::message &message) {
 	rapidjson::Document csettings = getSettings(bot, channelID, "");
 	std::string operation;
 	param >> operation;
@@ -295,7 +291,7 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, const std::string 
 }
 
 /* Show current channel configuration */
-void DoConfigShow(class Bot* bot, const std::string &channelID, SleepyDiscord::User issuer) {
+void DoConfigShow(class Bot* bot, int64_t channelID, const aegis::user &issuer) {
 	rapidjson::Document csettings = getSettings(bot, channelID, "");
 	std::stringstream s;
 	const statusfield statusfields[] = {
@@ -313,7 +309,7 @@ void DoConfigShow(class Bot* bot, const std::string &channelID, SleepyDiscord::U
 		}
 	}
 	s << "],\"description\":\"For help on changing these settings, type ``@" << bot->user.username << " help config``.\"}";
-	SleepyDiscord::Embed embed(s.str());
-	bot->sendMessage(channelID, "", embed, false);
+	//SleepyDiscord::Embed embed(s.str());
+	//bot->sendMessage(channelID, "", embed, false);
 }
 

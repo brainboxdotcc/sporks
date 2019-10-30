@@ -70,12 +70,10 @@ void Bot::InputThread()
 							std::lock_guard<std::mutex> input_lock(this->input_mutex);
 							if (!inputs.empty()) {
 								query = inputs.front();
-								SleepyDiscord::Channel channel;
 								rapidjson::Document channel_settings;
 								do {
 									std::lock_guard<std::mutex> hash_lock(this->channel_hash_mutex);
-									channel = this->channelList.find(query.channelID)->second;
-									channel_settings = getSettings(this, channel, query.serverID);
+									channel_settings = getSettings(this, query.channelID, query.serverID);
 
 								} while(false);
 
@@ -88,8 +86,9 @@ void Bot::InputThread()
 							}
 						} while(false);
 						if (has_item) {
-							writeLine(sockfd, std::string(".RN ") + this->nickList[query.serverID][random(0, this->nickList[query.serverID].size() - 1)]);
-							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+							/* FIXME
+							 * writeLine(sockfd, std::string(".RN ") + this->nickList[query.serverID][random(0, this->nickList[query.serverID].size() - 1)]);
+							readLine(sockfd, recvbuffer, sizeof(recvbuffer));*/
 							writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + query.message);
 							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							std::stringstream response(recvbuffer);
@@ -121,9 +120,6 @@ void Bot::InputThread()
 				}
 				catch (const std::exception &e) {
 					std::cout << "Infobot socket: caught connection exception\n";
-				}
-				catch (SleepyDiscord::ErrorCode e) {
-					std::cout << "Infobot thread Oof! #" << e << std::endl;
 				}
 			} else {
 				std::cout << "Infobot socket: connection failure\n";

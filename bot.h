@@ -19,7 +19,7 @@
  *************************************************************************************/
 #pragma once
 
-#include "sleepy_discord/sleepy_discord.h"
+#include <aegis.hpp>
 #include <vector>
 #include <string>
 #include <mutex>
@@ -27,10 +27,12 @@
 #include <unordered_map>
 #include "queue.h"
 
-typedef std::unordered_map<std::string, SleepyDiscord::Channel> ChannelCache;
+using json = nlohmann::json;
+
+/*typedef std::unordered_map<std::string, SleepyDiscord::Channel> ChannelCache;
 typedef std::unordered_map<std::string, SleepyDiscord::User> UserCache;
 typedef std::unordered_map<std::string, std::vector<std::string>> RandomNickCache;
-typedef std::unordered_map<std::string, SleepyDiscord::Server> BotServerCache;
+typedef std::unordered_map<std::string, SleepyDiscord::Server> BotServerCache;*/
 
 struct QueueStats {
 	size_t inputs;
@@ -38,9 +40,7 @@ struct QueueStats {
 	size_t users;
 };
 
-class Bot : public SleepyDiscord::DiscordClient {
-
-	using SleepyDiscord::DiscordClient::DiscordClient;
+class Bot {
 
 	/* True if bot is running in development mode */
 	bool dev;
@@ -78,42 +78,45 @@ class Bot : public SleepyDiscord::DiscordClient {
 	void UpdatePresenceThread();	/* Updates the bot presence every 120 seconds */
 
 public:
+	/* Aegis core */
+	aegis::core &core;
+
 	/* Caches, unordered map storage of discord's data (sleepy_discord doesn't cache much
 	 * at all, so we must ensure we maintain our own caches)
 	 */
-	BotServerCache serverList;
-	ChannelCache channelList;
-	UserCache userList;
-	RandomNickCache nickList;	/* Special case, contains a vector of nicknames per-server for selecting a random nickname only */
+	//BotServerCache serverList;
+	//ChannelCache channelList;
+	//UserCache userList;
+	//RandomNickCache nickList;	/* Special case, contains a vector of nicknames per-server for selecting a random nickname only */
 
 	/* Userqueue: a queue of users waiting to be written to SQL for the dashboard */
-	std::queue<SleepyDiscord::User> userqueue;
+	//std::queue<SleepyDiscord::User> userqueue;
 
 	/* The bot's user details, as sleepy doesn't cache it */
-	SleepyDiscord::User user;
+	//SleepyDiscord::User user;
 
 	/* Shard details, filled by ctor */
 	uint32_t ShardID;
 	uint32_t MaxShards;
 
-	Bot(const std::string &token, uint32_t shard_id, uint32_t max_shards, bool development);
+	Bot(uint32_t shard_id, uint32_t max_shards, bool development, aegis::core &aegiscore);
 	virtual ~Bot();
 
 	QueueStats GetQueueStats();
 
-	void onReady(const SleepyDiscord::Ready &ready) override;
+	//void onReady(const SleepyDiscord::Ready &ready) override;
 
 	/* Caches server entry, iterates and caches channels, iterates and caches users, queues users to be stored in SQL */
-	void onServer(const SleepyDiscord::Server &server) override;
+	//void onServer(const SleepyDiscord::Server &server) override;
 
 	/* Caches user, also stores user in SQL */
-	void onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) override;
+	//void onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) override;
 
 	/* Caches channel, also creates channel settings row in SQL if needed */
-	void onChannel(const SleepyDiscord::Channel &channel) override;
+	//void onChannel(const SleepyDiscord::Channel &channel) override;
 
 	/* Passes incoming messages to the input queue, and directly handles commands */
-	void onMessage(const SleepyDiscord::Message &message) override;
+	void onMessage(aegis::gateway::events::message_create message);
 
 	/* Theres some weird allocator crap going off with rapidjson as it's used in sleepy_discord,
 	 * so this is static to prevent a compilation error (!)

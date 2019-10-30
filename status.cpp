@@ -16,7 +16,7 @@ PCRE uptime_secs("(\\d+) second");
 statusfield::statusfield(const std::string &a, const std::string &b) : name(a), value(b) {
 }
 
-void ShowStatus(Bot* bot, const std::vector<std::string> &matches, const std::string &channelID) {
+void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t channelID) {
 	std::stringstream s;
 
 	size_t servers = bot->serverList.size();

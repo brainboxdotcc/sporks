@@ -1,4 +1,4 @@
-#include "sleepy_discord/sleepy_discord.h"
+#include <aegis.hpp>
 #include "bot.h"
 #include "includes.h"
 #include "readline.h"
@@ -15,21 +15,21 @@
 #include "stringops.h"
 #include "help.h"
 
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/document.h>
+#include <rapidjson/istreamwrapper.h>
+
 QueueStats Bot::GetQueueStats() {
 	QueueStats q;
 
-	q.inputs = inputs.size();
+	/*q.inputs = inputs.size();
 	q.outputs = outputs.size();
-	q.users = userqueue.size();
+	q.users = userqueue.size();*/
 
 	return q;
 }
 
-Bot::Bot(const std::string &token, uint32_t shard_id, uint32_t max_shards, bool development) : SleepyDiscord::DiscordClient(token, SleepyDiscord::USER_CONTROLED_THREADS), dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), ShardID(shard_id), MaxShards(max_shards) {
-
-	this->setShardID(ShardID, MaxShards);
-	//FIXME: This is disabled until it can store last 'S'
-	//this->DisablePresenceUpdates();
+Bot::Bot(uint32_t shard_id, uint32_t max_shards, bool development, aegis::core &aegiscore) : dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), ShardID(shard_id), MaxShards(max_shards) {
 
 	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
@@ -72,7 +72,7 @@ std::string Bot::GetConfig(const std::string &name) {
 	return config[name.c_str()].GetString();
 }
 
-void Bot::onServer(const SleepyDiscord::Server &server) {
+/*void Bot::onServer(const SleepyDiscord::Server &server) {
 	std::string serverID = server.ID;
 	serverList[serverID] = server;
 	std::cout << "Adding server #" << std::string(server.ID) << ": " << server.name << "\n";
@@ -92,10 +92,10 @@ void Bot::onServer(const SleepyDiscord::Server &server) {
 		this->userList[std::string(i->ID)] = i->user;
 		this->nickList[serverID].push_back(i->user.username);
 	}
-}
+}*/
 
 void Bot::SaveCachedUsersThread() {
-	SleepyDiscord::User u;
+/*	SleepyDiscord::User u;
 	time_t last_message = time(NULL);
 	while (!this->terminate) {
 		if (!userqueue.empty()) {
@@ -117,11 +117,11 @@ void Bot::SaveCachedUsersThread() {
 			}
 			last_message = time(NULL) + 60;
 		}
-	}
+	}*/
 }
 
 void Bot::UpdatePresenceThread() {
-	std::this_thread::sleep_for(std::chrono::seconds(30));
+/*	std::this_thread::sleep_for(std::chrono::seconds(30));
 	while (true) {
 		size_t servers = serverList.size();
 		size_t users = 0;
@@ -132,10 +132,10 @@ void Bot::UpdatePresenceThread() {
 		updateStatus(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts on " + Comma(servers) + " servers, " + Comma(users) + " total users", 0, SleepyDiscord::Status::online, false, 3);
 		db::query("INSERT INTO infobot_discord_counts (shard_id, dev, user_count, server_count) VALUES('?','?','?','?') ON DUPLICATE KEY UPDATE user_count = '?', server_count = '?', dev = '?'", {std::to_string(ShardID), std::to_string((uint32_t)dev), std::to_string(users), std::to_string(servers), std::to_string(users), std::to_string(servers), std::to_string((uint32_t)dev)});
 		std::this_thread::sleep_for(std::chrono::seconds(120));
-	}
+	}*/
 }
 
-void Bot::onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) {
+/*void Bot::onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) {
 	std::string userid = member.user.ID;
 	std::string bot = member.user.bot ? "1" : "0";
 	db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, member.user.username, member.user.discriminator, member.user.avatar, bot, member.user.username, member.user.discriminator, member.user.avatar});
@@ -145,40 +145,40 @@ void Bot::onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, Sle
 void Bot::onReady(const SleepyDiscord::Ready &ready) {
 	this->user = ready.user;
 	std::cout << "Ready! Online as " << this->user.username <<"#" << this->user.discriminator << " (" << std::string(this->getID()) << ")\n";
-}
+}*/
 
-void Bot::onMessage(const SleepyDiscord::Message &message) {
+void Bot::onMessage(aegis::gateway::events::message_create message) {
 
 	rapidjson::Document settings;
 	do {
 		std::lock_guard<std::mutex> input_lock(channel_hash_mutex);
-		settings = getSettings(this, message.channelID, message.serverID);
+		settings = getSettings(this, message.msg.get_channel_id().get(), message.msg.get_guild_id().get());
 	} while (false);
 
 	/* Ignore self, and bots */
-	if (message.author.ID != this->getID() && message.author.bot == false) {
+	if (message.get_user().get_id().get() != 0 /* FIXME */ && message.get_user().is_bot() == false) {
 
 		/* Ignore anyone on ignore list */
 		std::vector<uint64_t> ignorelist = settings::GetIgnoreList(settings);
-		if (std::find(ignorelist.begin(), ignorelist.end(), from_string<uint64_t>(message.author.ID, std::dec)) != ignorelist.end()) {
-			std::cout << "Message " << std::string(message.ID) << " dropped, user on channel ignore list" << std::endl;
+		if (std::find(ignorelist.begin(), ignorelist.end(), message.get_user().get_id().get()) != ignorelist.end()) {
+			std::cout << "Message " << std::to_string(message.msg.get_id().get()) << " dropped, user on channel ignore list" << std::endl;
 			return;
 		}
 
 		/* Replace all mentions with raw nicknames */
 		bool mentioned = false;
-		std::string mentions_removed = message.content;
-		for (auto m = message.mentions.begin(); m != message.mentions.end(); ++m) {
-			mentions_removed = ReplaceString(mentions_removed, std::string("<@") + std::string(m->ID) + ">", m->username);
+		std::string mentions_removed = message.msg.get_content();
+		for (auto m = message.msg.mentions.begin(); m != message.msg.mentions.end(); ++m) {
+			mentions_removed = ReplaceString(mentions_removed, std::string("<@") + std::to_string(m->get()) + ">", "XXXXX"/*m->username FIXME */);
 			/* Note: I know there's a message::isMentioned(), but we're looping here anyway so might as well roll this into one */
-			if (m->ID == this->getID()) {
+			if (m->get() == 0 /* FIXME */) {
 				mentioned = true;
 			}
 		}
 
-		std::cout << "<" << message.author.username << "> " << mentions_removed << std::endl;
+		std::cout << "<" << message.get_user().get_username() << "> " << mentions_removed << std::endl;
 
-		std::string botusername = this->user.username;
+		std::string botusername = "XXXXX";// FIXME this->user.username;
 
 		/* Remove bot's nickname from start of message, if it's there */
 		while (mentions_removed.substr(0, botusername.length()) == botusername) {
@@ -194,17 +194,17 @@ void Bot::onMessage(const SleepyDiscord::Message &message) {
 			if (param.size() > 2) {
 				section = param[2];
 			}
-			GetHelp(this, section, message.channelID, botusername, std::string(this->getID()), message.author.username, message.author.ID);
+			GetHelp(this, section, message.msg.get_channel_id().get(), botusername, 0 /* bot id, FIXME */, message.get_user().get_username(), message.get_user().get_id().get());
 		} else if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
 			/* Config command */
-			DoConfig(this, param, message.channelID, message);
+			DoConfig(this, param, message.msg.get_channel_id().get(), message.msg);
 		} else {
 			/* Everything else goes to the input queue to be processed by botnix */
 			QueueItem query;
 			query.message = mentions_removed;
-			query.channelID = message.channelID;
-			query.serverID = message.serverID;
-			query.username = message.author.username;
+			query.channelID = message.channel.get_id().get();
+			query.serverID = message.msg.get_guild_id().get();
+			query.username = message.get_user().get_username();
 			query.mentioned = mentioned;
 			do {
 				std::lock_guard<std::mutex> input_lock(input_mutex);
@@ -214,17 +214,15 @@ void Bot::onMessage(const SleepyDiscord::Message &message) {
 	}
 }
 
-void Bot::onChannel(const SleepyDiscord::Channel &channel) {
+/*void Bot::onChannel(const SleepyDiscord::Channel &channel) {
 
-	/* Cache the channel to unordered_map */
 	do {
 		std::lock_guard<std::mutex> hash_lock(channel_hash_mutex);
 		channelList[std::string(channel.ID)] = channel;
 	} while (false);
 
-	/* This just causes creation of the settings in SQL if they don't exist */
 	getSettings(this, channel, channel.serverID);
-}
+}*/
 
 
 int main(int argc, char** argv) {
@@ -279,15 +277,21 @@ int main(int argc, char** argv) {
 
 	/* It's go time! */
 	while (true) {
-		Bot client(token, shard_id, max_shards, dev);
+
+		aegis::core aegis_bot(aegis::create_bot_t().log_level(spdlog::level::trace).token(token));
+		aegis_bot.wsdbg = true;
+
+		Bot client(shard_id, max_shards, dev, aegis_bot);
+
+		aegis_bot.set_on_message_create(std::bind(&Bot::onMessage, &client, std::placeholders::_1));
 	
 		try {
 			/* Actually connect and start the event loop */
-			client.run();
+			aegis_bot.run();
+			aegis_bot.yield();
 		}
-		catch (SleepyDiscord::ErrorCode e) {
-			/* sleepy_discord throws these on websocket error. ew. */
-			std::cout << "Oof! #" << e << std::endl;
+		catch (std::exception e) {
+			std::cout << "Oof!" << std::endl;
 		}
 
 		/* Reconnection delay to prevent hammering discord */

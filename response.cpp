@@ -23,12 +23,11 @@ void Bot::OutputThread() {
 				}
 			} while (false);
 			while (!done.empty()) {
-				SleepyDiscord::Channel channel;
 				rapidjson::Document channel_settings;
 				do {
 					std::lock_guard<std::mutex> hash_lock(this->channel_hash_mutex);
-					channel = this->channelList.find(done.front().channelID)->second;
-					channel_settings = getSettings(this, channel, done.front().serverID);
+					//channel = this->channelList.find(done.front().channelID)->second;
+					channel_settings = getSettings(this, done.front().channelID, done.front().serverID);
 				} while (false);
 				if (done.front().mentioned || settings::IsTalkative(channel_settings)) {
 					try {
@@ -49,7 +48,8 @@ void Bot::OutputThread() {
 							size_t urls_matched = 0;
 							std::stringstream ss(message);
 							std::string word;
-							while ((ss >> word) != false) {
+							while (ss) {
+								ss >> word;
 								if (url_sanitise.Match(word)) {
 									if (urls_matched > 0) {
 										message = ReplaceString(message, word, "<" + word + ">");
@@ -57,19 +57,21 @@ void Bot::OutputThread() {
 									urls_matched++;
 								}
 							}
-							this->sendMessage(channel.ID, message);
+							//this->sendMessage(done.front().channelID, message);
+							//FIXME
 						}
 					}
-					catch (SleepyDiscord::ErrorCode e) {
-						std::cout << "Can't send message to channel id " << std::string(channel.ID) << " (talkative=" << settings::IsTalkative(channel_settings) << ",mentioned=" << done.front().mentioned << ") message was: '" << done.front().message << "'" << std::endl;
+					catch (std::exception e) { /* FIXME */
+						std::cout << "Can't send message to channel id " << done.front().channelID << " (talkative=" << settings::IsTalkative(channel_settings) << ",mentioned=" << done.front().mentioned << ") message was: '" << done.front().message << "'" << std::endl;
 					}
 				}
 				done.pop();
 			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
-		catch (SleepyDiscord::ErrorCode e) {
-			std::cout << "Response Oof! #" << e << std::endl;
+		catch (std::exception e) {
+			// FIXME
+			std::cout << "Response Oof!" << std::endl;
 		}
 	}
 }

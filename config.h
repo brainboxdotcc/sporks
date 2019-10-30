@@ -1,15 +1,15 @@
 #pragma once
 
-#include "sleepy_discord/sleepy_discord.h"
+#include <aegis.hpp>
 #include "database.h"
 #include <string>
 #include <cstdint>
-#include "sleepy_discord/rapidjson/rapidjson.h"
-#include "sleepy_discord/rapidjson/document.h"
-#include "sleepy_discord/rapidjson/istreamwrapper.h"
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/document.h>
+#include <rapidjson/istreamwrapper.h>
 
-rapidjson::Document getSettings(class Bot* bot, const std::string &channel_id, const std::string& guild_id);
-rapidjson::Document getSettings(class Bot* bot, const SleepyDiscord::Channel& channel, const std::string& guild_id);
+
+rapidjson::Document getSettings(class Bot* bot, int64_t channel_id, int64_t guild_id);
 
 namespace settings {
         bool IsLearningDisabled(const rapidjson::Document& settings);
@@ -19,5 +19,5 @@ namespace settings {
         std::string GetIgnoreList(const rapidjson::Document& settings, bool as_json);
 };
 
-void DoConfig(class Bot* bot, const std::vector<std::string> &param, const std::string &channelID, SleepyDiscord::Message message);
-bool HasPermission(class Bot* bot, const std::string &channelID, SleepyDiscord::Message message);
+void DoConfig(class Bot* bot, const std::vector<std::string> &param, int64_t channelID, const aegis::gateway::objects::message &message);
+bool HasPermission(class Bot* bot, int64_t channelID, const aegis::gateway::objects::message &message);
