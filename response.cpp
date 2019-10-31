@@ -57,8 +57,9 @@ void Bot::OutputThread() {
 									urls_matched++;
 								}
 							}
-							//this->sendMessage(done.front().channelID, message);
 							//FIXME
+							if (message != "*NOTHING*")
+//								this->sendMessage(channel.ID, message);
 						}
 					}
 					catch (std::exception e) { /* FIXME */
