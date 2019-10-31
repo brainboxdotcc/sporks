@@ -92,8 +92,8 @@ public:
 	/* Userqueue: a queue of users waiting to be written to SQL for the dashboard */
 	//std::queue<SleepyDiscord::User> userqueue;
 
-	/* The bot's user details, as sleepy doesn't cache it */
-	//SleepyDiscord::User user;
+	/* The bot's user details from ready event */
+	aegis::gateway::objects::user user;
 
 	/* Shard details, filled by ctor */
 	uint32_t ShardID;
@@ -104,7 +104,10 @@ public:
 
 	QueueStats GetQueueStats();
 
-	//void onReady(const SleepyDiscord::Ready &ready) override;
+	/* Shorthand to get bot's user id */
+	int64_t getID();
+
+	void onReady(aegis::gateway::events::ready ready);
 
 	/* Caches server entry, iterates and caches channels, iterates and caches users, queues users to be stored in SQL */
 	//void onServer(const SleepyDiscord::Server &server) override;

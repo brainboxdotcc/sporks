@@ -10,12 +10,59 @@
 #include <cstdint>
 #include <mutex>
 #include <stdlib.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 std::mutex config_sql_mutex;
 
-void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::user &issuer);
+void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::gateway::objects::user &issuer);
 void DoConfigIgnore(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::gateway::objects::message &message);
-void DoConfigShow(class Bot* bot, int64_t channelID, const aegis::user &issuer);
+void DoConfigShow(class Bot* bot, int64_t channelID, const aegis::gateway::objects::user &issuer);
+
+namespace settings {
+	const std::string createJSON(std::initializer_list<std::pair<std::string, std::string>> json) {
+		std::string target;
+		target.reserve(2);
+		for (std::pair<std::string, std::string> pair : json) {
+			if (pair.second != "") {
+				target += ",\"" + pair.first + "\":" + pair.second;
+			}
+		}
+		target[0] = '{';
+		target.push_back('}');
+		return target;
+	}
+
+	const std::string string(const std::string& s) {
+		if (s.empty())
+			return "";
+		rapidjson::StringBuffer buffer;
+		rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+		writer.String(s.data(), s.length());
+		return std::string(buffer.GetString(), buffer.GetSize());
+	}
+
+	const std::string UInteger(const uint64_t num) {
+		return std::to_string(num & 0x3FFFFFFFFFFFFF);   //just in case numbers are larger then 53 bits
+	}
+
+	const std::string optionalUInteger(const uint64_t num) {
+		return num ? UInteger(num) : "";
+	}
+
+	const std::string integer(const int64_t num) {
+		return std::to_string(num & 0x803FFFFFFFFFFFFF);  //just in case numbers are larger then 53 bits
+	}
+
+	const std::string optionalInteger(const int64_t num) {
+		return num ? integer(num) : "";
+	}
+
+	const std::string boolean(const bool boolean) {
+		return boolean ? "true" : "false";
+	}
+}
+
 
 rapidjson::Document getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 {
@@ -122,23 +169,23 @@ namespace settings {
 void DoConfig(class Bot* bot, const std::vector<std::string> &param, int64_t channelID, const aegis::gateway::objects::message& message) {
 
 	if (!HasPermission(bot, channelID, message)) {
-		GetHelp(bot, "access-denied", channelID, bot->user.username, bot->getID(), message.author.username, message.get_user().get_id().get(), false);
+		GetHelp(bot, "access-denied", channelID, bot->user.username, bot->getID(), message.author.username, message.author.id.get(), false);
 		return;
 	}
 
 	if (param.size() < 3) {
-		GetHelp(bot, "missing-parameters", channelID, bot->user.username, bot->getID(), message.author.username, message.get_user().get_id().get(), false);
+		GetHelp(bot, "missing-parameters", channelID, bot->user.username, bot->getID(), message.author.username, message.author.id.get(), false);
 		return;
 	}
 	std::stringstream tokens(trim(param[2]));
 	std::string subcommand;
 	tokens >> subcommand;
 	if (subcommand == "show") {
-		DoConfigShow(bot, channelID, message.get_user());
+		DoConfigShow(bot, channelID, message.author);
 	} else if (subcommand == "ignore") {
 		DoConfigIgnore(bot, tokens, channelID, message);
 	} else if (subcommand == "set") {
-		DoConfigSet(bot, tokens, channelID, message.get_user());
+		DoConfigSet(bot, tokens, channelID, message.author);
 	}
 }
 
@@ -149,22 +196,22 @@ void EmbedSimple(Bot* bot, const std::string &message, int64_t channelID) {
 	//bot->sendMessage(channelID, "", embed, false);
 }
 
-void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::user& issuer) {
+void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::gateway::objects::user& issuer) {
 	std::string variable;
 	std::string setting;
 	param >> variable >> setting;
 	variable = lowercase(variable);
 	setting = lowercase(setting);
 	if (variable == "" || setting == "") {
-		GetHelp(bot, "missing-set-var-or-value", channelID, bot->user.username, bot->getID(), issuer.get_username(), issuer.get_id().get(), false);
+		GetHelp(bot, "missing-set-var-or-value", channelID, bot->user.username, bot->getID(), issuer.username, issuer.id.get(), false);
 		return;
 	}
 	if (variable != "talkative" && variable != "learn") {
-		GetHelp(bot, "invalid-set-var-or-value", channelID, bot->user.username, bot->getID(), issuer.get_username(), issuer.get_id().get(), false);
+		GetHelp(bot, "invalid-set-var-or-value", channelID, bot->user.username, bot->getID(), issuer.username, issuer.id.get(), false);
 		return;
 	}
 	bool state = (setting == "yes" || setting == "true" || setting == "on" || setting == "1");
-	rapidjson::Document csettings = getSettings(bot, channelID, "");
+	rapidjson::Document csettings = getSettings(bot, channelID, 0);
 
 	bool talkative = (variable == "talkative" ? state : settings::IsTalkative(csettings));
 	bool learningdisabled = (variable == "learn" ? !state : settings::IsLearningDisabled(csettings));
@@ -173,15 +220,15 @@ void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, co
 		outstate = !state;
 	}
 
-	std::string json = json::createJSON({
-		{ "talkative", json::boolean(talkative) },
-		{ "learningdisabled", json::boolean(learningdisabled) },
+	std::string json = settings::createJSON({
+		{ "talkative", settings::boolean(talkative) },
+		{ "learningdisabled", settings::boolean(learningdisabled) },
 		{ "ignores", settings::GetIgnoreList(csettings, true) }
 	});
 
-	db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, channelID});
+	db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, std::to_string(channelID)});
 
-	EmbedSimple(bot, "Setting **'" + variable + "'** " + (outstate ? "enabled" : "disabled") + " on <#" + channelID + ">", channelID);
+	EmbedSimple(bot, "Setting **'" + variable + "'** " + (outstate ? "enabled" : "disabled") + " on <#" + std::to_string(channelID) + ">", channelID);
 }
 
 std::string ToJSON(std::vector<uint64_t> list) {
@@ -194,39 +241,31 @@ std::string ToJSON(std::vector<uint64_t> list) {
 }
 
 bool HasPermission(class Bot* bot, int64_t channelID, const aegis::gateway::objects::message &message) {
-	std::string serverID = message.serverID;
-	BotServerCache::iterator s = bot->serverList.find(serverID);
-	if (s != bot->serverList.end()) {
-		if (s->second.ownerID == message.author.ID) {
+	aegis::guild* g = bot->core.find_guild(message.get_guild_id());
+	if (g) {
+		if (g->get_owner() == message.author.id) {
 			/* Server owner */
 			return true;
 		}
-		for (auto serverrole = s->second.roles.begin(); serverrole != s->second.roles.end(); ++serverrole) {
-			for (auto memberrole = message.member.roles.begin(); memberrole != message.member.roles.end(); ++memberrole) {
-				/* Manage messages or administrator permission */
-				if (serverrole->ID == *memberrole) {
-					if ((serverrole->permissions & SleepyDiscord::Permission::MANAGE_MESSAGES) || (serverrole->permissions & SleepyDiscord::Permission::ADMINISTRATOR)) {
-						return true;
-					}
-				}
-			}
-		}
+		/* Has manage messages or admin permissions */
+		aegis::permission perms = g->get_permissions(bot->core.find_user(message.author.id), bot->core.find_channel(channelID));
+		return (perms.can_manage_messages() || perms.is_admin());
 	}
 	return false;
 }
 
 /* Add, amend and show channel ignore list */
 void DoConfigIgnore(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::gateway::objects::message &message) {
-	rapidjson::Document csettings = getSettings(bot, channelID, "");
+	rapidjson::Document csettings = getSettings(bot, channelID, 0);
 	std::string operation;
 	param >> operation;
 	std::string userlist;
 	std::vector<uint64_t> currentlist = settings::GetIgnoreList(csettings);
 	std::vector<uint64_t> mentions;
 	for (auto i = message.mentions.begin(); i != message.mentions.end(); ++i) {
-		if (i->ID != bot->getID()) {
-			mentions.push_back(from_string<uint64_t>(i->ID, std::dec));
-			userlist += " " + i->username;
+		if (*i != bot->user.id) {
+			mentions.push_back(i->get());
+			userlist += " " + bot->core.find_user(*i)->get_username();
 		}
 	}
 
@@ -238,20 +277,20 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, int64_t channelID,
 	/* Add ignore entries */
 	if (operation == "add") {
 		for (auto i = mentions.begin(); i != mentions.end(); ++i) {
-			if (*i != from_string<uint64_t>(message.author.ID, std::dec)) {
+			if (*i != message.author.id) {
 				currentlist.push_back(*i);
 			} else {
 				EmbedSimple(bot, "Foolish human, you can't ignore yourself!", channelID);
 				return;
 			}
 		}
-		std::string json = json::createJSON({
-			{ "talkative", json::boolean(settings::IsTalkative(csettings)) },
-			{ "learningdisabled", json::boolean(settings::IsLearningDisabled(csettings)) },
+		std::string json = settings::createJSON({
+			{ "talkative", settings::boolean(settings::IsTalkative(csettings)) },
+			{ "learningdisabled", settings::boolean(settings::IsLearningDisabled(csettings)) },
 			{ "ignores", ToJSON(currentlist) },
 		});
-		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, channelID});
-		EmbedSimple(bot, std::string("Added **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** to the ignore list for <#" + channelID + ">: " + userlist, channelID);
+		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, std::to_string(channelID)});
+		EmbedSimple(bot, std::string("Added **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** to the ignore list for <#" + std::to_string(channelID) + ">: " + userlist, channelID);
 	} else if (operation == "del") {
 		/* Remove ignore entries */
 		std::vector<uint64_t> newlist;
@@ -268,13 +307,13 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, int64_t channelID,
 			}
 		}
 		currentlist = newlist;
-		std::string json = json::createJSON({
-			{ "talkative", json::boolean(settings::IsTalkative(csettings)) },
-			{ "learningdisabled", json::boolean(settings::IsLearningDisabled(csettings)) },
+		std::string json = settings::createJSON({
+			{ "talkative", settings::boolean(settings::IsTalkative(csettings)) },
+			{ "learningdisabled", settings::boolean(settings::IsLearningDisabled(csettings)) },
 			{ "ignores", ToJSON(currentlist) },
 		});
-		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, channelID});
-		EmbedSimple(bot, std::string("Deleted **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** from the ignore list for <#" + channelID + ">: " + userlist, channelID);
+		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {json, std::to_string(channelID)});
+		EmbedSimple(bot, std::string("Deleted **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** from the ignore list for <#" + std::to_string(channelID) + ">: " + userlist, channelID);
 	} else if (operation == "list") {
 		/* List ignore entries */
 		std::stringstream s;
@@ -291,8 +330,8 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, int64_t channelID,
 }
 
 /* Show current channel configuration */
-void DoConfigShow(class Bot* bot, int64_t channelID, const aegis::user &issuer) {
-	rapidjson::Document csettings = getSettings(bot, channelID, "");
+void DoConfigShow(class Bot* bot, int64_t channelID, const aegis::gateway::objects::user &issuer) {
+	rapidjson::Document csettings = getSettings(bot, channelID, 0);
 	std::stringstream s;
 	const statusfield statusfields[] = {
 		statusfield("Talk without being mentioned?", settings::IsTalkative(csettings) ? "Yes" : "No"),

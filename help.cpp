@@ -5,6 +5,11 @@
 #include <fstream>
 #include <streambuf>
 #include "stringops.h"
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/document.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std::string &botusername, int64_t botid, const std::string &author, int64_t authorid, bool dm) {
 
@@ -24,20 +29,20 @@ void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std:
 
 	json = ReplaceString(json, ":section:" , section);
 	json = ReplaceString(json, ":user:", botusername);
-	json = ReplaceString(json, ":id:", botid);
+	json = ReplaceString(json, ":id:", std::to_string(botid));
 	json = ReplaceString(json, ":author:", author);
 
-	SleepyDiscord::Embed embed(json);
-	SleepyDiscord::Channel c = bot->createDirectMessageChannel(authorid).cast();
+	//SleepyDiscord::Embed embed(json);
+	//SleepyDiscord::Channel c = bot->createDirectMessageChannel(authorid).cast();
 	try {
 		if (dm) {
-			bot->sendMessage(c.ID, "", embed, false);
-			bot->sendMessage(channelID, "<@" + authorid + ">, please see your DMs for help text.");
+			//bot->sendMessage(c.ID, "", embed, false);
+			//bot->sendMessage(channelID, "<@" + authorid + ">, please see your DMs for help text.");
 		} else {
-			bot->sendMessage(channelID, "", embed, false);
+			//bot->sendMessage(channelID, "", embed, false);
 		}
 	}
-	catch (SleepyDiscord::ErrorCode e) {
-		bot->sendMessage(channelID, "<@" + authorid + ">, I can't send you help, as your DMs from me are blocked. Please check this, and try again.");
+	catch (std::exception e) { /* FIXME */
+		//bot->sendMessage(channelID, "<@" + std::to_string(authorid) + ">, I can't send you help, as your DMs from me are blocked. Please check this, and try again.");
 	}
 }

@@ -1,4 +1,4 @@
-#include "sleepy_discord/sleepy_discord.h"
+#include <aegis.hpp>
 #include <sstream>
 #include <iostream>
 #include <ctime>
@@ -19,11 +19,8 @@ statusfield::statusfield(const std::string &a, const std::string &b) : name(a), 
 void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t channelID) {
 	std::stringstream s;
 
-	size_t servers = bot->serverList.size();
-	size_t users = 0;
-	for (auto i = bot->serverList.begin(); i != bot->serverList.end(); ++i) {
-		users += i->second.members.size();
-	}
+	size_t servers = bot->core.get_guild_count();
+	size_t users = bot->core.guilds.size();
 
 	QueueStats qs = bot->GetQueueStats();
 
@@ -68,6 +65,6 @@ void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t chann
 		}
 	}
 	s << "],\"description\":\"\"}";
-	SleepyDiscord::Embed embed(s.str());
-	bot->sendMessage(channelID, "", embed, false);
+	//SleepyDiscord::Embed embed(s.str());
+	//bot->sendMessage(channelID, "", embed, false);
 }

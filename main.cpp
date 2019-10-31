@@ -140,12 +140,16 @@ void Bot::UpdatePresenceThread() {
 	std::string bot = member.user.bot ? "1" : "0";
 	db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, member.user.username, member.user.discriminator, member.user.avatar, bot, member.user.username, member.user.discriminator, member.user.avatar});
 	this->userList[userid] = member.user;
+}*/
+
+int64_t Bot::getID() {
+	return this->user.id.get();
 }
 
-void Bot::onReady(const SleepyDiscord::Ready &ready) {
+void Bot::onReady(aegis::gateway::events::ready ready) {
 	this->user = ready.user;
-	std::cout << "Ready! Online as " << this->user.username <<"#" << this->user.discriminator << " (" << std::string(this->getID()) << ")\n";
-}*/
+	std::cout << "Ready! Online as " << this->user.username <<"#" << this->user.discriminator << " (" << this->getID() << ")\n";
+}
 
 void Bot::onMessage(aegis::gateway::events::message_create message) {
 
