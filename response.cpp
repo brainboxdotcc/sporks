@@ -58,8 +58,9 @@ void Bot::OutputThread() {
 								}
 							}
 							//FIXME
-							if (message != "*NOTHING*")
+							if (message != "*NOTHING*") {
 //								this->sendMessage(channel.ID, message);
+							}
 						}
 					}
 					catch (std::exception e) { /* FIXME */
