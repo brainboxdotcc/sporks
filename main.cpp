@@ -22,9 +22,9 @@
 QueueStats Bot::GetQueueStats() {
 	QueueStats q;
 
-	/*q.inputs = inputs.size();
+	q.inputs = inputs.size();
 	q.outputs = outputs.size();
-	q.users = userqueue.size();*/
+	q.users = userqueue.size();
 
 	return q;
 }
@@ -72,31 +72,28 @@ std::string Bot::GetConfig(const std::string &name) {
 	return config[name.c_str()].GetString();
 }
 
-/*void Bot::onServer(const SleepyDiscord::Server &server) {
-	std::string serverID = server.ID;
-	serverList[serverID] = server;
-	std::cout << "Adding server #" << std::string(server.ID) << ": " << server.name << "\n";
+void Bot::onServer(aegis::gateway::events::guild_create gc) {
+
+	core.log->info("Adding server #{}: {}", gc.guild.id.get(), gc.guild.name);
 	do {
-		std::lock_guard<std::mutex> hash_lock(channel_hash_mutex);
-		for (auto i = server.channels.begin(); i != server.channels.end(); ++i) {
-			channelList[std::string(i->ID)] = *i;
-			getSettings(this, *i, server.ID);
+		for (auto i = gc.guild.channels.begin(); i != gc.guild.channels.end(); ++i) {
+			getSettings(this, i->id.get(), gc.guild.id.get());
 		}
 	} while (false);
-	this->nickList[serverID] = std::vector<std::string>();
-	for (auto i = server.members.begin(); i != server.members.end(); ++i) {
+
+	this->nickList[gc.guild.id.get()] = std::vector<std::string>();
+	for (auto i = gc.guild.members.begin(); i != gc.guild.members.end(); ++i) {
 		do {
 			std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
-			userqueue.push(i->user);
+			userqueue.push(i->_user);
 		} while (false);
-		this->userList[std::string(i->ID)] = i->user;
-		this->nickList[serverID].push_back(i->user.username);
+		this->nickList[gc.guild.id.get()].push_back(i->_user.username);
 	}
-}*/
+}
 
 void Bot::SaveCachedUsersThread() {
-/*	SleepyDiscord::User u;
 	time_t last_message = time(NULL);
+	aegis::gateway::objects::user u;
 	while (!this->terminate) {
 		if (!userqueue.empty()) {
 			do {
@@ -104,8 +101,8 @@ void Bot::SaveCachedUsersThread() {
 				u = userqueue.front();
 				userqueue.pop();
 			} while (false);
-			std::string userid = u.ID;
-			std::string bot = u.bot ? "1" : "0";
+			std::string userid = std::to_string(u.id.get());
+			std::string bot = u.is_bot() ? "1" : "0";
 			db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, u.username, u.discriminator, u.avatar, bot, u.username, u.discriminator, u.avatar});
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		} else {
@@ -113,34 +110,30 @@ void Bot::SaveCachedUsersThread() {
 		}
 		if (time(NULL) > last_message) {
 			if (userqueue.size() > 0) {
-				std::cout << "User queue size: " << userqueue.size() << std::endl;
+				core.log->info("User queue size: {} objects", userqueue.size());
 			}
 			last_message = time(NULL) + 60;
 		}
-	}*/
+	}
 }
 
 void Bot::UpdatePresenceThread() {
-/*	std::this_thread::sleep_for(std::chrono::seconds(30));
-	while (true) {
-		size_t servers = serverList.size();
-		size_t users = 0;
-		for (auto i = serverList.begin(); i != serverList.end(); ++i) {
-			users += i->second.members.size();
-		}
+	std::this_thread::sleep_for(std::chrono::seconds(30));
+	while (!this->terminate) {
+		int64_t servers = core.get_guild_count();
+		int64_t users = core.get_member_count();
 		db::resultset rs_fact = db::query("SELECT count(key_word) AS total FROM infobot", std::vector<std::string>());
-		updateStatus(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts on " + Comma(servers) + " servers, " + Comma(users) + " total users", 0, SleepyDiscord::Status::online, false, 3);
+		core.update_presence(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts on " + Comma(servers) + " servers, " + Comma(users) + " total users", aegis::gateway::objects::activity::Watching);
 		db::query("INSERT INTO infobot_discord_counts (shard_id, dev, user_count, server_count) VALUES('?','?','?','?') ON DUPLICATE KEY UPDATE user_count = '?', server_count = '?', dev = '?'", {std::to_string(ShardID), std::to_string((uint32_t)dev), std::to_string(users), std::to_string(servers), std::to_string(users), std::to_string(servers), std::to_string((uint32_t)dev)});
 		std::this_thread::sleep_for(std::chrono::seconds(120));
-	}*/
+	}
 }
 
-/*void Bot::onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) {
-	std::string userid = member.user.ID;
-	std::string bot = member.user.bot ? "1" : "0";
-	db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, member.user.username, member.user.discriminator, member.user.avatar, bot, member.user.username, member.user.discriminator, member.user.avatar});
-	this->userList[userid] = member.user;
-}*/
+void Bot::onMember(aegis::gateway::events::guild_member_add gma) {
+	std::string userid = std::to_string(gma.member._user.id.get());
+	std::string bot = gma.member._user.is_bot() ? "1" : "0";
+	db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar, bot, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar});
+}
 
 int64_t Bot::getID() {
 	return this->user.id.get();
@@ -148,7 +141,7 @@ int64_t Bot::getID() {
 
 void Bot::onReady(aegis::gateway::events::ready ready) {
 	this->user = ready.user;
-	std::cout << "Ready! Online as " << this->user.username <<"#" << this->user.discriminator << " (" << this->getID() << ")\n";
+	core.log->info("Ready! Online as {}#{} ({})", this->user.username, this->user.discriminator, this->getID());
 }
 
 void Bot::onMessage(aegis::gateway::events::message_create message) {
@@ -160,12 +153,12 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 	} while (false);
 
 	/* Ignore self, and bots */
-	if (message.get_user().get_id().get() != 0 /* FIXME */ && message.get_user().is_bot() == false) {
+	if (message.get_user().get_id() != user.id && message.get_user().is_bot() == false) {
 
 		/* Ignore anyone on ignore list */
 		std::vector<uint64_t> ignorelist = settings::GetIgnoreList(settings);
 		if (std::find(ignorelist.begin(), ignorelist.end(), message.get_user().get_id().get()) != ignorelist.end()) {
-			std::cout << "Message " << std::to_string(message.msg.get_id().get()) << " dropped, user on channel ignore list" << std::endl;
+			core.log->info("Message #{} dropped, user on channel ignore list", message.msg.get_id().get());
 			return;
 		}
 
@@ -173,16 +166,15 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 		bool mentioned = false;
 		std::string mentions_removed = message.msg.get_content();
 		for (auto m = message.msg.mentions.begin(); m != message.msg.mentions.end(); ++m) {
-			mentions_removed = ReplaceString(mentions_removed, std::string("<@") + std::to_string(m->get()) + ">", "XXXXX"/*m->username FIXME */);
-			/* Note: I know there's a message::isMentioned(), but we're looping here anyway so might as well roll this into one */
-			if (m->get() == 0 /* FIXME */) {
+			mentions_removed = ReplaceString(mentions_removed, std::string("<@") + std::to_string(m->get()) + ">", core.find_user(*m)->get_username());
+			if (*m == user.id) {
 				mentioned = true;
 			}
 		}
 
-		std::cout << "<" << message.get_user().get_username() << "> " << mentions_removed << std::endl;
+		core.log->info("<{}> {}", message.get_user().get_username(), mentions_removed);
 
-		std::string botusername = "XXXXX";// FIXME this->user.username;
+		std::string botusername = this->user.username;
 
 		/* Remove bot's nickname from start of message, if it's there */
 		while (mentions_removed.substr(0, botusername.length()) == botusername) {
@@ -198,7 +190,7 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			if (param.size() > 2) {
 				section = param[2];
 			}
-			GetHelp(this, section, message.msg.get_channel_id().get(), botusername, 0 /* bot id, FIXME */, message.get_user().get_username(), message.get_user().get_id().get());
+			GetHelp(this, section, message.msg.get_channel_id().get(), botusername, user.id.get(), message.get_user().get_username(), message.get_user().get_id().get());
 		} else if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
 			/* Config command */
 			DoConfig(this, param, message.msg.get_channel_id().get(), message.msg);
@@ -218,15 +210,9 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 	}
 }
 
-/*void Bot::onChannel(const SleepyDiscord::Channel &channel) {
-
-	do {
-		std::lock_guard<std::mutex> hash_lock(channel_hash_mutex);
-		channelList[std::string(channel.ID)] = channel;
-	} while (false);
-
-	getSettings(this, channel, channel.serverID);
-}*/
+void Bot::onChannel(aegis::gateway::events::channel_create channel_create) {
+	getSettings(this, channel_create.channel.id.get(), channel_create.channel.guild_id.get());
+}
 
 
 int main(int argc, char** argv) {
@@ -288,6 +274,10 @@ int main(int argc, char** argv) {
 		Bot client(shard_id, max_shards, dev, aegis_bot);
 
 		aegis_bot.set_on_message_create(std::bind(&Bot::onMessage, &client, std::placeholders::_1));
+		aegis_bot.set_on_ready(std::bind(&Bot::onReady, &client, std::placeholders::_1));
+		aegis_bot.set_on_channel_create(std::bind(&Bot::onChannel, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_member_add(std::bind(&Bot::onMember, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_create(std::bind(&Bot::onServer, &client, std::placeholders::_1));
 	
 		try {
 			/* Actually connect and start the event loop */
@@ -295,7 +285,7 @@ int main(int argc, char** argv) {
 			aegis_bot.yield();
 		}
 		catch (std::exception e) {
-			std::cout << "Oof!" << std::endl;
+			aegis_bot.log->error("Oof!");
 		}
 
 		/* Reconnection delay to prevent hammering discord */

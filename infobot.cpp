@@ -42,7 +42,7 @@ void Bot::InputThread()
 	char recvbuffer[32768];
 	std::string response;
 	while (!this->terminate) {
-		std::cout << "Connecting to infobot via telnet...\n";
+		core.log->info("Connecting to infobot via telnet...");
 		if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) >= 0) {
 			memset(&serv_addr, 0, sizeof(serv_addr));
 			serv_addr.sin_family = AF_INET;
@@ -56,7 +56,7 @@ void Bot::InputThread()
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 					writeLine(sockfd, Bot::GetConfig("telnetpass"));
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
-					std::cout << "Socket link to botnix is UP, and ready for queries" << std::endl;
+					core.log->info("Socket link to botnix is UP, and ready for queries");
 					writeLine(sockfd, ".DR identify");
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 					readLine(sockfd, recvbuffer, sizeof(recvbuffer));
@@ -86,9 +86,8 @@ void Bot::InputThread()
 							}
 						} while(false);
 						if (has_item) {
-							/* FIXME
-							 * writeLine(sockfd, std::string(".RN ") + this->nickList[query.serverID][random(0, this->nickList[query.serverID].size() - 1)]);
-							readLine(sockfd, recvbuffer, sizeof(recvbuffer));*/
+							writeLine(sockfd, std::string(".RN ") + this->nickList[query.serverID][random(0, this->nickList[query.serverID].size() - 1)]);
+							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + query.message);
 							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							std::stringstream response(recvbuffer);
@@ -119,13 +118,13 @@ void Bot::InputThread()
 					}
 				}
 				catch (const std::exception &e) {
-					std::cout << "Infobot socket: caught connection exception\n";
+					core.log->error("Infobot socket: caught connection exception");
 				}
 			} else {
-				std::cout << "Infobot socket: connection failure\n";
+				core.log->error("Infobot socket: connection failure");
 			}
 		} else {
-			std::cout << "Infobot socket: creation of file descriptor failed\n";
+			core.log->error("Infobot socket: creation of file descriptor failed");
 		}
 		std::this_thread::sleep_for(std::chrono::seconds(5));
 	}

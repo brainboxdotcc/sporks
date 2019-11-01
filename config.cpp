@@ -73,7 +73,7 @@ rapidjson::Document getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 	aegis::channel* channel = bot->core.find_channel(channel_id);
 
 	if (!channel) {
-		std::cout << "WTF, find_channel returned nullptr!\n";
+		bot->core.log->error("WTF, find_channel({}) returned nullptr!", channel_id);
 		settings.Parse("{}");
 		return settings;
 	}
@@ -87,15 +87,10 @@ rapidjson::Document getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 	/* Retrieve from db */
 	db::resultset r = db::query("SELECT settings, parent_id, name FROM infobot_discord_settings WHERE id = ?", {cid});
 
-	/*std::string parent_id = std::to_string(channel->parent_id.get());
-	  FIXME doesnt aegis have parent_id?!
-		https://docs.aegisbot.io/structaegis_1_1gateway_1_1objects_1_1channel.html
-		parent_id is here, in the channel object type from GUILD_CREATE. We may have to cache it.
-	 * */
-	std::string parent_id = "";
-
+	std::string parent_id = std::to_string(channel->get_parent_id().get());
 	std::string name = channel->get_name();
-	if (parent_id == "") {
+
+	if (parent_id == "" || parent_id == "0") {
 		parent_id = "NULL";
 	}
 
@@ -192,8 +187,13 @@ void DoConfig(class Bot* bot, const std::vector<std::string> &param, int64_t cha
 void EmbedSimple(Bot* bot, const std::string &message, int64_t channelID) {
 	std::stringstream s;
 	s << "{\"color\":16767488, \"description\": \"" << message << "\"}";
-	//SleepyDiscord::Embed embed(s.str());
-	//bot->sendMessage(channelID, "", embed, false);
+	nlohmann::json embed_json = nlohmann::json::parse(s.str());
+	aegis::channel* channel = bot->core.find_channel(channelID);
+	if (channel) {
+		channel->create_message_embed("", embed_json);
+	} else {
+		bot->core.log->error("Invalid channel {} passed to EmbedSimple", channelID);
+	}
 }
 
 void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::gateway::objects::user& issuer) {
@@ -348,7 +348,12 @@ void DoConfigShow(class Bot* bot, int64_t channelID, const aegis::gateway::objec
 		}
 	}
 	s << "],\"description\":\"For help on changing these settings, type ``@" << bot->user.username << " help config``.\"}";
-	//SleepyDiscord::Embed embed(s.str());
-	//bot->sendMessage(channelID, "", embed, false);
+	nlohmann::json embed_json = nlohmann::json::parse(s.str());
+	aegis::channel* channel = bot->core.find_channel(channelID);
+	if (channel) {
+		channel->create_message_embed("", embed_json);
+	} else {
+		bot->core.log->error("Invalid channel {} passed to EmbedSimple", channelID);
+	}	
 }
 

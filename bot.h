@@ -29,10 +29,7 @@
 
 using json = nlohmann::json;
 
-/*typedef std::unordered_map<std::string, SleepyDiscord::Channel> ChannelCache;
-typedef std::unordered_map<std::string, SleepyDiscord::User> UserCache;
-typedef std::unordered_map<std::string, std::vector<std::string>> RandomNickCache;
-typedef std::unordered_map<std::string, SleepyDiscord::Server> BotServerCache;*/
+typedef std::unordered_map<int64_t, std::vector<std::string>> RandomNickCache;
 
 struct QueueStats {
 	size_t inputs;
@@ -81,16 +78,10 @@ public:
 	/* Aegis core */
 	aegis::core &core;
 
-	/* Caches, unordered map storage of discord's data (sleepy_discord doesn't cache much
-	 * at all, so we must ensure we maintain our own caches)
-	 */
-	//BotServerCache serverList;
-	//ChannelCache channelList;
-	//UserCache userList;
-	//RandomNickCache nickList;	/* Special case, contains a vector of nicknames per-server for selecting a random nickname only */
+	RandomNickCache nickList;	/* Special case, contains a vector of nicknames per-server for selecting a random nickname only */
 
 	/* Userqueue: a queue of users waiting to be written to SQL for the dashboard */
-	//std::queue<SleepyDiscord::User> userqueue;
+	std::queue<aegis::gateway::objects::user> userqueue;
 
 	/* The bot's user details from ready event */
 	aegis::gateway::objects::user user;
@@ -110,13 +101,13 @@ public:
 	void onReady(aegis::gateway::events::ready ready);
 
 	/* Caches server entry, iterates and caches channels, iterates and caches users, queues users to be stored in SQL */
-	//void onServer(const SleepyDiscord::Server &server) override;
+	void onServer(aegis::gateway::events::guild_create gc);
 
 	/* Caches user, also stores user in SQL */
-	//void onMember(SleepyDiscord::Snowflake<SleepyDiscord::Server> serverID, SleepyDiscord::ServerMember member) override;
+	void onMember(aegis::gateway::events::guild_member_add gma);
 
 	/* Caches channel, also creates channel settings row in SQL if needed */
-	//void onChannel(const SleepyDiscord::Channel &channel) override;
+	void onChannel(aegis::gateway::events::channel_create channel);
 
 	/* Passes incoming messages to the input queue, and directly handles commands */
 	void onMessage(aegis::gateway::events::message_create message);

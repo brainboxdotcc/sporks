@@ -57,14 +57,16 @@ void Bot::OutputThread() {
 									urls_matched++;
 								}
 							}
-							//FIXME
 							if (message != "*NOTHING*") {
-//								this->sendMessage(channel.ID, message);
+								aegis::channel* channel = core.find_channel(done.front().channelID);
+								if (channel) {
+									channel->create_message(message);
+								}
 							}
 						}
 					}
 					catch (std::exception e) { /* FIXME */
-						std::cout << "Can't send message to channel id " << done.front().channelID << " (talkative=" << settings::IsTalkative(channel_settings) << ",mentioned=" << done.front().mentioned << ") message was: '" << done.front().message << "'" << std::endl;
+						core.log->error("Can't send message to channel id {}, (talkative={},mentioned={}), message was: {}", done.front().channelID, settings::IsTalkative(channel_settings), done.front().mentioned, done.front().message);
 					}
 				}
 				done.pop();
@@ -72,8 +74,7 @@ void Bot::OutputThread() {
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 		catch (std::exception e) {
-			// FIXME
-			std::cout << "Response Oof!" << std::endl;
+			core.log->error("Response Oof!");
 		}
 	}
 }

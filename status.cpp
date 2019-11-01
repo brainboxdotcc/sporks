@@ -19,8 +19,8 @@ statusfield::statusfield(const std::string &a, const std::string &b) : name(a), 
 void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t channelID) {
 	std::stringstream s;
 
-	size_t servers = bot->core.get_guild_count();
-	size_t users = bot->core.guilds.size();
+	int64_t servers = bot->core.get_guild_count();
+	int64_t users = bot->core.get_member_count();
 
 	QueueStats qs = bot->GetQueueStats();
 
@@ -65,6 +65,9 @@ void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t chann
 		}
 	}
 	s << "],\"description\":\"\"}";
-	//SleepyDiscord::Embed embed(s.str());
-	//bot->sendMessage(channelID, "", embed, false);
+	nlohmann::json embed_json = nlohmann::json::parse(s.str());
+	aegis::channel* channel = bot->core.find_channel(channelID);
+	if (channel) {
+		channel->create_message_embed("", embed_json);
+	}
 }
