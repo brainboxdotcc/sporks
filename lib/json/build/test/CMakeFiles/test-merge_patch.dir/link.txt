@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test-merge_patch.dir/src/unit-merge_patch.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-merge_patch 

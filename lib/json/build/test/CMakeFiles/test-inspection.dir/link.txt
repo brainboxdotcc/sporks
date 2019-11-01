@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test-inspection.dir/src/unit-inspection.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-inspection 

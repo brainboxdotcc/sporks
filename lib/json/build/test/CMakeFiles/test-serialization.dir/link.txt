@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test-serialization.dir/src/unit-serialization.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-serialization 

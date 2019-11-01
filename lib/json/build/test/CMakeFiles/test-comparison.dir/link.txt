@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test-comparison.dir/src/unit-comparison.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-comparison 

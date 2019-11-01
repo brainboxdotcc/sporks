@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test-allocator.dir/src/unit-allocator.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-allocator 

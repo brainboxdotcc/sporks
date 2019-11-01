@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test-items.dir/src/unit-items.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-items 

@@ -1,0 +1,4 @@
+/usr/local/include/nlohmann/json.hpp
+/usr/local/lib/cmake/nlohmann_json/nlohmann_jsonConfig.cmake
+/usr/local/lib/cmake/nlohmann_json/nlohmann_jsonConfigVersion.cmake
+/usr/local/lib/cmake/nlohmann_json/nlohmann_jsonTargets.cmake

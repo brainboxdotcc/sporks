@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test-class_parser.dir/src/unit-class_parser.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-class_parser 

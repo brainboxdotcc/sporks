@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test-algorithms.dir/src/unit-algorithms.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-algorithms 

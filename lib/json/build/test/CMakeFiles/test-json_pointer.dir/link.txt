@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/test-json_pointer.dir/src/unit-json_pointer.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-json_pointer 
