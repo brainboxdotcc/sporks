@@ -29,7 +29,7 @@ QueueStats Bot::GetQueueStats() {
 	return q;
 }
 
-Bot::Bot(uint32_t shard_id, uint32_t max_shards, bool development, aegis::core &aegiscore) : dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), ShardID(shard_id), MaxShards(max_shards) {
+Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore) {
 
 	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
@@ -123,8 +123,8 @@ void Bot::UpdatePresenceThread() {
 		int64_t servers = core.get_guild_count();
 		int64_t users = core.get_member_count();
 		db::resultset rs_fact = db::query("SELECT count(key_word) AS total FROM infobot", std::vector<std::string>());
-		core.update_presence(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts on " + Comma(servers) + " servers, " + Comma(users) + " total users", aegis::gateway::objects::activity::Watching);
-		db::query("INSERT INTO infobot_discord_counts (shard_id, dev, user_count, server_count) VALUES('?','?','?','?') ON DUPLICATE KEY UPDATE user_count = '?', server_count = '?', dev = '?'", {std::to_string(ShardID), std::to_string((uint32_t)dev), std::to_string(users), std::to_string(servers), std::to_string(users), std::to_string(servers), std::to_string((uint32_t)dev)});
+		core.update_presence(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts, on " + Comma(servers) + " servers with " + Comma(users) + " users across " + Comma(core.shard_max_count) + " shards", aegis::gateway::objects::activity::Watching);
+		db::query("INSERT INTO infobot_discord_counts (shard_id, dev, user_count, server_count, shard_count) VALUES('?','?','?','?','?') ON DUPLICATE KEY UPDATE user_count = '?', server_count = '?', shard_count = '?'", {std::to_string(0), std::to_string((uint32_t)dev), std::to_string(users), std::to_string(servers), std::to_string(core.shard_max_count), std::to_string(users), std::to_string(servers), std::to_string(core.shard_max_count)});
 		std::this_thread::sleep_for(std::chrono::seconds(120));
 	}
 }
@@ -218,31 +218,19 @@ void Bot::onChannel(aegis::gateway::events::channel_create channel_create) {
 int main(int argc, char** argv) {
 
 	int dev = 0;	/* Note: getopt expects ints, this is actually treated as bool */
-	uint32_t shard_id = 0;
-	uint32_t max_shards = 0;
 
 	/* Parse command line parameters using getopt() */
 	struct option longopts[] =
 	{
 		{ "dev",       no_argument,        &dev,    1  },
-		{ "shardid",   required_argument,  NULL,   'i' },
-		{ "numshards", required_argument,  NULL,   'n' },
 		{ 0, 0, 0, 0 }
 	};
 
 	/* Yes, getopt is ugly, but what you gonna do... */
 	int index;
 	char arg;
-	while ((arg = getopt_long_only(argc, argv, ":i:n", longopts, &index)) != -1) {
+	while ((arg = getopt_long_only(argc, argv, "", longopts, &index)) != -1) {
 		switch (arg) {
-			case 'i':
-				/* Shard ID was set */
-				shard_id = atoi(optarg);
-			break;
-			case 'n':
-				/* Number of shards was set */
-				max_shards = atoi(optarg);
-			break;
 			case 0:
 				/* getopt_long_only() set an int variable, just keep going */
 			break;
@@ -268,11 +256,14 @@ int main(int argc, char** argv) {
 	/* It's go time! */
 	while (true) {
 
+		/* Aegis core routes websocket events and does all the API magic */
 		aegis::core aegis_bot(aegis::create_bot_t().log_level(spdlog::level::trace).token(token));
 		aegis_bot.wsdbg = true;
 
-		Bot client(shard_id, max_shards, dev, aegis_bot);
+		/* Bot class handles application logic */
+		Bot client(dev, aegis_bot);
 
+		/* Attach events to the Bot class methods from aegis::core */
 		aegis_bot.set_on_message_create(std::bind(&Bot::onMessage, &client, std::placeholders::_1));
 		aegis_bot.set_on_ready(std::bind(&Bot::onReady, &client, std::placeholders::_1));
 		aegis_bot.set_on_channel_create(std::bind(&Bot::onChannel, &client, std::placeholders::_1));
@@ -285,7 +276,7 @@ int main(int argc, char** argv) {
 			aegis_bot.yield();
 		}
 		catch (std::exception e) {
-			aegis_bot.log->error("Oof!");
+			aegis_bot.log->error("Oof! {}", e.what());
 		}
 
 		/* Reconnection delay to prevent hammering discord */

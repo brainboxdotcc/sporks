@@ -78,8 +78,8 @@ rapidjson::Document getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 		return settings;
 	}
 
-	/* DM channel */
-	if (channel->get_type() == 1) {
+	/* DM channels dont have settings */
+	if (channel->get_type() == aegis::gateway::objects::channel::channel_type::DirectMessage) {
 		settings.Parse("{}");
 		return settings;
 	}
@@ -94,7 +94,7 @@ rapidjson::Document getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 		parent_id = "NULL";
 	}
 
-	if (channel->get_type() == 0) {	/* Channel type: TEXT */
+	if (channel->get_type() == aegis::gateway::objects::channel::channel_type::Text) {
 		name = std::string("#") + name;
 	}
 
@@ -119,8 +119,6 @@ rapidjson::Document getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 		return settings;
 	}
 }
-
-// {"talkative":true,"learningdisabled":false,"ignores":[159985870458322944,155149108183695360]}
 
 namespace settings {
 

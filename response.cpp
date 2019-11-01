@@ -26,7 +26,6 @@ void Bot::OutputThread() {
 				rapidjson::Document channel_settings;
 				do {
 					std::lock_guard<std::mutex> hash_lock(this->channel_hash_mutex);
-					//channel = this->channelList.find(done.front().channelID)->second;
 					channel_settings = getSettings(this, done.front().channelID, done.front().serverID);
 				} while (false);
 				if (done.front().mentioned || settings::IsTalkative(channel_settings)) {
@@ -65,8 +64,8 @@ void Bot::OutputThread() {
 							}
 						}
 					}
-					catch (std::exception e) { /* FIXME */
-						core.log->error("Can't send message to channel id {}, (talkative={},mentioned={}), message was: {}", done.front().channelID, settings::IsTalkative(channel_settings), done.front().mentioned, done.front().message);
+					catch (std::exception e) {
+						core.log->error("Can't send message to channel id {}, (talkative={},mentioned={}), error is: {}", done.front().channelID, settings::IsTalkative(channel_settings), done.front().mentioned, e.what());
 					}
 				}
 				done.pop();
@@ -74,7 +73,7 @@ void Bot::OutputThread() {
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 		catch (std::exception e) {
-			core.log->error("Response Oof!");
+			core.log->error("Response Oof! {}", e.what());
 		}
 	}
 }

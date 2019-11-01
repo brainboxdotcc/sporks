@@ -118,7 +118,7 @@ void Bot::InputThread()
 					}
 				}
 				catch (const std::exception &e) {
-					core.log->error("Infobot socket: caught connection exception");
+					core.log->error("Infobot socket: caught connection exception: {}", e.what());
 				}
 			} else {
 				core.log->error("Infobot socket: connection failure");

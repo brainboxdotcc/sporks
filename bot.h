@@ -86,11 +86,7 @@ public:
 	/* The bot's user details from ready event */
 	aegis::gateway::objects::user user;
 
-	/* Shard details, filled by ctor */
-	uint32_t ShardID;
-	uint32_t MaxShards;
-
-	Bot(uint32_t shard_id, uint32_t max_shards, bool development, aegis::core &aegiscore);
+	Bot(bool development, aegis::core &aegiscore);
 	virtual ~Bot();
 
 	QueueStats GetQueueStats();
@@ -112,9 +108,6 @@ public:
 	/* Passes incoming messages to the input queue, and directly handles commands */
 	void onMessage(aegis::gateway::events::message_create message);
 
-	/* Theres some weird allocator crap going off with rapidjson as it's used in sleepy_discord,
-	 * so this is static to prevent a compilation error (!)
-	 */
 	static std::string GetConfig(const std::string &name);
 };
 
