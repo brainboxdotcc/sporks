@@ -28,17 +28,17 @@ void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std:
 		return;
 	}
 
-	try {
-		if (dm) {
-			aegis::create_message_t dmobj;
+	if (dm) {
+		aegis::create_message_t dmobj;
+		try {
 			dmobj.user_id(authorid).embed(embed_json);
-			bot->core.create_dm_message(dmobj);
+			bot->core.create_dm_message(dmobj).get();
 			channel->create_message("<@" + std::to_string(authorid) + ">, please see your DMs for help text.");
-		} else {
-			channel->create_message("", embed_json);
 		}
-	}
-	catch (std::exception e) { /* FIXME */
-		channel->create_message("<@" + std::to_string(authorid) + ">, I can't send you help, as your DMs from me are blocked. Please check this, and try again.");
+		catch (const aegis::exception &e) {
+			channel->create_message("<@" + std::to_string(authorid) + ">, I can't send you help, as your DMs from me are blocked. Please check this, and try again.");
+		}
+	} else {
+		channel->create_message("", embed_json);
 	}
 }
