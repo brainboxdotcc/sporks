@@ -86,8 +86,11 @@ void Bot::InputThread()
 							}
 						} while(false);
 						if (has_item) {
-							writeLine(sockfd, std::string(".RN ") + this->nickList[query.serverID][random(0, this->nickList[query.serverID].size() - 1)]);
-							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+							/* Fix: If there isnt a list yet, don't try and do this otherwise it will result in a call of random(0, -1) and a SIGFPE */
+							if (nickList.find(query.serverID) != nickList.end() && this->nickList[query.serverID].size() > 0) {
+								writeLine(sockfd, std::string(".RN ") + this->nickList[query.serverID][random(0, this->nickList[query.serverID].size() - 1)]);
+								readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+							}
 							writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + query.message);
 							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							std::stringstream response(recvbuffer);

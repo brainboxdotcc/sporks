@@ -153,11 +153,11 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 	} while (false);
 
 	/* Ignore self, and bots */
-	if (message.get_user().get_id() != user.id && message.get_user().is_bot() == false) {
+	if (message.msg.get_user().get_id() != user.id && message.msg.get_user().is_bot() == false) {
 
 		/* Ignore anyone on ignore list */
 		std::vector<uint64_t> ignorelist = settings::GetIgnoreList(settings);
-		if (std::find(ignorelist.begin(), ignorelist.end(), message.get_user().get_id().get()) != ignorelist.end()) {
+		if (std::find(ignorelist.begin(), ignorelist.end(), message.msg.get_user().get_id().get()) != ignorelist.end()) {
 			core.log->info("Message #{} dropped, user on channel ignore list", message.msg.get_id().get());
 			return;
 		}
@@ -172,7 +172,7 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			}
 		}
 
-		core.log->info("<{}> {}", message.get_user().get_username(), mentions_removed);
+		core.log->info("<{}> {}", message.msg.get_user().get_username(), mentions_removed);
 
 		std::string botusername = this->user.username;
 
@@ -190,7 +190,7 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			if (param.size() > 2) {
 				section = param[2];
 			}
-			GetHelp(this, section, message.msg.get_channel_id().get(), botusername, user.id.get(), message.get_user().get_username(), message.get_user().get_id().get());
+			GetHelp(this, section, message.msg.get_channel_id().get(), botusername, user.id.get(), message.msg.get_user().get_username(), message.msg.get_user().get_id().get());
 		} else if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
 			/* Config command */
 			DoConfig(this, param, message.msg.get_channel_id().get(), message.msg);
@@ -200,7 +200,7 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			query.message = mentions_removed;
 			query.channelID = message.channel.get_id().get();
 			query.serverID = message.msg.get_guild_id().get();
-			query.username = message.get_user().get_username();
+			query.username = message.msg.get_user().get_username();
 			query.mentioned = mentioned;
 			do {
 				std::lock_guard<std::mutex> input_lock(input_mutex);
