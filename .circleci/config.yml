@@ -17,10 +17,10 @@ jobs:
           command: 'apt-get update && apt-get install -y cmake'
       - run:
           name: Installing other dependencies
-          command: 'apt-get update && apt-get install -y libmariadb-dev libssl-dev zlib1g-dev'
+          command: 'apt-get update && apt-get install -y libssl-dev zlib1g-dev'
       - run:
-          name: Fixing mariadb fuckery
-          command: 'ln -s /usr/include/mariadb/mysql.h /usr/include/mysql.h'
+          name: Installing mysql
+          command: 'https://s3.amazonaws.com/circle-downloads/install-mysql5.7-circleci.sh'
       - run:
           name: Cloning aegis
           command: 'git clone https://github.com/zeroxs/aegis.cpp'
