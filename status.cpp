@@ -65,7 +65,14 @@ void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t chann
 		}
 	}
 	s << "],\"description\":\"\"}";
-	nlohmann::json embed_json = nlohmann::json::parse(s.str());
+
+	json embed_json;
+	try {
+		embed_json = json::parse(s.str());
+	}
+	catch (const std::exception &e) {
+		bot->core.log->error("Malformed json created when reporting status: {}", s.str());
+	}
 	aegis::channel* channel = bot->core.find_channel(channelID);
 	if (channel) {
 		channel->create_message_embed("", embed_json);

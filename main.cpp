@@ -15,10 +15,6 @@
 #include "stringops.h"
 #include "help.h"
 
-#include <rapidjson/rapidjson.h>
-#include <rapidjson/document.h>
-#include <rapidjson/istreamwrapper.h>
-
 QueueStats Bot::GetQueueStats() {
 	QueueStats q;
 
@@ -61,15 +57,10 @@ Bot::~Bot() {
 }
 
 std::string Bot::GetConfig(const std::string &name) {
-	rapidjson::Document config;
+	json document;
 	std::ifstream configfile("../config.json");
-	rapidjson::IStreamWrapper wrapper(configfile);
-	config.ParseStream(wrapper);
-	if (!config.IsObject()) {
-		std::cerr << "../config.json not found, or doesn't contain an object" << std::endl;
-		exit(1);
-	}
-	return config[name.c_str()].GetString();
+	configfile >> document;
+	return document[name].get<std::string>();
 }
 
 void Bot::onServer(aegis::gateway::events::guild_create gc) {
@@ -146,7 +137,7 @@ void Bot::onReady(aegis::gateway::events::ready ready) {
 
 void Bot::onMessage(aegis::gateway::events::message_create message) {
 
-	rapidjson::Document settings;
+	json settings;
 	do {
 		std::lock_guard<std::mutex> input_lock(channel_hash_mutex);
 		settings = getSettings(this, message.msg.get_channel_id().get(), message.msg.get_guild_id().get());

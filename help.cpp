@@ -9,10 +9,18 @@
 void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std::string &botusername, int64_t botid, const std::string &author, int64_t authorid, bool dm) {
 
 	bool found = true;
+	json embed_json;
+	aegis::channel* channel = bot->core.find_channel(channelID);
 
-	std::ifstream t("../help/" + (found ? section : "error") + ".json");
+	if (!channel) {
+		bot->core.log->error("Can't find channel {}!", channelID);
+		return;
+	}
+	
+	std::ifstream t("../help/" + section + ".json");
 	if (!t) {
 		found = dm = false;
+		t = std::ifstream("../help/error.json");
 	}
 	std::string json((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 
@@ -21,10 +29,12 @@ void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std:
 	json = ReplaceString(json, ":id:", std::to_string(botid));
 	json = ReplaceString(json, ":author:", author);
 
-	nlohmann::json embed_json = nlohmann::json::parse(json);
-	aegis::channel* channel = bot->core.find_channel(channelID);
-	if (!channel) {
-		bot->core.log->error("Can't find channel {}!", channelID);
+	try {
+		embed_json = json::parse(json);
+	}
+	catch (const std::exception &e) {
+		channel->create_message("<@" + std::to_string(authorid) + ">, herp derp, theres a malformed help file. Please contact a developer on the official support server: https://discord.gg/brainbox");
+		bot->core.log->error("Malformed help file {}.json!", section);
 		return;
 	}
 

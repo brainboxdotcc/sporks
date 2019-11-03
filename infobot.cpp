@@ -70,7 +70,7 @@ void Bot::InputThread()
 							std::lock_guard<std::mutex> input_lock(this->input_mutex);
 							if (!inputs.empty()) {
 								query = inputs.front();
-								rapidjson::Document channel_settings;
+								json channel_settings;
 								do {
 									std::lock_guard<std::mutex> hash_lock(this->channel_hash_mutex);
 									channel_settings = getSettings(this, query.channelID, query.serverID);

@@ -4,12 +4,10 @@
 #include "database.h"
 #include <string>
 #include <cstdint>
-#include <rapidjson/rapidjson.h>
-#include <rapidjson/document.h>
-#include <rapidjson/istreamwrapper.h>
 
+using json = nlohmann::json;
 
-rapidjson::Document getSettings(class Bot* bot, int64_t channel_id, int64_t guild_id);
+json getSettings(class Bot* bot, int64_t channel_id, int64_t guild_id);
 
 namespace settings {
 	/* Create json from a simple std::initializer_list of string pairs */
@@ -21,11 +19,10 @@ namespace settings {
         const std::string integer(const int64_t num);
         const std::string optionalInteger(const int64_t num);
         const std::string boolean(const bool boolean);
-        bool IsLearningDisabled(const rapidjson::Document& settings);
-        bool IsLearningEnabled(const rapidjson::Document& settings);
-        bool IsTalkative(const rapidjson::Document& settings);
-	std::vector<uint64_t> GetIgnoreList(const rapidjson::Document& settings);
-        std::string GetIgnoreList(const rapidjson::Document& settings, bool as_json);
+        bool IsLearningDisabled(const json& settings);
+        bool IsLearningEnabled(const json& settings);
+        bool IsTalkative(const json& settings);
+	std::vector<uint64_t> GetIgnoreList(const json& settings);
 }
 
 void DoConfig(class Bot* bot, const std::vector<std::string> &param, int64_t channelID, const aegis::gateway::objects::message &message);

@@ -23,7 +23,7 @@ void Bot::OutputThread() {
 				}
 			} while (false);
 			while (!done.empty()) {
-				rapidjson::Document channel_settings;
+				json channel_settings;
 				do {
 					std::lock_guard<std::mutex> hash_lock(this->channel_hash_mutex);
 					channel_settings = getSettings(this, done.front().channelID, done.front().serverID);
