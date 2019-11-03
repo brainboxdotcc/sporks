@@ -20,20 +20,23 @@ jobs:
           command: 'apt-get update && apt-get install -y libmariadb-dev libssl-dev zlib1g-dev libasio-dev libwebsocketpp-dev'
       - run:
           name: Cloning aegis
-          command: 'git clone https://github.com/zeroxs/aegis.cpp && cd aegis.cpp'
+          command: 'git clone https://github.com/zeroxs/aegis.cpp'
       - run:
           name: Building aegis deps
-          command: './install-deps.sh'
+          command: './aegis.cpp/install-deps.sh'
       - run:
           name: Creating aegis build files
-          command: 'mkdir build && cd build && cmake ..'
+          command: 'cmake  -Haegis.cpp -Baegis.cpp/build'
       - run:
-          name: Building and installing aegis
-          command: 'make && make install'
+          name: Building aegis
+          command: 'cmake --build aegis.cpp/build'
       - run:
+          name: Installing aegis
+          command: 'cmake --install aegis.cpp/build'
+      -run:
           name: Creating Build Files
-          command: 'cd ../.. && mkdir build && cd build && cmake ..'
+          command: 'cmake -H. -Bbuild'
       - run:
           name: Creating Binary Files
-          command: 'make'
+          command: 'cmake --build build'
 
