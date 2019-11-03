@@ -32,7 +32,7 @@ jobs:
           command: 'cmake --build aegis.cpp/build'
       - run:
           name: Installing aegis
-          command: 'cmake --install aegis.cpp/build'
+          command: 'cd aegis.cpp/build && cmake install'
       - run:
           name: Creating Build Files
           command: 'cmake -H. -Bbuild'
