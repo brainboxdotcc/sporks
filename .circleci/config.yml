@@ -20,10 +20,10 @@ jobs:
           command: 'apt-get update && apt-get install -y libssl-dev zlib1g-dev curl wget'
       - run:
           name: Downloading mysql
-          command: 'wget https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-server_8.0.18-1debian10_amd64.deb-bundle.tar'
+          command: 'wget -q https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-server_8.0.18-1debian10_amd64.deb-bundle.tar'
       - run:
           name: Installing mysql
-          command: tar fpx mysql-server_8.0.18-1debian10_amd64.deb-bundle.tar && dpkg -i libmysqlclient21_8.0.18-1debian10_amd64.deb && dpkg -i libmysqlclient-dev_8.0.18-1debian10_amd64.deb
+          command: tar fpx mysql-server_8.0.18-1debian10_amd64.deb-bundle.tar && dpkg -i mysql-common_8.0.18-1debian10_amd64.deb && dpkg -i libmysqlclient21_8.0.18-1debian10_amd64.deb && dpkg -i libmysqlclient-dev_8.0.18-1debian10_amd64.deb
       - run:
           name: Cloning aegis
           command: 'git clone https://github.com/zeroxs/aegis.cpp'
