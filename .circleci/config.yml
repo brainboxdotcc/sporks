@@ -17,7 +17,7 @@ jobs:
           command: 'apt-get update && apt-get install -y cmake'
       - run:
           name: Installing other dependencies
-          command: 'apt-get update && apt-get install -y libssl-dev zlib1g-dev curl wget'
+          command: 'apt-get update && apt-get install -y libssl-dev zlib1g-dev curl wget libpcre3-dev'
       - run:
           name: Downloading mysql
           command: 'wget -q https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-server_8.0.18-1debian10_amd64.deb-bundle.tar'
