@@ -23,7 +23,7 @@ jobs:
           command: 'git clone https://github.com/zeroxs/aegis.cpp'
       - run:
           name: Checking out and building aegis deps
-          command: 'cd aegis.cpp && git submodule init lib/json && git submodule init lib/spdlog && git submodule init lib/spdlog && git submodule init lib/websocketpp && git submodule update && ./install-deps.sh'
+          command: 'cd aegis.cpp && git submodule init lib/asio && git submodule init lib/json && git submodule init lib/spdlog &&  git submodule init lib/websocketpp && git submodule update && ./install-deps.sh'
       - run:
           name: Creating aegis build files
           command: 'cmake  -Haegis.cpp -Baegis.cpp/build'
