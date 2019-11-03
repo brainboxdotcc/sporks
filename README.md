@@ -1,5 +1,7 @@
 # botnix-discord-cpp
-Botnix Discord Connector, C++ verison
+Botnix Discord Connector, C++ verison using Aegis.cpp
+
+[![CircleCI](https://circleci.com/gh/braindigitalis/botnix-discord-cpp.svg?style=svg)](https://circleci.com/gh/braindigitalis/botnix-discord-cpp)
 
 ## Building
 
@@ -24,13 +26,12 @@ run.sh will restart the bot executable continually if it dies. Alternatively, if
 
 ## Command line parameters
 
-    ./bot [--dev] [--shardid=(n)] [--numshards=(m)]
+    ./bot [--dev]
 
 | Argument        | Meaning                                                |
 | --------------- |------------------------------------------------------- |
 | --dev           | Run using the development token in the config file     |
-| --shardid=(n)   | Run as shard id <n> in a sharded environment           |
-| --numshards=(m) | The number of shards in total in a sharded environment | 
+
 
 ## Reporting to bot list sites
 
@@ -42,15 +43,6 @@ To report your bot's server count to bot list sites (really, you shouldn't even 
     
 and configure the infobot_discord_list_sites table with the sites your bot is registered upon:
 
-    CREATE TABLE IF NOT EXISTS `infobot_discord_list_sites` (
-    `id` bigint(20) unsigned NOT NULL,
-      `name` varchar(255) NOT NULL,
-      `url` varchar(255) NOT NULL,
-      `server_count_field` varchar(255) NOT NULL,
-      `user_count_field` varchar(255) DEFAULT NULL,
-      `authorization` varchar(255) NOT NULL
-    ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1;
-    
     INSERT INTO `infobot_discord_list_sites` (`name`, `url`, `server_count_field`, `user_count_field`, `authorization`) VALUES
     ('Top.gg', 'https://top.gg/api/bots/your-bot-id/stats', 'server_count', NULL, 'your api key goes here'),
     ('DiscordBotList', 'https://discordbotlist.com/api/bots/your-bot-id/stats', 'guilds', 'users', 'another api key'),
