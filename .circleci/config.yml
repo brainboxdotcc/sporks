@@ -1,0 +1,39 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: "debian:buster"
+    steps:
+      - checkout
+      - run:
+          name: Installing SUDO
+          command: 'apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*'
+      - run:
+          name: Installing GCC
+          command: 'apt-get update && apt-get install -y gcc g++ build-essential'
+      - run:
+          name: Install CMAKE
+          command: 'apt-get update && apt-get install -y cmake'
+      - run:
+          name: Installing other dependencies
+          command: 'apt-get update && apt-get install -y libmysqlclient-dev libssl-dev zlib1g-dev libasio-dev libwebsocketpp-dev'
+      - run:
+          name: Cloning aegis
+          command: 'git clone https://github.com/zeroxs/aegis.cpp && cd aegis.cpp'
+      - run:
+          name: Building aegis deps
+          command: '/install-deps.sh'
+      - run:
+          name: Creating aegis build files
+          command: 'mkdir build && cd build && cmake ..'
+      - run:
+          name: Building and installing aegis
+          command: 'make && make install'
+      - run:
+          name: Creating Build Files
+          command: 'cd ../.. && mkdir build && cd build && cmake ..'
+      - run:
+          name: Creating Binary Files
+          command: 'make'
+
