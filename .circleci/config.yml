@@ -23,7 +23,7 @@ jobs:
           command: 'git clone https://github.com/zeroxs/aegis.cpp'
       - run:
           name: Building aegis deps
-          command: './aegis.cpp/install-deps.sh'
+          command: 'cd aegis.cpp && ./install-deps.sh'
       - run:
           name: Creating aegis build files
           command: 'cmake  -Haegis.cpp -Baegis.cpp/build'
