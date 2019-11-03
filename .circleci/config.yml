@@ -17,10 +17,13 @@ jobs:
           command: 'apt-get update && apt-get install -y cmake'
       - run:
           name: Installing other dependencies
-          command: 'apt-get update && apt-get install -y libssl-dev zlib1g-dev curl'
+          command: 'apt-get update && apt-get install -y libssl-dev zlib1g-dev curl wget'
+      - run:
+          name: Downloading mysql
+          command: 'wget https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-server_8.0.18-1debian10_amd64.deb-bundle.tar'
       - run:
           name: Installing mysql
-          command: 'export DEBIAN_FRONTEND=noninteractive && curl -sSL https://s3.amazonaws.com/circle-downloads/install-mysql5.7-circleci.sh | sh'
+          command: tar fpx mysql-server_8.0.18-1debian10_amd64.deb-bundle.tar && dpkg -i libmysqlclient21_8.0.18-1debian10_amd64.deb && dpkg -i libmysqlclient-dev_8.0.18-1debian10_amd64.deb
       - run:
           name: Cloning aegis
           command: 'git clone https://github.com/zeroxs/aegis.cpp'
