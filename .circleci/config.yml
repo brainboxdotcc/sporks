@@ -17,13 +17,13 @@ jobs:
           command: 'apt-get update && apt-get install -y cmake'
       - run:
           name: Installing other dependencies
-          command: 'apt-get update && apt-get install -y libmariadb-dev libssl-dev zlib1g-dev libasio-dev libwebsocketpp-dev'
+          command: 'apt-get update && apt-get install -y libmariadb-dev libssl-dev zlib1g-dev'
       - run:
           name: Cloning aegis
           command: 'git clone https://github.com/zeroxs/aegis.cpp'
       - run:
-          name: Building aegis deps
-          command: 'cd aegis.cpp && ./install-deps.sh'
+          name: Checking out and building aegis deps
+          command: 'cd aegis.cpp && git submodule init lib/json && git submodule init lib/spdlog && git submodule init lib/spdlog && git submodule init lib/websocketpp && git submodule update && ./install-deps.sh'
       - run:
           name: Creating aegis build files
           command: 'cmake  -Haegis.cpp -Baegis.cpp/build'
