@@ -17,10 +17,10 @@ jobs:
           command: 'apt-get update && apt-get install -y cmake'
       - run:
           name: Installing other dependencies
-          command: 'apt-get update && apt-get install -y libssl-dev zlib1g-dev'
+          command: 'apt-get update && apt-get install -y libssl-dev zlib1g-dev curl'
       - run:
           name: Installing mysql
-          command: 'https://s3.amazonaws.com/circle-downloads/install-mysql5.7-circleci.sh'
+          command: 'export DEBIAN_FRONTEND=noninteractive && curl -sSL https://s3.amazonaws.com/circle-downloads/install-mysql5.7-circleci.sh | sh'
       - run:
           name: Cloning aegis
           command: 'git clone https://github.com/zeroxs/aegis.cpp'
