@@ -76,5 +76,6 @@ void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t chann
 	aegis::channel* channel = bot->core.find_channel(channelID);
 	if (channel) {
 		channel->create_message_embed("", embed_json);
+		bot->sent_messages++;
 	}
 }

@@ -24,7 +24,7 @@ if (!$conn) {
 
 mysqli_select_db($conn, $settings->dbname);
 /* Fetch statistics from all shards for non-development instances */
-$totals = mysqli_fetch_object(mysqli_query($conn, "SELECT SUM(user_count) AS users, SUM(server_count) AS servers FROM infobot_discord_counts WHERE dev = 0"));
+$totals = mysqli_fetch_object(mysqli_query($conn, "SELECT SUM(user_count) AS users, SUM(server_count) AS servers, SUM(shard_count) AS shards, SUM(sent_messages) AS sent_messages, SUM(received_messages) AS received_messages, MAX(memory_usage) AS memory_usage, SUM(channel_count) AS channels FROM infobot_discord_counts WHERE dev = 0"));
 
 /* Get a list of all bot listing sites */
 $q = mysqli_query($conn, "SELECT * FROM infobot_discord_list_sites");
@@ -34,14 +34,29 @@ while ($site = mysqli_fetch_object($q)) {
 	if (!empty($site->user_count_field)) {
 		$payload->{$site->user_count_field} = $totals->users;
 	}
+	if (!empty($site->shard_count_field)) {
+		$payload->{$site->shard_count_field} = $totals->shards;
+	}
+        if (!empty($site->sent_message_count_field)) {
+                $payload->{$site->sent_message_count_field} = $totals->sent_messages;
+        }
+        if (!empty($site->received_message_count_field)) {
+                $payload->{$site->received_message_count_field} = $totals->received_messages;
+        }
+        if (!empty($site->ram_used_field)) {
+                $payload->{$site->ram_used_field} = $totals->memory_usage *1024;
+	}
+	if (!empty($site->channels_field)) {
+		$payload->{$site->channels_field} = $totals->channels;
+	}
 	$json_payload = json_encode($payload);
-	@file_get_contents($site->url, false, stream_context_create([
+	$response = @file_get_contents($site->url, false, stream_context_create([
 	'http' => [
 			'method' => 'POST',
 			'header'  => "Content-Type: application/json\r\nAuthorization: " . $site->authorization,
-			'content' => $json_payload,
+			'content' => ($site->post_type == 'json' ? $json_payload : $payload), 
 		]
 	]));
-	echo "\n";
+	echo $site->url . " => " . $response . "\n";
 }
 

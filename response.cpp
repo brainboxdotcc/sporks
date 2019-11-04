@@ -60,6 +60,7 @@ void Bot::OutputThread() {
 								aegis::channel* channel = core.find_channel(done.front().channelID);
 								if (channel) {
 									channel->create_message(message);
+									sent_messages++;
 								}
 							}
 						}

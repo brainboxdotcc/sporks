@@ -34,6 +34,7 @@ void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std:
 	}
 	catch (const std::exception &e) {
 		channel->create_message("<@" + std::to_string(authorid) + ">, herp derp, theres a malformed help file. Please contact a developer on the official support server: https://discord.gg/brainbox");
+		bot->sent_messages++;
 		bot->core.log->error("Malformed help file {}.json!", section);
 		return;
 	}
@@ -41,12 +42,14 @@ void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std:
 	if (dm) {
 		aegis::create_message_t dmobj;
 		try {
-			dmobj.user_id(authorid).embed(embed_json);
-			bot->core.create_dm_message(dmobj).get();
+			dmobj.user_id(authorid).embed(embed_json).nonce(authorid);
+			bot->core.create_dm_message(dmobj);
 			channel->create_message("<@" + std::to_string(authorid) + ">, please see your DMs for help text.");
+			bot->sent_messages += 2;
 		}
 		catch (const aegis::exception &e) {
-			channel->create_message("<@" + std::to_string(authorid) + ">, I can't send you help, as your DMs from me are blocked. Please check this, and try again.");
+			channel->create_message("<@" + std::to_string(authorid) + ">, I couldn't send help text to you via DM. Please check your privacy settings and try again.");
+			bot->sent_messages++;
 		}
 	} else {
 		channel->create_message("", embed_json);

@@ -24,6 +24,7 @@
 #include <string>
 #include <mutex>
 #include <thread>
+#include <tuple>
 #include <unordered_map>
 #include "queue.h"
 
@@ -85,6 +86,9 @@ public:
 
 	/* The bot's user details from ready event */
 	aegis::gateway::objects::user user;
+
+	uint64_t sent_messages;
+	uint64_t received_messages;
 
 	Bot(bool development, aegis::core &aegiscore);
 	virtual ~Bot();

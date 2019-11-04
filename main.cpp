@@ -9,6 +9,8 @@
 #include <queue>
 #include <stdlib.h>
 #include <getopt.h>
+#include "sys/types.h"
+#include "sys/sysinfo.h"
 #include "database.h"
 #include "config.h"
 #include "regex.h"
@@ -25,7 +27,7 @@ QueueStats Bot::GetQueueStats() {
 	return q;
 }
 
-Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore) {
+Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
 
 	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
@@ -108,15 +110,48 @@ void Bot::SaveCachedUsersThread() {
 	}
 }
 
+uint32_t parseLine(char* line) {
+	uint32_t i = strlen(line);
+	const char* p = line;
+	while (*p <'0' || *p > '9') p++;
+	line[i-3] = '\0';
+	i = atoi(p);
+	return i;
+}
+
+
 void Bot::UpdatePresenceThread() {
 	std::this_thread::sleep_for(std::chrono::seconds(30));
+	uint64_t minutes = 0;
 	while (!this->terminate) {
 		int64_t servers = core.get_guild_count();
 		int64_t users = core.get_member_count();
+		int64_t channel_count = core.channels.size();
+		uint32_t ram;
+
+		FILE* file = fopen("/proc/self/status", "r");
+		int result = -1;
+		char line[128];
+		while (fgets(line, 128, file) != NULL){
+			if (strncmp(line, "VmRSS:", 6) == 0){
+				ram = parseLine(line);
+				break;
+			}
+		}
+		fclose(file);
+
 		db::resultset rs_fact = db::query("SELECT count(key_word) AS total FROM infobot", std::vector<std::string>());
 		core.update_presence(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts, on " + Comma(servers) + " servers with " + Comma(users) + " users across " + Comma(core.shard_max_count) + " shards", aegis::gateway::objects::activity::Watching);
-		db::query("INSERT INTO infobot_discord_counts (shard_id, dev, user_count, server_count, shard_count) VALUES('?','?','?','?','?') ON DUPLICATE KEY UPDATE user_count = '?', server_count = '?', shard_count = '?'", {std::to_string(0), std::to_string((uint32_t)dev), std::to_string(users), std::to_string(servers), std::to_string(core.shard_max_count), std::to_string(users), std::to_string(servers), std::to_string(core.shard_max_count)});
-		std::this_thread::sleep_for(std::chrono::seconds(120));
+		db::query("INSERT INTO infobot_discord_counts (shard_id, dev, user_count, server_count, shard_count, channel_count, sent_messages, received_messages, memory_usage) VALUES('?','?','?','?','?','?','?','?','?') ON DUPLICATE KEY UPDATE user_count = '?', server_count = '?', shard_count = '?', channel_count = '?', sent_messages = '?', received_messages = '?', memory_usage = '?'",
+				{std::to_string(0), std::to_string((uint32_t)dev), std::to_string(users), std::to_string(servers), std::to_string(core.shard_max_count),
+				std::to_string(channel_count), std::to_string(sent_messages), std::to_string(received_messages), std::to_string(ram),
+				std::to_string(users), std::to_string(servers), std::to_string(core.shard_max_count),
+				std::to_string(channel_count), std::to_string(sent_messages), std::to_string(received_messages), std::to_string(ram)
+				});
+		if (++minutes > 10) {
+			minutes = sent_messages = received_messages = 0;
+		}
+		std::this_thread::sleep_for(std::chrono::seconds(60));
 	}
 }
 
@@ -145,6 +180,8 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 
 	/* Ignore self, and bots */
 	if (message.msg.get_user().get_id() != user.id && message.msg.get_user().is_bot() == false) {
+
+		received_messages++;
 
 		/* Ignore anyone on ignore list */
 		std::vector<uint64_t> ignorelist = settings::GetIgnoreList(settings);
@@ -213,7 +250,7 @@ int main(int argc, char** argv) {
 	/* Parse command line parameters using getopt() */
 	struct option longopts[] =
 	{
-		{ "dev",       no_argument,        &dev,    1  },
+		{ "dev",	   no_argument,		&dev,	1  },
 		{ 0, 0, 0, 0 }
 	};
 
