@@ -1,5 +1,5 @@
 #include "database.h"
-#include <mysql.h>
+#include <mysql/mysql.h>
 #include <iostream>
 #include <mutex>
 
@@ -9,6 +9,7 @@ namespace db {
 	std::mutex db_mutex;
 
 	bool connect(const std::string &host, const std::string &user, const std::string &pass, const std::string &db, int port) {
+		mysql_init(&connection);
 		return mysql_real_connect(&connection, host.c_str(), user.c_str(), pass.c_str(), db.c_str(), port, NULL, CLIENT_MULTI_RESULTS | CLIENT_MULTI_STATEMENTS);
 	}
 
