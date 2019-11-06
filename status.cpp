@@ -56,8 +56,8 @@ void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t chann
 	};
 
 	s << "{\"title\":\"" << bot->user.username;
-	s << " status\",\"color\":16767488,\"url\":\"https:\\/\\/brainbox.cc\\/sporks\\/\",\"image\":{\"url\":\"https:\\/\\/neuron.brainbox.cc\\/botnix\\/daylearned.php?now=" << time(NULL);
-	s << "\"},\"footer\":{\"link\":\"https;\\/\\/www.botnix.org\\/\",\"text\":\"Powered by Botnix 2.0 with the infobot and discord modules\",\"icon_url\":\"https:\\/\\/www.botnix.org\\/images\\/botnix.png\"},\"fields\":[";
+	s << " status\",\"color\":16767488,\"url\":\"https:\\/\\/sporks.gg\\/\\/\",\"image\":{\"url\":\"https:\\/\\/sporks.gg\\/graphs\\/daylearned.php?now=" << time(NULL);
+	s << "\"},\"footer\":{\"link\":\"https;\\/\\/sporks.gg\\/\",\"text\":\"Powered by Botnix 2.0 with the infobot and discord modules\",\"icon_url\":\"https:\\/\\/www.botnix.org\\/images\\/botnix.png\"},\"fields\":[";
 	for (int i = 0; statusfields[i].name != ""; ++i) {
 		s << "{\"name\":\"" +  statusfields[i].name + "\",\"value\":\"" + statusfields[i].value + "\", \"inline\": true}";
 		if (statusfields[i + 1].name != "") {
