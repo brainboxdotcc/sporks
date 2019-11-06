@@ -43,7 +43,7 @@ void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std:
 		aegis::create_message_t dmobj;
 		try {
 			dmobj.user_id(authorid).embed(embed_json).nonce(authorid);
-			bot->core.create_dm_message(dmobj);
+			bot->core.create_dm_message(dmobj); //.get();
 			channel->create_message("<@" + std::to_string(authorid) + ">, please see your DMs for help text.");
 			bot->sent_messages += 2;
 		}

@@ -16,6 +16,7 @@
 #include "regex.h"
 #include "stringops.h"
 #include "help.h"
+#include "rss.h"
 
 QueueStats Bot::GetQueueStats() {
 	QueueStats q;
@@ -110,16 +111,6 @@ void Bot::SaveCachedUsersThread() {
 	}
 }
 
-uint32_t parseLine(char* line) {
-	uint32_t i = strlen(line);
-	const char* p = line;
-	while (*p <'0' || *p > '9') p++;
-	line[i-3] = '\0';
-	i = atoi(p);
-	return i;
-}
-
-
 void Bot::UpdatePresenceThread() {
 	std::this_thread::sleep_for(std::chrono::seconds(30));
 	uint64_t minutes = 0;
@@ -127,18 +118,7 @@ void Bot::UpdatePresenceThread() {
 		int64_t servers = core.get_guild_count();
 		int64_t users = core.get_member_count();
 		int64_t channel_count = core.channels.size();
-		uint32_t ram;
-
-		FILE* file = fopen("/proc/self/status", "r");
-		int result = -1;
-		char line[128];
-		while (fgets(line, 128, file) != NULL){
-			if (strncmp(line, "VmRSS:", 6) == 0){
-				ram = parseLine(line);
-				break;
-			}
-		}
-		fclose(file);
+		int64_t ram = GetRSS();
 
 		db::resultset rs_fact = db::query("SELECT count(key_word) AS total FROM infobot", std::vector<std::string>());
 		core.update_presence(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts, on " + Comma(servers) + " servers with " + Comma(users) + " users across " + Comma(core.shard_max_count) + " shards", aegis::gateway::objects::activity::Watching);
