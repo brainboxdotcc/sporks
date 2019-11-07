@@ -222,6 +222,13 @@ void Bot::onChannel(aegis::gateway::events::channel_create channel_create) {
 	getSettings(this, channel_create.channel.id.get(), channel_create.channel.guild_id.get());
 }
 
+void Bot::onChannelDelete(aegis::gateway::events::channel_delete cd) {
+	db::query("DELETE FROM infobot_discord_settings WHERE id = '?'", {std::to_string(cd.channel.id.get())});
+}
+
+void Bot::onServerDelete(aegis::gateway::events::guild_delete gd) {
+	db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
+}
 
 int main(int argc, char** argv) {
 
@@ -277,6 +284,8 @@ int main(int argc, char** argv) {
 		aegis_bot.set_on_channel_create(std::bind(&Bot::onChannel, &client, std::placeholders::_1));
 		aegis_bot.set_on_guild_member_add(std::bind(&Bot::onMember, &client, std::placeholders::_1));
 		aegis_bot.set_on_guild_create(std::bind(&Bot::onServer, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_delete(std::bind(&Bot::onServerDelete, &client, std::placeholders::_1));
+		aegis_bot.set_on_channel_delete(std::bind(&Bot::onChannelDelete, &client, std::placeholders::_1));
 	
 		try {
 			/* Actually connect and start the event loop */

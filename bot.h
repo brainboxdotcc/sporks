@@ -112,6 +112,12 @@ public:
 	/* Passes incoming messages to the input queue, and directly handles commands */
 	void onMessage(aegis::gateway::events::message_create message);
 
+	/* Deletes channel settings from SQL database */
+	void onChannelDelete(aegis::gateway::events::channel_delete cd);
+
+	/* Deletes channel settings from SQL database for all channels on server */
+	void onServerDelete(aegis::gateway::events::guild_delete gd);
+
 	static std::string GetConfig(const std::string &name);
 };
 
