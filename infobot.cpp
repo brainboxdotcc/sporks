@@ -108,6 +108,7 @@ void Bot::InputThread()
 								resp.channelID = query.channelID;
 								resp.serverID = query.serverID;
 								resp.mentioned = query.mentioned;
+								resp.jsonstore = query.jsonstore;
 								do {
 									 std::lock_guard<std::mutex> output_lock(this->output_mutex);
 									 outputs.push(resp);

@@ -8,10 +8,14 @@
 #include "config.h"
 #include "stringops.h"
 #include "status.h"
+#include "js.h"
 
 void Bot::OutputThread() {
 	PCRE statsreply("Since (.+?), there have been (\\d+) modifications and (\\d+) questions. I have been alive for (.+?), I currently know (\\d+)");
 	PCRE url_sanitise("^https?://", true);
+
+	js = new JS(core.log);
+
 	while (!this->terminate) {
 		try {
 			std::queue<QueueItem> done;
@@ -59,8 +63,14 @@ void Bot::OutputThread() {
 							if (message != "*NOTHING*") {
 								aegis::channel* channel = core.find_channel(done.front().channelID);
 								if (channel) {
-									channel->create_message(message);
-									sent_messages++;
+
+									if (message == "js-test") {
+										json j_channel;
+										js->run(done.front().channelID, done.front().jsonstore);
+									} else {
+										channel->create_message(message);
+										sent_messages++;
+									}
 								}
 							}
 						}

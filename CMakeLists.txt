@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.6)
 project(bot)
-add_executable(bot main.cpp readline.cpp database.cpp infobot.cpp response.cpp stringops.cpp config.cpp regex.cpp help.cpp status.cpp rss.cpp)
+add_executable(bot main.cpp readline.cpp database.cpp infobot.cpp response.cpp stringops.cpp config.cpp regex.cpp help.cpp status.cpp rss.cpp duktape.c js.cpp timeout.c)
 
 include(buildtools/cmake/FindMYSQL.cmake)
 include(buildtools/cmake/FindPCRE.cmake)

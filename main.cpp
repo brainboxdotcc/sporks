@@ -17,6 +17,7 @@
 #include "stringops.h"
 #include "help.h"
 #include "rss.h"
+#include "js.h"
 
 QueueStats Bot::GetQueueStats() {
 	QueueStats q;
@@ -210,6 +211,15 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			query.serverID = message.msg.get_guild_id().get();
 			query.username = message.msg.get_user().get_username();
 			query.mentioned = mentioned;
+			json chan;
+			aegis::channel& c = message.channel;
+			chan["name"] = c.get_name();
+			chan["nsfw"] = c.nsfw();
+			chan["dm"] = c.is_dm();
+			chan["id"] = c.get_id();
+			query.jsonstore["channel"] = chan;
+			aegis::gateway::objects::to_json(query.jsonstore["message"], message.msg);
+			aegis::gateway::objects::to_json(query.jsonstore["author"], message.msg.author);
 			do {
 				std::lock_guard<std::mutex> input_lock(input_mutex);
 				inputs.push(query);

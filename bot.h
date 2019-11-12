@@ -95,6 +95,8 @@ public:
 
 	QueueStats GetQueueStats();
 
+	class JS* js;
+
 	/* Shorthand to get bot's user id */
 	int64_t getID();
 
