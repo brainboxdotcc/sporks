@@ -23,6 +23,9 @@ namespace settings {
         bool IsLearningEnabled(const json& settings);
         bool IsTalkative(const json& settings);
 	std::vector<uint64_t> GetIgnoreList(const json& settings);
+	bool channelHasJS(int64_t channel_id);
+	std::string getJSConfig(int64_t channel_id, std::string variable);
+	void setJSConfig(int64_t channel_id, std::string variable, std::string value);
 }
 
 void DoConfig(class Bot* bot, const std::vector<std::string> &param, int64_t channelID, const aegis::gateway::objects::message &message);

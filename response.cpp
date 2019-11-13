@@ -8,13 +8,10 @@
 #include "config.h"
 #include "stringops.h"
 #include "status.h"
-#include "js.h"
 
 void Bot::OutputThread() {
 	PCRE statsreply("Since (.+?), there have been (\\d+) modifications and (\\d+) questions. I have been alive for (.+?), I currently know (\\d+)");
 	PCRE url_sanitise("^https?://", true);
-
-	js = new JS(core.log);
 
 	while (!this->terminate) {
 		try {
@@ -61,16 +58,16 @@ void Bot::OutputThread() {
 								}
 							}
 							if (message != "*NOTHING*") {
+								/* Prevent training the bot with a @everyone or @here message
+								 * Note these are still stored as-is in the database as they arent harmful
+								 * on other mediums such as IRC.
+								 */
+								message = ReplaceString(message, "@everyone", "everyone");
+								message = ReplaceString(message, "@here", "here");
 								aegis::channel* channel = core.find_channel(done.front().channelID);
 								if (channel) {
-
-									if (message == "js-test") {
-										json j_channel;
-										js->run(done.front().channelID, done.front().jsonstore);
-									} else {
-										channel->create_message(message);
-										sent_messages++;
-									}
+									channel->create_message(message);
+									sent_messages++;
 								}
 							}
 						}

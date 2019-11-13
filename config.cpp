@@ -18,6 +18,36 @@ void DoConfigIgnore(class Bot* bot, std::stringstream &param, int64_t channelID,
 void DoConfigShow(class Bot* bot, int64_t channelID, const aegis::gateway::objects::user &issuer);
 void EmbedSimple(Bot* bot, const std::string &message, int64_t channelID);
 
+namespace settings {
+
+bool channelHasJS(int64_t channel_id)
+{
+	db::resultset r = db::query("SELECT id FROM infobot_discord_javascript WHERE id = ?", {std::to_string(channel_id)});
+	/* No javascript configuration for this channel */
+	if (r.size() == 0) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
+std::string getJSConfig(int64_t channel_id, std::string variable)
+{
+	db::resultset r = db::query("SELECT `" + variable + "` FROM infobot_discord_javascript WHERE id = ?", {std::to_string(channel_id)});
+	if (r.size() == 0) {
+		return "";
+	} else {
+		return r[0].find(variable)->second;
+	}
+}
+
+void setJSConfig(int64_t channel_id, std::string variable, std::string value)
+{
+	db::resultset r = db::query("UPDATE infobot_discord_javascript SET `" + variable + "` = '?' WHERE id = ?", {value, std::to_string(channel_id)});
+}
+
+};
+
 json getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 {
 	std::lock_guard<std::mutex> sql_lock(config_sql_mutex);

@@ -1,18 +1,24 @@
 #include "js.h"
+#include "bot.h"
+#include "config.h"
+#include "stringops.h"
 #include <thread>
 #include <streambuf>
 #include <fstream>
 #include <iostream>
+#include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
 
 extern int interrupt;
 bool terminate = false;
 int64_t current_context;
+aegis::guild* current_guild;
 static std::shared_ptr<spdlog::logger> c_apis_suck;
 std::unordered_map<int64_t, duk_context*> emptyref;
 std::unordered_map<int64_t, duk_context*> &contexts = emptyref;
 std::unordered_map<int64_t, size_t> total_allocated;
+static Bot* botref;
 
 void sandbox_fatal(void *udata, const char *msg);
 void sandbox_free(void *udata, void *ptr);
@@ -64,15 +70,70 @@ static void define_string(duk_context* ctx, const char *name, const char *value)
 static duk_ret_t js_print(duk_context *cx)
 {
 	int argc = duk_get_top(cx);
+	std::string output;
 	if (argc < 1)
 		return 0;
 	for (int i = 0; i < argc; i++)
-		c_apis_suck->warn("JS debuglog(): {}", duk_to_string(cx, i - argc));
+		output.append(duk_to_string(cx, i - argc)).append(" ");
+	c_apis_suck->debug("JS debuglog(): {}", trim(output));
 	return 0;
 }
 
-JS::JS(std::shared_ptr<spdlog::logger>& logger) : log(logger)
+static void duk_build_object(duk_context* cx, const std::map<std::string, std::string> &strings, const std::map<std::string, bool> &bools)
 {
+	duk_idx_t obj_idx = duk_push_bare_object(cx);
+	for (auto i = strings.begin(); i != strings.end(); ++i) {
+		duk_push_string(cx, i->first.c_str());
+		duk_push_string(cx, i->second.c_str());
+		duk_put_prop(cx, obj_idx);
+	}
+	for (auto i = bools.begin(); i != bools.end(); ++i) {
+		duk_push_string(cx, i->first.c_str());
+		duk_push_boolean(cx, i->second);
+		duk_put_prop(cx, obj_idx);
+	}
+}
+
+static duk_ret_t js_find_user(duk_context *cx)
+{
+	int argc = duk_get_top(cx);
+	if (argc != 1) {
+		c_apis_suck->warn("JS find_user(): incorrect number of parameters: {}", argc);
+		return 0;
+	}
+	if (!duk_is_string(cx, -1)) {
+		c_apis_suck->warn("JS find_user(): parameter is not a string");
+		return 0;
+	}
+	std::string id = duk_get_string(cx, -1);
+	c_apis_suck->debug("JS find_user(): {} on guild {}", id, current_guild->get_id());
+	aegis::user* u = current_guild->find_member(from_string<int64_t>(id, std::dec));
+	std::string nickname = u->get_name(current_guild->get_id());
+	if (u) {
+		duk_build_object(cx, {
+			{ "id", std::to_string(u->get_id()) },
+			{ "username", u->get_username() },
+			{ "discriminator", std::to_string(u->get_discriminator()) },
+			{ "avatar", u->get_avatar() },
+			{ "mention", u->get_mention() },
+			{ "full_name", u->get_full_name() },
+			{ "nickname", nickname }
+		}, {
+			{ "bot", u->is_bot() },
+			{ "mfa_enabled", u->is_mfa_enabled() }
+		});
+		return 1;
+	}
+	return 0;
+}
+
+JS::JS(std::shared_ptr<spdlog::logger>& logger, Bot* thisbot) : log(logger), bot(thisbot)
+{
+}
+
+bool JS::hasReplied()
+{
+	return false;
 }
 
 bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &vars)
@@ -80,34 +141,44 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	duk_int_t ret;
 	int i;
 
+	aegis::channel* c = bot->core.find_channel(channel_id);
+	if (!c) {
+		return false;
+	}
+	current_guild = &c->get_guild();
+
 	auto iter = code.find(channel_id);
 	duk_context* ctx;
 	program v;
 
 	c_apis_suck = log;
+	botref = bot;
 
 	if (iter == code.end()) {
 
 		log->info("create new context for channel {}", channel_id);
-		std::string name = "../js/" + std::to_string(channel_id) + ".js";
-		std::ifstream src(name);
-		std::string source((std::istreambuf_iterator<char>(src)), std::istreambuf_iterator<char>());
+		std::string source = settings::getJSConfig(channel_id, "script");
+		std::string name = std::to_string(channel_id) + ".js";
 		v.name = name;
 		v.source = source;
 
 		code[channel_id] = v;
 
 	} else {
+		/* TODO: Needs a reload flag */
 		v = code[channel_id];
 	}
 
 	current_context = channel_id;
 	total_allocated[channel_id] = 0;
+
+	auto t_start = std::chrono::high_resolution_clock::now();	
 	ctx = duk_create_heap(sandbox_alloc, sandbox_realloc, sandbox_free, NULL, sandbox_fatal);
 
 	duk_push_global_object(ctx);
 	define_number(ctx, "THIS_CHANNEL_ID", (duk_double_t)channel_id);
 	define_func(ctx, "debuglog", js_print, DUK_VARARGS);
+	define_func(ctx, "find_user", js_find_user, 1);
 	duk_pop(ctx);
 
 	duk_push_string(ctx, v.name.c_str());
@@ -121,6 +192,10 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 		log->error("couldnt compile: {}", lasterror);
 		return false;
 	}
+
+	auto t_end = std::chrono::high_resolution_clock::now();
+	double compile_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+	settings::setJSConfig(channel_id, "last_compile_ms", std::to_string(compile_time_ms));
 
 	if (/*!duk_get_global_string(ctx, "onmessage") ||*/ !duk_is_function(ctx, -1)) {
 		lasterror = "No onmessage function found";
@@ -140,9 +215,14 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 				interrupt = 1;
 			}
 		});
+		t_start = std::chrono::high_resolution_clock::now();
 		ret = duk_pcall(ctx, 0);
+		t_end = std::chrono::high_resolution_clock::now();
+		double exec_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+		settings::setJSConfig(channel_id, "last_exec_ms", std::to_string(exec_time_ms));
 		terminate = true;
 		monitor.join();
+		settings::setJSConfig(channel_id, "last_memory_max", std::to_string(total_allocated[channel_id]));
 	} while (false);
 
 	if (ret != DUK_EXEC_SUCCESS) {
@@ -154,9 +234,12 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 			lasterror = duk_safe_to_string(ctx, -1);
 		}
 		log->error("JS error: {}", lasterror);
+		settings::setJSConfig(channel_id, "last_error", lasterror);
 		return false;
+	} else {
+		settings::setJSConfig(channel_id, "last_error", "");
 	}
-	log->error("Executed JS on channel {}", channel_id);
+	log->debug("Executed JS on channel {}", channel_id);
 	//function return value
 	duk_pop(ctx);
 	duk_destroy_heap(ctx);

@@ -34,6 +34,8 @@ Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input
 	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
 
+	js = new JS(core.log, this);
+
 	thr_input = new std::thread(&Bot::InputThread, this);
 	thr_output = new std::thread(&Bot::OutputThread, this);
 	thr_userqueue = new std::thread(&Bot::SaveCachedUsersThread, this);
@@ -58,6 +60,8 @@ Bot::~Bot() {
 	DisposeThread(thr_output);
 	DisposeThread(thr_userqueue);
 	DisposeThread(thr_presence);
+
+	delete js;
 }
 
 std::string Bot::GetConfig(const std::string &name) {
@@ -174,7 +178,9 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 		/* Replace all mentions with raw nicknames */
 		bool mentioned = false;
 		std::string mentions_removed = message.msg.get_content();
+		std::vector<std::string> stringmentions;
 		for (auto m = message.msg.mentions.begin(); m != message.msg.mentions.end(); ++m) {
+			stringmentions.push_back(std::to_string(m->get()));
 			mentions_removed = ReplaceString(mentions_removed, std::string("<@") + std::to_string(m->get()) + ">", core.find_user(*m)->get_username());
 			if (*m == user.id) {
 				mentioned = true;
@@ -216,10 +222,26 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			chan["name"] = c.get_name();
 			chan["nsfw"] = c.nsfw();
 			chan["dm"] = c.is_dm();
-			chan["id"] = c.get_id();
+			json guild;
+			aegis::guild* g = core.find_guild(message.msg.get_guild_id());
+			if (g) {
+				guild["name"] = g->get_name();
+				guild["owner"] = std::to_string(g->get_owner());
+				guild["id"] = std::to_string(message.msg.get_guild_id());
+				guild["region"] = g->get_region();
+				guild["member_count"] = g->get_member_count();
+				query.jsonstore["guild"] = guild;
+			}
 			query.jsonstore["channel"] = chan;
 			aegis::gateway::objects::to_json(query.jsonstore["message"], message.msg);
 			aegis::gateway::objects::to_json(query.jsonstore["author"], message.msg.author);
+			query.jsonstore["message"]["id"] = std::to_string(message.msg.get_id());
+			query.jsonstore["message"]["nonce"] = std::to_string(message.msg.nonce);
+			query.jsonstore["mentions"] = stringmentions;
+			query.jsonstore["channel"]["id"] = std::to_string(c.get_id());
+			query.jsonstore["channel"]["guild_id"] = std::to_string(message.msg.get_guild_id().get());
+			query.jsonstore["author"]["id"] = std::to_string(message.msg.author.id);
+			query.jsonstore["author"]["guild_id"] = query.jsonstore["channel"]["guild_id"];
 			do {
 				std::lock_guard<std::mutex> input_lock(input_mutex);
 				inputs.push(query);

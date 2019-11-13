@@ -1,4 +1,5 @@
 #include "bot.h"
+#include "js.h"
 #include "includes.h"
 #include "readline.h"
 #include "queue.h"
@@ -91,28 +92,37 @@ void Bot::InputThread()
 								writeLine(sockfd, std::string(".RN ") + this->nickList[query.serverID][random(0, this->nickList[query.serverID].size() - 1)]);
 								readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							}
-							writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + query.message);
-							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
-							std::stringstream response(recvbuffer);
-							std::string text;
-							bool found;
-							response >> found;
-							std::getline(response, text);
-							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
-							set_core_nickname(recvbuffer);
 
-							if (found && text != "*NOTHING*") {
-								QueueItem resp;
-								resp.username = query.username;
-								resp.message = text;
-								resp.channelID = query.channelID;
-								resp.serverID = query.serverID;
-								resp.mentioned = query.mentioned;
-								resp.jsonstore = query.jsonstore;
-								do {
-									 std::lock_guard<std::mutex> output_lock(this->output_mutex);
-									 outputs.push(resp);
-								} while (false);
+							bool wake = true;
+							if (settings::channelHasJS(query.channelID)) {
+								js->run(query.channelID, query.jsonstore);
+								wake = !js->hasReplied();
+							}
+						       	if (wake) {
+
+								writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + query.message);
+								readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+								std::stringstream response(recvbuffer);
+								std::string text;
+								bool found;
+								response >> found;
+								std::getline(response, text);
+								readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+								set_core_nickname(recvbuffer);
+	
+								if (found && text != "*NOTHING*") {
+									QueueItem resp;
+									resp.username = query.username;
+									resp.message = text;
+									resp.channelID = query.channelID;
+									resp.serverID = query.serverID;
+									resp.mentioned = query.mentioned;
+									resp.jsonstore = query.jsonstore;
+									do {
+										 std::lock_guard<std::mutex> output_lock(this->output_mutex);
+										 outputs.push(resp);
+									} while (false);
+								}
 							}
 
 							std::this_thread::sleep_for(std::chrono::milliseconds(10));
