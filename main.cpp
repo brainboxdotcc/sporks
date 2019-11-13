@@ -304,8 +304,8 @@ int main(int argc, char** argv) {
 	while (true) {
 
 		/* Aegis core routes websocket events and does all the API magic */
-		aegis::core aegis_bot(aegis::create_bot_t().log_level(spdlog::level::trace).token(token));
-		aegis_bot.wsdbg = true;
+		aegis::core aegis_bot(aegis::create_bot_t().file_logging(true).log_level(spdlog::level::trace).token(token));
+		aegis_bot.wsdbg = false;
 
 		/* Bot class handles application logic */
 		Bot client(dev, aegis_bot);
