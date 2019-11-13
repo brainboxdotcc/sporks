@@ -62,8 +62,8 @@ void Bot::OutputThread() {
 								 * Note these are still stored as-is in the database as they arent harmful
 								 * on other mediums such as IRC.
 								 */
-								message = ReplaceString(message, "@everyone", "everyone");
-								message = ReplaceString(message, "@here", "here");
+								message = ReplaceString(message, "@everyone", "@‎everyone");
+								message = ReplaceString(message, "@here", "@‎here");
 								aegis::channel* channel = core.find_channel(done.front().channelID);
 								if (channel) {
 									channel->create_message(message);

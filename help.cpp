@@ -52,6 +52,6 @@ void GetHelp(Bot* bot, const std::string &section, int64_t channelID, const std:
 			bot->sent_messages++;
 		}
 	} else {
-		channel->create_message("", embed_json);
+		channel->create_message_embed("", embed_json);
 	}
 }
