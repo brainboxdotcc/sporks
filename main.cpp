@@ -247,6 +247,8 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 				inputs.push(query);
 			} while (false);
 		}
+
+		core.log->flush();
 	}
 }
 
