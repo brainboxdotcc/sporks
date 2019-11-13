@@ -242,7 +242,7 @@ JS::JS(std::shared_ptr<spdlog::logger>& logger, Bot* thisbot) : log(logger), bot
 
 bool JS::hasReplied()
 {
-	return false;
+	return message_total > 0;
 }
 
 bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &vars)
