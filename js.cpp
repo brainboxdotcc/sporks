@@ -353,6 +353,10 @@ bool JS::hasReplied()
 	return message_total > 0;
 }
 
+std::string CleanErrorMessage(const std::string &error) {
+	return ReplaceString(error, "    at [anon] (duk_js_var.c:1234) internal\n", "");
+}
+
 bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &vars)
 {
 	duk_int_t ret;
@@ -419,7 +423,7 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	if (duk_pcompile_string_filename(ctx, 0, source.c_str()) != 0) {
 		lasterror = duk_safe_to_string(ctx, -1);
 		log->error("couldnt compile: {}", lasterror);
-		settings::setJSConfig(channel_id, "last_error", lasterror);
+		settings::setJSConfig(channel_id, "last_error", CleanErrorMessage(lasterror));
 		auto t_end = std::chrono::high_resolution_clock::now();
 		double compile_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
 		settings::setJSConfig(channel_id, "last_compile_ms", std::to_string(compile_time_ms));
@@ -434,7 +438,7 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	if (!duk_is_function(ctx, -1)) {
 		lasterror = "Top of stack is not a function";
 		log->error("JS error: {}", lasterror);
-		settings::setJSConfig(channel_id, "last_error", lasterror);
+		settings::setJSConfig(channel_id, "last_error", CleanErrorMessage(lasterror));
 		duk_destroy_heap(ctx);
 		return false;
 	}
@@ -458,7 +462,7 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 			lasterror = duk_safe_to_string(ctx, -1);
 		}
 		log->error("JS error: {}", lasterror);
-		settings::setJSConfig(channel_id, "last_error", lasterror);
+		settings::setJSConfig(channel_id, "last_error", CleanErrorMessage(lasterror));
 		duk_destroy_heap(ctx);
 		return false;
 	} else {
