@@ -185,7 +185,6 @@ static duk_ret_t js_find_user(duk_context *cx)
 		return 0;
 	}
 	std::string id = duk_get_string(cx, -1);
-	c_apis_suck->debug("JS find_user(): {} on guild {}", id, current_guild->get_id());
 	aegis::user* u = current_guild->find_member(from_string<int64_t>(id, std::dec));
 	if (u) {
 		std::string nickname = u->get_name(current_guild->get_id());
@@ -206,6 +205,42 @@ static duk_ret_t js_find_user(duk_context *cx)
 	return 0;
 }
 
+static duk_ret_t js_find_username(duk_context *cx)
+{
+	int argc = duk_get_top(cx);
+	if (argc != 1) {
+		c_apis_suck->warn("JS find_username(): incorrect number of parameters: {}", argc);
+		return 0;
+	}
+	if (!duk_is_string(cx, -1)) {
+		c_apis_suck->warn("JS find_username(): parameter is not a string");
+		return 0;
+	}
+	std::string username = lowercase(std::string(duk_get_string(cx, -1)));
+	/* Yeah this sucks and is O(n). Until aegis provides a better way of looking up a guild member by
+	 * anything other than snowflake id, this will have to do
+	 */
+	for (auto u = current_guild->get_members().begin(); u != current_guild->get_members().end(); ++u) {
+		if (lowercase(u->second->get_full_name()) == username) {
+			std::string nickname = u->second->get_name(current_guild->get_id());
+			duk_build_object(cx, {
+				{ "id", std::to_string(u->second->get_id()) },
+				{ "username", u->second->get_username() },
+				{ "discriminator", std::to_string(u->second->get_discriminator()) },
+				{ "avatar", u->second->get_avatar() },
+				{ "mention", u->second->get_mention() },
+				{ "full_name", u->second->get_full_name() },
+				{ "nickname", nickname }
+			}, {
+				{ "bot", u->second->is_bot() },
+				{ "mfa_enabled", u->second->is_mfa_enabled() }
+			});
+			return 1;
+		}
+	}
+	return 0;
+}
+
 static duk_ret_t js_find_channel(duk_context *cx)
 {
 	int argc = duk_get_top(cx);
@@ -218,7 +253,6 @@ static duk_ret_t js_find_channel(duk_context *cx)
 		return 0;
 	}
 	std::string id = duk_get_string(cx, -1);
-	c_apis_suck->debug("JS find_channel(): {} on guild {}", id, current_guild->get_id());
 	aegis::channel* c = current_guild->find_channel(from_string<int64_t>(id, std::dec));
 	if (c) {
 		duk_build_object(cx, {
@@ -232,6 +266,80 @@ static duk_ret_t js_find_channel(duk_context *cx)
 			{ "nsfw", c->nsfw() }
 		});
 		return 1;
+	}
+	return 0;
+}
+
+static duk_ret_t js_load(duk_context *cx)
+{
+	int argc = duk_get_top(cx);
+	if (argc != 1) {
+		c_apis_suck->warn("JS load(): incorrect number of parameters: {}", argc);
+		return 0;
+	}
+	if (!duk_is_string(cx, -1)) {
+		c_apis_suck->warn("JS load(): parameter is not a string");
+		return 0;
+	}
+	std::string keyname = duk_get_string(cx, -1);
+	std::string guild_id = std::to_string(current_guild->get_id());
+	db::resultset rs = db::query("SELECT value FROM infobot_javascript_kv WHERE guild_id = ? AND keyname = '?'", {guild_id, keyname});
+	if (rs.size() == 1 && rs[0].find("value") != rs[0].end()) {
+		duk_push_string(cx, rs[0].find("value")->second.c_str());
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+static duk_ret_t js_save(duk_context *cx)
+{
+	int argc = duk_get_top(cx);
+	if (argc != 2) {
+		c_apis_suck->warn("JS save(): incorrect number of parameters: {}", argc);
+		return 0;
+	}
+	if (!duk_is_string(cx, 0)) {
+		c_apis_suck->warn("JS save(): first parameter is not a string");
+		return 0;
+	}
+	if (!duk_is_string(cx, -1)) {
+		c_apis_suck->warn("JS save(): second parameter is not a string");
+		return 0;
+	}
+	std::string keyname = duk_get_string(cx, 0);
+	std::string value = duk_get_string(cx, -1);
+	std::string guild_id = std::to_string(current_guild->get_id());
+	db::query("INSERT INTO infobot_javascript_kv (guild_id, keyname, value) VALUES(?,'?','?') ON DUPLICATE KEY UPDATE value ='?'", {guild_id, keyname, value, value});
+	return 0;
+}
+
+static duk_ret_t js_find_channelname(duk_context *cx)
+{
+	int argc = duk_get_top(cx);
+	if (argc != 1) {
+		c_apis_suck->warn("JS find_channelname(): incorrect number of parameters: {}", argc);
+		return 0;
+	}
+	if (!duk_is_string(cx, -1)) {
+		c_apis_suck->warn("JS find_channelname(): parameter is not a string");
+		return 0;
+	}
+	std::string channelname = lowercase(std::string(duk_get_string(cx, -1)));
+	for (auto c = current_guild->get_channels().begin(); c != current_guild->get_channels().end(); ++c) {
+		if (lowercase(c->second->get_name()) == channelname) {
+			duk_build_object(cx, {
+				{ "id", std::to_string(c->second->get_id()) },
+				{ "name", c->second->get_name() },
+				{ "type", std::to_string(c->second->get_type()) },
+				{ "guild_id", std::to_string(c->second->get_guild_id()) },
+				{ "parent_id", std::to_string(c->second->get_parent_id()) }
+			}, {
+				{ "dm", c->second->is_dm() },
+				{ "nsfw", c->second->nsfw() }
+			});
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -296,6 +404,10 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	define_func(ctx, "find_channel", js_find_channel, 1);
 	define_func(ctx, "create_message", js_create_message, DUK_VARARGS);
 	define_func(ctx, "create_embed", js_create_embed, 2);
+	define_func(ctx, "find_username", js_find_username, 1);
+	define_func(ctx, "find_channelname", js_find_channelname, 1);
+	define_func(ctx, "save", js_save, 2);
+	define_func(ctx, "load", js_load, 1);
 	duk_pop(ctx);
 
 	duk_push_string(ctx, v.name.c_str());
