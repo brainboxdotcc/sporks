@@ -30,33 +30,34 @@ $totals = mysqli_fetch_object(mysqli_query($conn, "SELECT SUM(user_count) AS use
 $q = mysqli_query($conn, "SELECT * FROM infobot_discord_list_sites");
 while ($site = mysqli_fetch_object($q)) {
 	$payload = new stdClass;
-	$payload->{$site->server_count_field} = $totals->servers;
+	$payload->{$site->server_count_field} = $totals->servers + 0;
 	if (!empty($site->user_count_field)) {
-		$payload->{$site->user_count_field} = $totals->users;
+		$payload->{$site->user_count_field} = $totals->users + 0;
 	}
 	if (!empty($site->shard_count_field)) {
-		$payload->{$site->shard_count_field} = $totals->shards;
+		$payload->{$site->shard_count_field} = $totals->shards + 0;
 	}
         if (!empty($site->sent_message_count_field)) {
-                $payload->{$site->sent_message_count_field} = $totals->sent_messages;
+                $payload->{$site->sent_message_count_field} = $totals->sent_messages + 0;
         }
         if (!empty($site->received_message_count_field)) {
-                $payload->{$site->received_message_count_field} = $totals->received_messages;
+                $payload->{$site->received_message_count_field} = $totals->received_messages + 0;
         }
         if (!empty($site->ram_used_field)) {
                 $payload->{$site->ram_used_field} = $totals->memory_usage *1024;
 	}
 	if (!empty($site->channels_field)) {
-		$payload->{$site->channels_field} = $totals->channels;
+		$payload->{$site->channels_field} = $totals->channels + 0;
 	}
 	$json_payload = json_encode($payload);
 	$response = @file_get_contents($site->url, false, stream_context_create([
 	'http' => [
 			'method' => 'POST',
+			'ignore_errors' => true,
 			'header'  => "Content-Type: application/json\r\nAuthorization: " . $site->authorization,
 			'content' => ($site->post_type == 'json' ? $json_payload : $payload), 
 		]
 	]));
-	echo $site->url . " => " . $response . "\n";
+	echo $site->url . " => " . $response . " (" . $http_response_header[0] . ")\n";
 }
 

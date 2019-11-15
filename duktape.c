@@ -4323,10 +4323,10 @@ DUK_INTERNAL_DECL void duk_js_compile(duk_hthread *thr, const duk_uint8_t *src_b
 #define DUK_RE_MAX_ATOM_COPIES             1000
 
 /* regexp compilation limits */
-#define DUK_RE_COMPILE_TOKEN_LIMIT         100000000L   /* 1e8 */
+#define DUK_RE_COMPILE_TOKEN_LIMIT         1000L   /* 1e8 */
 
 /* regexp execution limits */
-#define DUK_RE_EXECUTE_STEPS_LIMIT         1000000000L  /* 1e9 */
+#define DUK_RE_EXECUTE_STEPS_LIMIT         10000L  /* 1e9 */
 
 /* regexp opcodes */
 #define DUK_REOP_MATCH                     1
