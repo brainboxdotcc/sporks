@@ -25,6 +25,7 @@ const uint32_t message_limit = 5;
 
 uint32_t message_total = 0;
 extern timeval t_script_start;
+extern timeval t_script_now;
 
 void sandbox_fatal(void *udata, const char *msg);
 void sandbox_free(void *udata, void *ptr);
@@ -443,11 +444,9 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 		return false;
 	}
 
-	struct timeval t_script_now;
 	interrupt = 0;
 	gettimeofday(&t_script_start, nullptr);
 	ret = duk_pcall(ctx, 0);
-	gettimeofday(&t_script_now, NULL);
 
 	double exec_time_ms = (double)((t_script_now.tv_sec - t_script_start.tv_sec) * 1000000 + t_script_now.tv_usec - t_script_start.tv_usec) / 1000;
 	settings::setJSConfig(channel_id, "last_exec_ms", std::to_string(exec_time_ms));
