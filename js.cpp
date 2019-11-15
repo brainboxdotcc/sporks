@@ -443,13 +443,13 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 		return false;
 	}
 
+	struct timeval t_script_now;
 	interrupt = 0;
-	t_start = std::chrono::high_resolution_clock::now();
 	gettimeofday(&t_script_start, nullptr);
 	ret = duk_pcall(ctx, 0);
-	t_end = std::chrono::high_resolution_clock::now();
+	gettimeofday(&t_script_now, NULL);
 
-	double exec_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+	double exec_time_ms = (double)((t_script_now.tv_sec - t_script_start.tv_sec) * 1000000 + t_script_now.tv_usec - t_script_start.tv_usec) / 1000;
 	settings::setJSConfig(channel_id, "last_exec_ms", std::to_string(exec_time_ms));
 	settings::setJSConfig(channel_id, "last_memory_max", std::to_string(total_allocated[channel_id]));
 
