@@ -13,7 +13,7 @@ while (true) {
 	$q = mysqli_query($conn, "SELECT * FROM infobot_web_requests WHERE statuscode = '000'");
 
 	while ($rs = mysqli_fetch_object($q)) {
-		if (preg_match('/^{.+?}$/im', $rs->postdata) && $rs->type == 'POST') {
+		if (preg_match('/^\{.+?\}$/im', $rs->postdata) && $rs->type == 'POST') {
 			$mt = "application/json";
 		} else {
 			$mt = "application/x-www-form-urlencoded";
