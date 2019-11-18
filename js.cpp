@@ -200,6 +200,10 @@ static duk_ret_t js_get(duk_context *cx)
 		c_apis_suck->warn("JS get(): incorrect number of parameters: {}", argc);
 		return 0;
 	}
+	if (!duk_is_string(cx, 0) || !duk_is_string(cx, -1)) {
+		c_apis_suck->warn("JS post(): parameters are not strings!");
+		return 0;
+	}
 	std::string url = duk_get_string(cx, 0);
 	std::string callback = duk_get_string(cx, -1);
 	do_web_request("GET", url, callback);
@@ -211,6 +215,10 @@ static duk_ret_t js_post(duk_context *cx)
 	int argc = duk_get_top(cx);
 	if (argc != 3) {
 		c_apis_suck->warn("JS post(): incorrect number of parameters: {}", argc);
+		return 0;
+	}
+	if (!duk_is_string(cx, 0) || !duk_is_string(cx, -1) || !duk_is_string(cx, -2)) {
+		c_apis_suck->warn("JS post(): parameters are not strings!");
 		return 0;
 	}
 	std::string url = duk_get_string(cx, 0);
