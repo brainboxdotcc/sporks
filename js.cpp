@@ -54,6 +54,10 @@ struct alloc_hdr {
 
 static size_t max_allocated = 256 * 1024;  /* 256kB sandbox */
 
+
+class ExitException : public std::exception {
+};
+
 static void define_func(duk_context* ctx, const std::string &name, duk_c_function func, int nargs)
 {
 	duk_push_string(ctx, name.c_str());
@@ -171,6 +175,48 @@ static duk_ret_t js_create_embed(duk_context *cx)
 	} else {
 		c_apis_suck->warn("JS create_message(): invalid channel id: {}", id);
 	}
+	return 0;
+}
+
+void do_web_request(const std::string &reqtype, const std::string &url, const std::string &callback, const std::string &postdata = "")
+{
+	
+	db::resultset rs = db::query("SELECT count(guild_id) AS count1 FROM infobot_web_requests WHERE guild_id = ?", {std::to_string(current_guild->get_id())});
+	if (rs[0]["count1"] == "0") {
+		db::resultset rs = db::query("SELECT count(channel_id) AS count2 FROM infobot_web_requests WHERE guild_id = ?", {std::to_string(current_context)});
+		if (rs[0]["count2"] == "0") {
+			c_apis_suck->debug("JS web request created on guild={}/channel={}: {}", current_guild->get_id(), current_context, url);
+			db::resultset rs = db::query("INSERT INTO infobot_web_requests (channel_id, guild_id, url, type, postdata, callback) VALUES('?','?','?','?','?','?')",
+					{std::to_string(current_context), std::to_string(current_guild->get_id()), url, reqtype, postdata, callback});
+		}
+	}
+}
+
+static duk_ret_t js_get(duk_context *cx)
+{
+	/* url, callback */
+	int argc = duk_get_top(cx);
+	if (argc != 2) {
+		c_apis_suck->warn("JS get(): incorrect number of parameters: {}", argc);
+		return 0;
+	}
+	std::string url = duk_get_string(cx, 0);
+	std::string callback = duk_get_string(cx, -1);
+	do_web_request("GET", url, callback);
+	return 0;
+}
+
+static duk_ret_t js_post(duk_context *cx)
+{
+	int argc = duk_get_top(cx);
+	if (argc != 3) {
+		c_apis_suck->warn("JS post(): incorrect number of parameters: {}", argc);
+		return 0;
+	}
+	std::string url = duk_get_string(cx, 0);
+	std::string postdata = duk_get_string(cx, -1);
+	std::string callback = duk_get_string(cx, -2);
+	do_web_request("POST", url, callback, postdata);
 	return 0;
 }
 
@@ -315,6 +361,15 @@ static duk_ret_t js_save(duk_context *cx)
 	return 0;
 }
 
+static duk_ret_t js_exit(duk_context *cx)
+{
+	int argc = duk_get_top(cx);
+	if (argc != 1) {
+		c_apis_suck->warn("JS exit(): incorrect number of parameters: {}", argc);
+	}
+	throw ExitException();
+}
+
 static duk_ret_t js_find_channelname(duk_context *cx)
 {
 	int argc = duk_get_top(cx);
@@ -347,6 +402,31 @@ static duk_ret_t js_find_channelname(duk_context *cx)
 
 JS::JS(std::shared_ptr<spdlog::logger>& logger, Bot* thisbot) : log(logger), bot(thisbot)
 {
+	terminate = false;
+	web_request_watcher = new std::thread(&JS::WebRequestWatch, this);
+}
+
+void JS::WebRequestWatch()
+{
+	while (!this->terminate)
+	{
+		db::resultset rs = db::query("SELECT * FROM infobot_web_requests WHERE statuscode != '000'", {});
+		for (auto i = rs.begin(); i != rs.end(); ++i) {
+			c_apis_suck->debug("JS web request response received for url {}", (*i)["url"]);
+			run(from_string<int64_t>((*i)["channel_id"], std::dec), {}, (*i)["callback"], (*i)["returndata"]);
+			db::query("DELETE FROM infobot_web_requests WHERE channel_id = ?", {(*i)["channel_id"]});
+		}
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+	}
+}
+
+JS::~JS()
+{
+	terminate = true;
+	if (web_request_watcher->joinable()) {
+		web_request_watcher->join();
+	}
+	delete web_request_watcher;
 }
 
 bool JS::hasReplied()
@@ -358,13 +438,15 @@ std::string CleanErrorMessage(const std::string &error) {
 	return ReplaceString(error, "    at [anon] (duk_js_var.c:1234) internal\n", "");
 }
 
-bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &vars)
+bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &vars, const std::string &callback_fn, const std::string &callback_content)
 {
+	std::lock_guard<std::mutex> input_lock(this->jsmutex);
 	duk_int_t ret;
 	int i;
 
 	aegis::channel* c = bot->core.find_channel(channel_id);
 	if (!c) {
+		log->error("JS::run() Can't find channel {}", channel_id);
 		return false;
 	}
 	current_guild = &c->get_guild();
@@ -413,6 +495,12 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	define_func(ctx, "find_channelname", js_find_channelname, 1);
 	define_func(ctx, "save", js_save, 2);
 	define_func(ctx, "load", js_load, 1);
+	define_func(ctx, "get", js_get, 2);
+	define_func(ctx, "post", js_post, 3);
+	define_func(ctx, "exit", js_exit, 1);
+	if (!callback_content.empty()) {
+		define_string(ctx, "WCB_CONTENT", callback_content);
+	}
 	duk_pop(ctx);
 
 	duk_push_string(ctx, v.name.c_str());
@@ -421,6 +509,13 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 		source += i->first + "=" + i->second.dump() + ";";
 	}
 	source += ";" + v.source;
+
+	if (!callback_fn.empty()) {
+		source += ";" + callback_fn + "(WCB_CONTENT);exit(0);" + v.source;
+	} else {
+		source += ";" + v.source;
+	}
+
 	if (duk_pcompile_string_filename(ctx, 0, source.c_str()) != 0) {
 		lasterror = duk_safe_to_string(ctx, -1);
 		log->error("couldnt compile: {}", lasterror);
@@ -445,9 +540,17 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	}
 
 	interrupt = 0;
-	gettimeofday(&t_script_start, nullptr);
-	ret = duk_pcall(ctx, 0);
-
+	ret = DUK_EXEC_SUCCESS;
+	bool exited = false;
+	try {
+		gettimeofday(&t_script_start, nullptr);
+		ret = duk_pcall(ctx, 0);
+	}
+	catch (const ExitException &e) {
+		/* Graceful exit from javascript via an exception for the exit() function */
+		ret = DUK_EXEC_SUCCESS;
+		exited = true;
+	}
 	double exec_time_ms = (double)((t_script_now.tv_sec - t_script_start.tv_sec) * 1000000 + t_script_now.tv_usec - t_script_start.tv_usec) / 1000;
 	settings::setJSConfig(channel_id, "last_exec_ms", std::to_string(exec_time_ms));
 	settings::setJSConfig(channel_id, "last_memory_max", std::to_string(total_allocated[channel_id]));
@@ -468,7 +571,9 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 		settings::setJSConfig(channel_id, "last_error", "");
 	}
 	log->debug("Executed JS on channel {}", channel_id);
-	duk_pop(ctx);
+	if (!exited) {
+		duk_pop(ctx);
+	}
 	duk_destroy_heap(ctx);
 	return true;
 }
