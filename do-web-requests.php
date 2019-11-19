@@ -22,6 +22,7 @@ while (true) {
 			/* Prevent access to local files, stream context may be ignored. FU PHP. */
 			$response = FALSE;
 		}
+		/* Maximum of 1 meg actually retrieved, truncated after this */
 		$response = @file_get_contents($rs->url, false, stream_context_create([
 		'http' => [
 				'method' => $rs->type,
@@ -29,7 +30,7 @@ while (true) {
 				'header'  => "Content-Type: $mt",
 				'content' => $rs->postdata,
 			]
-		]));
+		]), 0, 1024*1024);
 		if ($response === FALSE) {
 			mysqli_query($conn, "UPDATE infobot_web_requests SET statuscode = '999', returndata = '' WHERE channel_id = ".$rs->channel_id);
 			echo $rs->url . " => Connection failure\n";
