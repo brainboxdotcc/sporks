@@ -18,6 +18,10 @@ while (true) {
 		} else {
 			$mt = "application/x-www-form-urlencoded";
 		}
+		if (!preg_match("/^http:\/\/i/", $rs->url) && !preg_match("/^https:\/\/i/", $rs->url)) {
+			/* Prevent access to local files, stream context may be ignored. FU PHP. */
+			$response = FALSE;
+		}
 		$response = @file_get_contents($rs->url, false, stream_context_create([
 		'http' => [
 				'method' => $rs->type,
