@@ -1,14 +1,14 @@
 {
     "title": ":user: configuration help",
     "color": 16767488,
-    "url": "https:\/\/www.botnix.org",
+    "url": "https://sporks.gg/",
     "thumbnail": {
-        "url": "https:\/\/www.botnix.org\/images\/botnix.png"
+        "url": "https://www.sporks.gg/images/sporks_2019.png"
     },
     "footer": {
-        "link": "https;\/\/www.botnix.org\/",
-        "text": "Powered by Botnix 2.0 with the infobot and discord modules",
-        "icon_url": "https:\/\/www.botnix.org\/images\/botnix.png"
+        "link": "https://sporks.gg",
+        "text": "Powered by Sporks!",
+        "icon_url": "https://www.sporks.gg/images/sporks_2019.png"
     },
     "fields": [
         {

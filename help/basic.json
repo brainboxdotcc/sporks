@@ -1,14 +1,14 @@
 {
     "title": ":user: help",
     "color": 16767488,
-    "url": "https:\/\/sporks.gg",
+    "url": "https://sporks.gg",
     "thumbnail": {
-        "url": "https:\/\/www.botnix.org\/images\/botnix.png"
+        "url": "https://www.sporks.gg/images/sporks_2019.png"
     },
     "footer": {
-        "link": "https;\/\/www.botnix.org\/",
-        "text": "Powered by Botnix 2.0 with the infobot and discord modules",
-        "icon_url": "https:\/\/www.botnix.org\/images\/botnix.png"
+        "link": "https://sporks.gg/",
+        "text": "Powered by Sporks!",
+        "icon_url": "https://www.sporks.gg/images/sporks_2019.png"
     },
     "fields": [
         {
@@ -18,7 +18,7 @@
         },
         {
             "name": "Giving :user: amnesia",
-            "value": "You can make the bot forget a phrase with\n                                                        ```@:user: forget <keyword>```\n                                                        If the bot already knows a fact, you will usually have to tell it to forget the fact, before it will accept a new one.\n                                                ",
+            "value": "You can make the bot forget a phrase with\n```@:user: forget <keyword>```\nIf the bot already knows a fact, you will usually have to tell it to forget the fact, before it will accept a new one.\n                                                ",
             "inline": false
         },
 	{

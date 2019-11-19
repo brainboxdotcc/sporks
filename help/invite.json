@@ -1,16 +1,17 @@
 {
-    "author": {
-        "name": "Want :user: on your server?"
-    },
-    "title": "Click here for the invite link",
-    "color": 16767488,
-    "thumbnail": {
-        "url": "https:\/\/www.botnix.org\/images\/botnix.png"
-    },
-    "footer": {
-        "link": "https;\/\/www.botnix.org\/",
-        "text": "Requested by :author:",
-        "icon_url": "https:\/\/www.botnix.org\/images\/botnix.png"
-    },
-    "url": "https:\/\/discordapp.com\/oauth2\/authorize?client_id=:id:&scope=bot+identify&permissions=379968&redirect_uri=https%3A%2F%2Fsporks.gg%2F&response_type=code"
+	"author": {
+		"name": "Want :user: on your server?"
+	},
+	"title": "Click here for the invite link",
+	"color": 16767488,
+	"thumbnail": {
+		"url": "https://www.sporks.gg/images/sporks_2019.png"
+	},
+	"footer": {
+		"link": "https://sporks.gg",
+		"text": "Requested by :author:",
+		"icon_url": "https://www.sporks.gg/images/sporks_2019.png"
+	},
+	"url": "https://sporks.gg/",
+	"description": ""
 }
