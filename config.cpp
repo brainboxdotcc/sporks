@@ -197,10 +197,6 @@ void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, co
 
 	bool talkative = (variable == "talkative" ? state : settings::IsTalkative(csettings));
 	bool learningdisabled = (variable == "learn" ? !state : settings::IsLearningDisabled(csettings));
-	bool outstate = state;
-	if (variable == "learn") {
-		outstate = !state;
-	}
 
 	json j;
 	j["talkative"] = talkative;
@@ -209,7 +205,7 @@ void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, co
 
 	db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {j.dump(), std::to_string(channelID)});
 
-	EmbedSimple(bot, "Setting **'" + variable + "'** " + (outstate ? "enabled" : "disabled") + " on <#" + std::to_string(channelID) + ">", channelID);
+	EmbedSimple(bot, "Setting **'" + variable + "'** " + (state ? "enabled" : "disabled") + " on <#" + std::to_string(channelID) + ">", channelID);
 }
 
 std::string ToJSON(std::vector<uint64_t> list) {
