@@ -56,7 +56,7 @@ while (true) {
 			curl_setopt($ch, CURLOPT_BUFFERSIZE, 128); // more progress info
 			curl_setopt($ch, CURLOPT_NOPROGRESS, false);
 			curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function($curlhandle, $DownloadSize, $Downloaded, $UploadSize, $Uploaded) {
-				return ($Downloaded > (1024 * 1024)) ? 1 : 0;
+				return ($Downloaded > (1024 * 1024) || ($Uploaded > 1024 * 256)) ? 1 : 0;
 			});
 	
 			$response = curl_exec($ch);
