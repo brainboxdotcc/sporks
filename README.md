@@ -1,7 +1,7 @@
 # botnix-discord-cpp
 Botnix Discord Connector, C++ verison using Aegis.cpp
 
-![Discord](https://img.shields.io/discord/537746810471448576?label=discord) ![CircleCI](https://img.shields.io/circleci/build/github/braindigitalis/botnix-discord-cpp/master) ![Dashboard](https://img.shields.io/website?down_color=red&label=dashboard&url=https%3A%2F%2Fsporks.gg)
+![Discord](https://img.shields.io/discord/537746810471448576?label=discord) ![CircleCI](https://img.shields.io/circleci/build/github/braindigitalis/botnix-discord-cpp/master) ![Dashboard](https://img.shields.io/website?down_color=red&label=dashboard&url=https%3A%2F%2Fsporks.gg) ![Backend](https://img.shields.io/uptimerobot/status/m783839323-076cf6fcf6d447189eef61da ?label=backend)
  
 ## Building
 
