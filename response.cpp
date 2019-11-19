@@ -65,6 +65,8 @@ void Bot::OutputThread() {
 								 */
 								message = ReplaceString(message, "@everyone", "@‎everyone");
 								message = ReplaceString(message, "@here", "@‎here");
+								message = ReplaceString(message, "<br>", "\n");
+								message = ReplaceString(message, "<s>", "|");
 								aegis::channel* channel = core.find_channel(done.front().channelID);
 								if (channel) {
 									std::vector<std::string> embedmatches;
