@@ -23,21 +23,39 @@ while (true) {
 			$response = FALSE;
 		}
 		/* Maximum of 1 meg actually retrieved, truncated after this */
-		$response = @file_get_contents($rs->url, false, stream_context_create([
-		'http' => [
-				'method' => $rs->type,
-				'ignore_errors' => true,
-				'header'  => "Content-Type: $mt",
-				'content' => $rs->postdata,
-			]
-		]), 0, 1024*1024);
+		$headers = ['User-Agent: Sporks/1.2', 'Content-Type: ' . $mt];
+
+		$ch = curl_init($rs->url);
+		curl_setopt_array($ch, [
+			CURLOPT_HTTP_VERSION    =>      CURL_HTTP_VERSION_1_1,
+			CURLOPT_FOLLOWLOCATION  =>      1,
+			CURLOPT_HEADER	 	=>      0,
+			CURLOPT_RETURNTRANSFER  =>      1,
+			CURLOPT_CUSTOMREQUEST   =>      $rs->type,
+			CURLOPT_HTTPHEADER      =>      $headers,
+		]);
+		if ($rs->type == "POST") {
+			curl_setopt_array($ch, [
+				CURLOPT_POST		=> 1,
+				CURLOPT_POSTFIELDS	=> $rs->postdata,
+			]);
+		}
+		curl_setopt($ch, CURLOPT_BUFFERSIZE, 128); // more progress info
+		curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+		curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function($DownloadSize, $Downloaded, $UploadSize, $Uploaded) {
+			return ($Downloaded > (1024 * 1024)) ? 1 : 0;
+		});
+
+		$response = curl_exec($ch);
+		$code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+
 		if ($response === FALSE) {
 			mysqli_query($conn, "UPDATE infobot_web_requests SET statuscode = '999', returndata = '' WHERE channel_id = ".$rs->channel_id);
 			echo $rs->url . " => Connection failure\n";
 		} else {
 			list($proto, $status, $msg) = explode(' ', $http_response_header[0]);
-			mysqli_query($conn, "UPDATE infobot_web_requests SET statuscode = '".mysqli_real_escape_string($conn, $status)."', returndata = '".mysqli_real_escape_string($conn, $response)."' WHERE channel_id = ".$rs->channel_id);
-			echo $rs->url . " => " . $http_response_header[0] . "\n";
+			mysqli_query($conn, "UPDATE infobot_web_requests SET statuscode = '$code', returndata = '".mysqli_real_escape_string($conn, $response)."' WHERE channel_id = ".$rs->channel_id);
+			echo $rs->url . " => $code\n";
 		}
 	}
 
