@@ -409,6 +409,23 @@ static duk_ret_t js_load(duk_context *cx)
 	}
 }
 
+static duk_ret_t js_delete(duk_context *cx)
+{
+	int argc = duk_get_top(cx);
+	if (argc != 1) {
+		c_apis_suck->warn("JS delete(): incorrect number of parameters: {}", argc);
+		return 0;
+	}
+	if (!duk_is_string(cx, -1)) {
+		c_apis_suck->warn("JS delete(): parameter is not a string");
+		return 0;
+	}
+	std::string keyname = duk_get_string(cx, -1);
+	std::string guild_id = std::to_string(current_guild->get_id());
+	db::resultset rs = db::query("DELETE FROM infobot_javascript_kv WHERE guild_id = ? AND keyname = '?'", {guild_id, keyname});
+	return 0;
+}
+
 static duk_ret_t js_save(duk_context *cx)
 {
 	int argc = duk_get_top(cx);
@@ -564,6 +581,7 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	define_func(ctx, "find_channelname", js_find_channelname, 1);
 	define_func(ctx, "save", js_save, 2);
 	define_func(ctx, "load", js_load, 1);
+	define_func(ctx, "delete", js_delete, 1);
 	define_func(ctx, "get", js_get, 2);
 	define_func(ctx, "post", js_post, 3);
 	define_func(ctx, "exit", js_exit, 1);
