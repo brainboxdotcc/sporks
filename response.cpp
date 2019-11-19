@@ -12,6 +12,7 @@
 void Bot::OutputThread() {
 	PCRE statsreply("Since (.+?), there have been (\\d+) modifications and (\\d+) questions. I have been alive for (.+?), I currently know (\\d+)");
 	PCRE url_sanitise("^https?://", true);
+	PCRE embed_reply("\\s*<embed:(.+)>\\s*$", true);
 
 	while (!this->terminate) {
 		try {
@@ -66,7 +67,19 @@ void Bot::OutputThread() {
 								message = ReplaceString(message, "@here", "@‎here");
 								aegis::channel* channel = core.find_channel(done.front().channelID);
 								if (channel) {
-									channel->create_message(message);
+									std::vector<std::string> embedmatches;
+									if (embed_reply.Match(message, embedmatches)) {
+										json embed_json;
+										try {
+											embed_json = json::parse(embedmatches[1]);
+											channel->create_message_embed("", embed_json);
+										}
+										catch (const std::exception &e) {
+											channel->create_message(message);
+										}
+									} else {
+										channel->create_message(message);
+									}
 									sent_messages++;
 								}
 							}

@@ -123,6 +123,8 @@ void Bot::InputThread()
 										 outputs.push(resp);
 									} while (false);
 								}
+							} else {
+								core.log->debug("Not talking as script has output lines");
 							}
 
 							std::this_thread::sleep_for(std::chrono::milliseconds(10));

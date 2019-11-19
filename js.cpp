@@ -137,6 +137,68 @@ static duk_ret_t js_create_message(duk_context *cx)
 	return 0;
 }
 
+static duk_ret_t js_add_reaction(duk_context *cx)
+{
+        int argc = duk_get_top(cx);
+        std::string output;
+        if (argc < 2)
+                return 0;
+        if (!duk_is_string(cx, 0)) {
+                c_apis_suck->warn("JS add_reaction(): parameter 1 is not a string");
+                return 0;
+        }
+	if (!duk_is_string(cx, -1)) {
+		c_apis_suck->warn("JS add_reaction(): parameter 2 is not a string");
+		return 0;
+	}
+        if (!duk_is_string(cx, -2)) {
+		c_apis_suck->warn("JS add_reaction(): parameter 3 is not a string");
+		return 0;
+        }	
+        std::string id = duk_get_string(cx, 0);
+	std::string message_id = duk_get_string(cx, -1);
+	std::string emoji = duk_get_string(cx, -2);
+        aegis::channel* c = current_guild->find_channel(from_string<int64_t>(id, std::dec));
+        if (c) {
+                c->create_reaction(from_string<int64_t>(message_id, std::dec), trim(emoji));
+                c_apis_suck->debug("JS add_reaction() on guild={}/channel={}: msg={} {}", current_guild->get_id(), id, message_id, emoji);
+        } else {
+                c_apis_suck->warn("JS add_reaction(): invalid channel id: {}", id);
+        }
+        return 0;
+}
+
+static duk_ret_t js_delete_reaction(duk_context *cx)
+{
+        int argc = duk_get_top(cx);
+        std::string output;
+        if (argc < 2)
+                return 0;
+        if (!duk_is_string(cx, 0)) {
+                c_apis_suck->warn("JS delete_reaction(): parameter 1 is not a string");
+                return 0;
+        }
+        if (!duk_is_string(cx, -1)) {
+                c_apis_suck->warn("JS delete_reaction(): parameter 2 is not a string");
+                return 0;
+        }
+        if (!duk_is_string(cx, -2)) {
+                c_apis_suck->warn("JS delete_reaction(): parameter 3 is not a string");
+                return 0;
+        }
+        std::string id = duk_get_string(cx, 0);
+	std::string message_id = duk_get_string(cx, -1);
+        std::string emoji = duk_get_string(cx, -2);
+        aegis::channel* c = current_guild->find_channel(from_string<int64_t>(id, std::dec));
+        if (c) {
+                c->delete_own_reaction(from_string<int64_t>(id, std::dec), trim(emoji));
+                c_apis_suck->debug("JS delete_reaction() on guild={}/channel={}: msg={}, {}", current_guild->get_id(), id, message_id, emoji);
+        } else {
+                c_apis_suck->warn("JS delete_reaction(): invalid channel id: {}", id);
+        }
+        return 0;
+}
+
 std::string Sanitise(const std::string &s) {
 	return ReplaceString(ReplaceString(s, "@here", "@‎here"), "@everyone", "@‎everyone");
 }
@@ -479,7 +541,6 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 		settings::setJSConfig(channel_id, "dirty", "0");
 
 	} else {
-		/* TODO: Needs a reload flag */
 		v = code[channel_id];
 	}
 
@@ -506,6 +567,8 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	define_func(ctx, "get", js_get, 2);
 	define_func(ctx, "post", js_post, 3);
 	define_func(ctx, "exit", js_exit, 1);
+	define_func(ctx, "add_reaction", js_add_reaction, 3);
+	define_func(ctx, "delete_reaction", js_delete_reaction, 3);
 	if (!callback_content.empty()) {
 		define_string(ctx, "WCB_CONTENT", callback_content);
 	}
@@ -516,7 +579,6 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	for (auto i = vars.begin(); i != vars.end(); ++i) {
 		source += i->first + "=" + i->second.dump() + ";";
 	}
-	source += ";" + v.source;
 
 	if (!callback_fn.empty()) {
 		source += ";" + callback_fn + "(WCB_CONTENT);exit(0);" + v.source;
