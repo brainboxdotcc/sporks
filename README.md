@@ -1,5 +1,6 @@
-# botnix-discord-cpp
-Botnix Discord Connector, C++ verison using Aegis.cpp
+# Sporks, the backchatting, learning, scriptable discord bot
+This github project contains the source code for the Discord enhancements for Sporks, the infobot/botnix bot, written in C++ using the aegis.cpp library.
+Remember you can still find my original botnix version of Sporks on IRC at irc.chatspike.net!
 
 ## Project and System status
 
