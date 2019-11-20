@@ -100,7 +100,23 @@ void Bot::InputThread()
 							}
 						       	if (wake) {
 
-								writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + query.message);
+								/* Mangle common prefixes, so if someone asks "What is x" it is treated same as "x?" */
+								std::string cleaned_message = query.message;
+								std::vector<std::string> prefixes = {
+									"what is",
+									"tell me about",
+									"who is",
+									"what are",
+									"wtf is",
+									"how do i",
+								};
+								for (auto p = prefixes.begin(); p != prefixes.end(); ++p) {
+									if (lowercase(trim(cleaned_message.substr(0, p->length()))) == *p) {
+										cleaned_message = trim(cleaned_message.substr(p->length(), cleaned_message.length() - p->length()));
+									}
+								}
+
+								writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + cleaned_message);
 								readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 								std::stringstream response(recvbuffer);
 								std::string text;
