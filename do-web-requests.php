@@ -72,6 +72,6 @@ while (true) {
 		}
 	}
 
-	sleep(1);
+	usleep(500000);
 }
 
