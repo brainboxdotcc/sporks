@@ -49,15 +49,20 @@ while ($site = mysqli_fetch_object($q)) {
 	if (!empty($site->channels_field)) {
 		$payload->{$site->channels_field} = $totals->channels + 0;
 	}
+	if (!empty($site->auth_field)) {
+		$payload->{$site->auth_field} = $site->authorization;
+	}
 	$json_payload = json_encode($payload);
-	$response = @file_get_contents($site->url, false, stream_context_create([
-	'http' => [
-			'method' => 'POST',
-			'ignore_errors' => true,
-			'header'  => "Content-Type: application/json\r\nAuthorization: " . $site->authorization,
-			'content' => ($site->post_type == 'json' ? $json_payload : $payload), 
-		]
-	]));
+	$ct = ($site->post_type == 'json' ? 'application/json' : 'application/x-www-form-urlencoded');
+	$context = [
+		'http' => [
+				'method' => 'POST',
+				'ignore_errors' => true,
+				'header'  => "Content-Type: $ct\r\nAuthorization: " . $site->authorization.  "\r\nX-TOKEN-DBLFR: " . $site->authorization,
+				'content' => ($site->post_type == 'json' ? $json_payload : http_build_query($payload)), 
+			]
+		];
+	$response = @file_get_contents($site->url, false, stream_context_create($context));
 	echo $site->url . " => " . $response . " (" . $http_response_header[0] . ")\n";
 }
 
