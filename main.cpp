@@ -19,6 +19,9 @@
 #include "rss.h"
 #include "js.h"
 
+const int64_t TEST_SERVER_SNOWFLAKE_ID = 633212509242785792;
+int debug = 0;
+
 QueueStats Bot::GetQueueStats() {
 	QueueStats q;
 
@@ -209,8 +212,8 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 		} else if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
 			/* Config command */
 			DoConfig(this, param, message.msg.get_channel_id().get(), message.msg);
-		} else {
-			/* Everything else goes to the input queue to be processed by botnix */
+		} else if (!debug || message.msg.get_guild_id().get() == TEST_SERVER_SNOWFLAKE_ID) {
+			/* Everything else goes to the input queue to be processed by botnix if we're not in dev mode OR we're on the test server */
 			QueueItem query;
 			query.message = mentions_removed;
 			query.channelID = message.channel.get_id().get();
@@ -272,6 +275,7 @@ int main(int argc, char** argv) {
 	struct option longopts[] =
 	{
 		{ "dev",	   no_argument,		&dev,	1  },
+		{ "debug",         no_argument,		&debug, 1  },
 		{ 0, 0, 0, 0 }
 	};
 
@@ -306,7 +310,7 @@ int main(int argc, char** argv) {
 	while (true) {
 
 		/* Aegis core routes websocket events and does all the API magic */
-		aegis::core aegis_bot(aegis::create_bot_t().file_logging(true).log_level(spdlog::level::trace).token(token));
+		aegis::core aegis_bot(aegis::create_bot_t().file_logging(true).log_level(spdlog::level::trace).token(token).force_shard_count(10));
 		aegis_bot.wsdbg = false;
 
 		/* Bot class handles application logic */
