@@ -103,11 +103,30 @@ void Bot::InputThread()
 								/* Mangle common prefixes, so if someone asks "What is x" it is treated same as "x?" */
 								std::string cleaned_message = query.message;
 								std::vector<std::string> prefixes = {
+									"what is a",
+									"whats",
+									"whos",
+									"whats up with",
+									"whats going off with",
 									"what is",
 									"tell me about",
 									"who is",
 									"what are",
+									"who are",
 									"wtf is",
+									"tell me about",
+									"tell me",
+									"can someone help me with",
+									"can you help me with",
+									"can you help me",
+									"can someone help me",
+									"can i ask about",
+									"can i ask",
+									"do you",
+									"can you",
+									"will you",
+									"wont you",
+									"won't you",
 									"how do i",
 								};
 								for (auto p = prefixes.begin(); p != prefixes.end(); ++p) {
@@ -126,7 +145,7 @@ void Bot::InputThread()
 								readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 								set_core_nickname(recvbuffer);
 	
-								if (found && text != "*NOTHING*") {
+								if ((found || query.mentioned) && text != "*NOTHING*") {
 									QueueItem resp;
 									resp.username = query.username;
 									resp.message = text;
