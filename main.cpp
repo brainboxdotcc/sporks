@@ -301,6 +301,7 @@ void Bot::onChannelDelete(aegis::gateway::events::channel_delete cd) {
 
 void Bot::onServerDelete(aegis::gateway::events::guild_delete gd) {
 	db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
+	db::query("DELETE FROM infobot_shard_map WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
 }
 
 int main(int argc, char** argv) {
