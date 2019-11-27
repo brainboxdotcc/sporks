@@ -77,6 +77,21 @@ std::string Bot::GetConfig(const std::string &name) {
 void Bot::onServer(aegis::gateway::events::guild_create gc) {
 
 	core.log->info("Adding server #{}: {}", gc.guild.id.get(), gc.guild.name);
+
+	db::query("INSERT INTO infobot_shard_map (guild_id, shard_id, name, icon, unavailable) VALUES('?','?','?','?','?') ON DUPLICATE KEY UPDATE shard_id = '?', name = '?', icon = '?', unavailable = '?'", 
+		{ 
+			std::to_string(gc.guild.id.get()),
+			std::to_string(gc.shard.get_id()),
+			gc.guild.name,
+			gc.guild.icon,
+			std::to_string(gc.guild.unavailable),
+			std::to_string(gc.shard.get_id()),
+			gc.guild.name,
+			gc.guild.icon,
+			std::to_string(gc.guild.unavailable)
+		}
+	);
+
 	do {
 		for (auto i = gc.guild.channels.begin(); i != gc.guild.channels.end(); ++i) {
 			getSettings(this, i->id.get(), gc.guild.id.get());
@@ -139,7 +154,28 @@ void Bot::UpdatePresenceThread() {
 		if (++minutes > 10) {
 			minutes = sent_messages = received_messages = 0;
 		}
-		std::this_thread::sleep_for(std::chrono::seconds(60));
+		std::this_thread::sleep_for(std::chrono::seconds(30));
+
+		const aegis::shards::shard_mgr& s = core.get_shard_mgr();
+		const std::vector<std::unique_ptr<aegis::shards::shard>>& shards = s.get_shards();
+		for (auto i = shards.begin(); i != shards.end(); ++i) {
+			const aegis::shards::shard* shard = i->get();
+			db::query("INSERT INTO infobot_shard_status (id, connected, online, uptime, transfer, transfer_compressed) VALUES('?','?','?','?','?','?') ON DUPLICATE KEY UPDATE connected = '?', online = '?', uptime = '?', transfer = '?', transfer_compressed = '?'", 
+				{
+					std::to_string(shard->get_id()),
+					std::to_string(shard->is_connected()),
+					std::to_string(shard->is_online()),
+					std::to_string(shard->uptime()),
+					std::to_string(shard->get_transfer_u()),
+					std::to_string(shard->get_transfer()),
+					std::to_string(shard->is_connected()),
+					std::to_string(shard->is_online()),
+					std::to_string(shard->uptime()),
+					std::to_string(shard->get_transfer_u()),
+					std::to_string(shard->get_transfer())
+				}
+			);
+		}
 	}
 }
 
@@ -275,7 +311,7 @@ int main(int argc, char** argv) {
 	struct option longopts[] =
 	{
 		{ "dev",	   no_argument,		&dev,	1  },
-		{ "debug",         no_argument,		&debug, 1  },
+		{ "debug",	 no_argument,		&debug, 1  },
 		{ 0, 0, 0, 0 }
 	};
 
