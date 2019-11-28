@@ -8,5 +8,6 @@
 	"dbuser": "<mysql user>",
 	"dbpass": "<mysql pass>",
 	"dbname": "<mysql db",
-	"dbport": "3306"
+	"dbport": "3306",
+	"utr_readonly_key": "<readonly api key for uptimerobot>"
 }
