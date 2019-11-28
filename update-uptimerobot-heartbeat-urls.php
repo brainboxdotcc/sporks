@@ -2,16 +2,22 @@
 
 /***********************************************************************************************************
  *
- * Bot list updater for Botnix
+ * Sporks UptimeRobot Heartbeat Ping
  *
- * There are a ton of discord bot listing sites out there, they all seem to have similar-ish APIs which let
- * you update your guild count and user count via a http POST with an Authorisation header. To allow this to
- * be done on a more or less generic basis, this script accepts details of these sites from a mysql table
- * (infobot_discord_list sites) and submits totals to them from all shards. Each shard has individual
- * responsibility for updating its row in the infobot_discord_counts table into the mysql cluster.
+ * This script should be run every minute under crontab, and uses UptimeRobot's API to retrieve the
+ * heartbeat url for each monitor associated with a discord shard. It will find these by requesting all
+ * monitors which contain the string "Discord Bot Shard " in their name, and are of type 5 (heartbeat).
+ * Once they are retrieved it will iterate them and match them to a regular expression by friendly name,
+ * extracting the shard ID from the name. It then does two things:
  *
- * Don't crontab this script more often than an hour, as you don't weant to annoy these sites by spamming
- * their API endpoints with updates!
+ * 1) Update the database to store the last uptimerobot heartbeat url to be pinged under infobot_shard_status
+ *
+ * 2) If the shard is both online and connected, ping the endpoint with a simple GET request to let
+ *    uptimerobot know this shard is alive
+ *
+ * If this script does not ping one of the uptimerobot heartbeat endpoints for 4 minutes (two heartbeats)
+ * then uptimerobot will POST to a discord webhook which causes an embed message in #status on the official
+ * discord server.
  *
  ***********************************************************************************************************/
 
@@ -49,7 +55,7 @@ foreach($monitors->monitors as $monitor) {
 		if ($shardinfo) {
 			mysqli_query($conn, "UPDATE infobot_shard_status SET uptimerobot_heartbeat = '" . mysqli_real_escape_string($conn, $monitor->url) . "' WHERE id = " . mysqli_real_escape_string($conn, $m[1]));
 			if ($shardinfo->connected && $shardinfo->online) {
-				echo "Shard " . $m[1] . " => " . file_get_contents($monitor->url) . "\n";
+				file_get_contents($monitor->url);
 			}
 		}
 	}

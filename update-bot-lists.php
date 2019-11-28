@@ -10,8 +10,8 @@
  * (infobot_discord_list sites) and submits totals to them from all shards. Each shard has individual
  * responsibility for updating its row in the infobot_discord_counts table into the mysql cluster.
  *
- * Don't crontab this script more often than an hour, as you don't weant to annoy these sites by spamming
- * their API endpoints with updates!
+ * Don't crontab this script more often than every few minutes, as you don't weant to annoy these sites by
+ * spamming their API endpoints with updates!
  *
  ***********************************************************************************************************/
 
@@ -54,6 +54,7 @@ while ($site = mysqli_fetch_object($q)) {
 	}
 	$json_payload = json_encode($payload);
 	$ct = ($site->post_type == 'json' ? 'application/json' : 'application/x-www-form-urlencoded');
+	/* Note there's a special case here for wonderbotlist, a french bot list site that just has to be different in a traditionally french way! ;) */
 	$context = [
 		'http' => [
 				'method' => 'POST',

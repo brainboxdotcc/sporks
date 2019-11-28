@@ -1,4 +1,24 @@
 <?php
+
+/***********************************************************************************************
+ *
+ * Sporks web request handler
+ *
+ * Whenever a javascript program requests a webpage via the get() or post() functions, it will
+ * insert a row for this request into the infobot_web_requests table. This script runs in a loop
+ * watching this table every half a second for new rows. When new rows are found, web requests
+ * are made (either GET or POST) and then the row updated with the resulting content and a HTTP
+ * status code. Certain restrictions are placed on the request to prevent abuse:
+ *
+ * 1) DNS requets can only take up to 1 second
+ * 2) There can be only one attempt at DNS resolution per request
+ * 3) The initial connection may only take 2 seconds
+ * 4) There can be a maximum of 3 HTTP redirections per request
+ * 5) The entire request may only take 5 seconds
+ * 6) The POST body may be a maximum of 256k. Anything longer is truncated.
+ * 7) The returned content may be a maximum of 1mb. Anything longer is truncated.
+ *
+ ***********************************************************************************************/
 $settings = json_decode(file_get_contents("config.json"));
 $conn = mysqli_connect($settings->dbhost, $settings->dbuser, $settings->dbpass);
 
