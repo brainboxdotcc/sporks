@@ -9,5 +9,6 @@
 	"dbpass": "<mysql pass>",
 	"dbname": "<mysql db",
 	"dbport": "3306",
-	"utr_readonly_key": "<readonly api key for uptimerobot>"
+	"utr_readonly_key": "<readonly api key for uptimerobot>",
+	"error_recipient": "<email address of user to receive runtime errors>"
 }
