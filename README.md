@@ -10,8 +10,8 @@ Remember you can still find my original botnix version of Sporks on IRC at irc.c
 
 ## Listing Badges
 
-![Discord Boats](https://discord.boats/api/widget/630730262765895680) 
 [![Discord Bots](https://top.gg/api/widget/630730262765895680.svg)](https://top.gg/bot/630730262765895680)
+![Discord Boats](https://discord.boats/api/widget/630730262765895680) 
 ![DiscordBotList](https://discordbotlist.com/bots/630730262765895680/widget)
 
 ## Supported Platforms
