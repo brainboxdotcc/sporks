@@ -4,11 +4,14 @@ Remember you can still find my original botnix version of Sporks on IRC at irc.c
 
 ## Project and System status
 
-![Discord](https://img.shields.io/discord/537746810471448576?label=discord) ![CircleCI](https://img.shields.io/circleci/build/github/braindigitalis/botnix-discord-cpp/master) ![Dashboard](https://img.shields.io/website?down_color=red&label=dashboard&url=https%3A%2F%2Fsporks.gg) ![Uptime Robot status](https://img.shields.io/uptimerobot/status/m783839388-6330727bef379018815558a4?label=frontend) ![Backend](https://img.shields.io/uptimerobot/status/m783839323-076cf6fcf6d447189eef61da?label=backend)
+![Discord](https://img.shields.io/discord/537746810471448576?label=discord) ![CircleCI](https://img.shields.io/circleci/build/github/braindigitalis/botnix-discord-cpp/master) ![Dashboard](https://img.shields.io/website?down_color=red&label=dashboard&url=https%3A%2F%2Fsporks.gg)
+
+[Service Status](https://status.sporks.gg)
 
 ## Listing Badges
 
-![Discord Boats](https://discord.boats/api/widget/630730262765895680)
+![Discord Boats](https://discord.boats/api/widget/630730262765895680) 
+![DiscordBotList](https://discordbotlist.com/bots/630730262765895680/widget)
 
 ## Supported Platforms
 
@@ -58,15 +61,16 @@ run.sh will restart the bot executable continually if it dies.
 | Argument        | Meaning                                                |
 | --------------- |------------------------------------------------------- |
 | --dev           | Run using the development token in the config file     |
+| --debug         | Run using the live token but only respond on the development server  |
 
 
 ## Reporting to bot list sites
 
 To report your bot's server count to bot list sites (really, you shouldn't even do this, as you'd be running a fork of an existing bot!) you should add the simple script "update-bot-lists.php" to your crontab:
 
-    user@server:~/cppbot$ crontab -l
+    user@server:~/bot$ crontab -l
     # m h  dom mon dow   command
-    0,30 * * * *    cd /home/user/cppbot && /usr/bin/php update-bot-lists.php
+    0,30 * * * *    cd /home/user/bot && /usr/bin/php update-bot-lists.php
     
 and configure the infobot_discord_list_sites table with the sites your bot is registered upon:
 
