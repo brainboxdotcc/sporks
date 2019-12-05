@@ -178,24 +178,26 @@ void Bot::UpdatePresenceThread() {
 
 		db::resultset rs_votes = db::query("SELECT id, snowflake_id, UNIX_TIMESTAMP(vote_time) AS vote_time, origin, rolegiven FROM infobot_votes", {});
 		aegis::guild* home = core.find_guild(from_string<int64_t>(Bot::GetConfig("home"), std::dec));
-		for (auto vote = rs_votes.begin(); vote != rs_votes.end(); ++vote) {
-			int64_t member_id = from_string<int64_t>((*vote)["snowflake_id"], std::dec);
-			aegis::user* user = core.find_user(member_id);
-			if (user) {
-				if ((*vote)["rolegiven"] == "0") {
-					/* Role not yet given, give the role and set rolegiven to 1 */
-					core.log->info("Adding vanity role to {}", member_id);
-					home->add_guild_member_role(member_id, from_string<int64_t>(Bot::GetConfig("vote_role"), std::dec));
-					db::query("UPDATE infobot_votes SET rolegiven = 1 WHERE snowflake_id = ?", {(*vote)["snowflake_id"]});
-				} else {
-					/* Role was already given, take away the role and remove the vote IF the date is too far in the past.
-					 * Votes last 24 hours.
-					 */
-					uint64_t role_timestamp = from_string<uint64_t>((*vote)["vote_time"], std::dec);
-					if (time(NULL) - role_timestamp > 86400) {
-						db::query("DELETE FROM infobot_votes WHERE id = ?", {(*vote)["id"]});
-						home->remove_guild_member_role(member_id, from_string<int64_t>(Bot::GetConfig("vote_role"), std::dec));
-						core.log->info("Removing vanity role from {}", member_id);
+		if (home) {
+			for (auto vote = rs_votes.begin(); vote != rs_votes.end(); ++vote) {
+				int64_t member_id = from_string<int64_t>((*vote)["snowflake_id"], std::dec);
+				aegis::user* user = core.find_user(member_id);
+				if (user) {
+					if ((*vote)["rolegiven"] == "0") {
+						/* Role not yet given, give the role and set rolegiven to 1 */
+						core.log->info("Adding vanity role to {}", member_id);
+						home->add_guild_member_role(member_id, from_string<int64_t>(Bot::GetConfig("vote_role"), std::dec));
+						db::query("UPDATE infobot_votes SET rolegiven = 1 WHERE snowflake_id = ?", {(*vote)["snowflake_id"]});
+					} else {
+						/* Role was already given, take away the role and remove the vote IF the date is too far in the past.
+						 * Votes last 24 hours.
+						 */
+						uint64_t role_timestamp = from_string<uint64_t>((*vote)["vote_time"], std::dec);
+						if (time(NULL) - role_timestamp > 86400) {
+							db::query("DELETE FROM infobot_votes WHERE id = ?", {(*vote)["id"]});
+							home->remove_guild_member_role(member_id, from_string<int64_t>(Bot::GetConfig("vote_role"), std::dec));
+							core.log->info("Removing vanity role from {}", member_id);
+						}
 					}
 				}
 			}
