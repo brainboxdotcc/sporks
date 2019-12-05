@@ -135,7 +135,7 @@ void Bot::SaveCachedUsersThread() {
 }
 
 void Bot::UpdatePresenceThread() {
-	std::this_thread::sleep_for(std::chrono::seconds(30));
+	std::this_thread::sleep_for(std::chrono::seconds(120));
 	uint64_t minutes = 0;
 	while (!this->terminate) {
 		int64_t servers = core.get_guild_count();
