@@ -1,7 +1,7 @@
 #!/bin/sh
 cd build
 # enable core dumps for debugging
-ulimit -c 0
+ulimit -c unlimited
 # run repeatedly until ctrl+c
 while true;
 do
