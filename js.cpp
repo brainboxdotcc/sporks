@@ -221,8 +221,9 @@ static duk_ret_t js_create_embed(duk_context *cx)
 	std::string j = duk_json_encode(cx, -1);
 	aegis::channel* c = current_guild->find_channel(from_string<int64_t>(id, std::dec));
 	if (c) {
-		json embed = json::parse(Sanitise(j));
+		json embed;
 		try {
+			embed = json::parse(Sanitise(j));
 			if (message_total >= message_limit) {
 				duk_push_error_object(cx, DUK_ERR_RANGE_ERROR, "Message limit reached");
 				return duk_throw(cx);
