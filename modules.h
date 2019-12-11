@@ -82,5 +82,6 @@ public:
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message);
 };
 
+
 #define MODULE_INIT(y) extern "C" Module* init_module(Bot* instigator, ModuleLoader* ml) { return new y(instigator, ml); }
 

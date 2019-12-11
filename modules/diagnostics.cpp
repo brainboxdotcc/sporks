@@ -1,6 +1,11 @@
 #include "../modules.h"
 
-class DiagnosticsModule : public Module {
+/**
+ * Provides diagnostic commands for monitoring the bot and debugging it interactively while it's running.
+ */
+
+class DiagnosticsModule : public Module
+{
 public:
 	DiagnosticsModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml)
 	{
@@ -12,13 +17,15 @@ public:
 	{
 		return "1.0";
 	}
+
 	virtual std::string GetDescription()
 	{
-		return "Diagnostic Commands";
+		return "libmodules_diagnostics.so - Diagnostic Commands";
 	}
 
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message)
 	{
+		bot->core.log->debug("Diagnostics OnMessage: {}", message.msg.get_content());
 		return true;
 	}
 };

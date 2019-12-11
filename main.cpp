@@ -41,6 +41,8 @@ Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input
 	js = new JS(core.log, this);
 	Loader = new ModuleLoader(this);
 
+	Loader->Load("libmodule_diagnostics.so");
+
 	thr_input = new std::thread(&Bot::InputThread, this);
 	thr_output = new std::thread(&Bot::OutputThread, this);
 	thr_userqueue = new std::thread(&Bot::SaveCachedUsersThread, this);
