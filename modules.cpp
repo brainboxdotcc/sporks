@@ -1,5 +1,6 @@
 #include "modules.h"
 #include <dlfcn.h>
+#include <sstream>
 
 const char* StringNames[I_END + 1] = {
 	"I_BEGIN",
@@ -16,6 +17,10 @@ const char* StringNames[I_END + 1] = {
 ModuleLoader::ModuleLoader(Bot* creator) : bot(creator)
 {
 	bot->core.log->info("Module loader initialising...");
+}
+
+ModuleLoader::~ModuleLoader()
+{
 }
 
 void ModuleLoader::Attach(Implementation* i, Module* mod, size_t sz)
@@ -40,7 +45,11 @@ bool ModuleLoader::Load(const std::string &filename)
 
 	if (Modules.find(filename) == Modules.end() || Modules[filename].err) {
 
-		m.dlopen_handle = dlopen(filename.c_str(), RTLD_NOW|RTLD_LOCAL);
+		char buffer[PATH_MAX + 1];
+		getcwd(buffer, PATH_MAX);
+		std::string full_module_spec = std::string(buffer) + "/" + filename;
+
+		m.dlopen_handle = dlopen(full_module_spec.c_str(), RTLD_NOW | RTLD_LOCAL);
 		if (!m.dlopen_handle) {
 			m.err = dlerror();
 			Modules[filename] = m;
@@ -48,13 +57,17 @@ bool ModuleLoader::Load(const std::string &filename)
 			return false;
 		} else {
 			if (!GetSymbol(m, "init_module")) {
-				m.err = "Unable to find init_module() entrypoint";
-				bot->core.log->error("Can't load module: {}", m.err);
+				bot->core.log->error("Can't load module: {}", m.err ? m.err : "General error");
 				Modules[filename] = m;
 				return false;
 			} else {
 				bot->core.log->debug("Module {} loaded", filename);
 				m.module_object = m.init(bot, this);
+				if (!m.module_object) {
+					bot->core.log->error("Can't load module: Invalid module pointer returned");
+					Modules[filename] = m;
+					return false;
+				}
 				bot->core.log->debug("Module {} initialised", filename);
 			}
 		}
@@ -62,6 +75,51 @@ bool ModuleLoader::Load(const std::string &filename)
 		return true;
 	}
 	return false;
+}
+
+bool ModuleLoader::Unload(const std::string &filename)
+{
+	auto m = Modules.find(filename);
+
+	if (m == Modules.end()) {
+		return false;
+	}
+
+	ModuleNative mod = m->second;
+
+	/* Remove attached events */
+	for (int j = I_BEGIN; j != I_END; ++j) {
+		std::remove(EventHandlers[j].begin(), EventHandlers[j].end(), mod.module_object);
+	}
+	/* Remove module entry */
+	Modules.erase(m);
+
+	if (mod.module_object) {
+		delete mod.module_object;
+	}
+
+	/* Remove module from memory */
+	if (mod.dlopen_handle) {
+		dlclose(mod.dlopen_handle);
+	}
+
+	return true;
+}
+
+bool ModuleLoader::Reload(const std::string &filename)
+{
+	return (Unload(filename) && Load(filename));
+}
+
+void ModuleLoader::LoadAll()
+{
+	json document;
+	std::ifstream configfile("../modules.json");
+	configfile >> document;
+	for (auto entry = document.begin(); entry != document.end(); ++entry) {
+		std::string modulename = entry->get<std::string>();
+		this->Load(modulename);
+	}
 }
 
 bool ModuleLoader::GetSymbol(ModuleNative &native, const char *sym_name)
@@ -74,11 +132,18 @@ bool ModuleLoader::GetSymbol(ModuleNative &native, const char *sym_name)
 		if (!native.init || native.err) {
 			return false;
 		}
+	} else {
+		native.err = "ModuleLoader::GetSymbol(): Invalid dlopen() handle";
+		return false;
 	}
 	return true;
 }
 
 Module::Module(Bot* instigator, ModuleLoader* ml) : bot(instigator)
+{
+}
+
+Module::~Module()
 {
 }
 

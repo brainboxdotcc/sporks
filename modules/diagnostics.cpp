@@ -13,6 +13,10 @@ public:
 		ml->Attach(eventlist, this, sizeof(eventlist) / sizeof(Implementation));
 	}
 
+	virtual ~DiagnosticsModule()
+	{
+	}
+
 	virtual std::string GetVersion()
 	{
 		return "1.0";
@@ -20,7 +24,7 @@ public:
 
 	virtual std::string GetDescription()
 	{
-		return "libmodules_diagnostics.so - Diagnostic Commands";
+		return "module_diagnostics.so - Diagnostic Commands";
 	}
 
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message)

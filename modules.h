@@ -63,8 +63,12 @@ public:
 	std::vector<Module*> EventHandlers[I_END];
 
 	ModuleLoader(Bot* creator);
+	virtual ~ModuleLoader();
 	void Attach(Implementation* i, Module* mod, size_t sz);
 	bool Load(const std::string &filename);
+	bool Unload(const std::string &filename);
+	bool Reload(const std::string &filename);
+	void LoadAll();
 };
 
 class Module {
@@ -72,6 +76,7 @@ protected:
 	Bot* bot;
 public:
 	Module(Bot* instigator, ModuleLoader* ml);
+	virtual ~Module();
 	virtual std::string GetVersion();
 	virtual std::string GetDescription();
 	virtual bool OnChannelCreate(const aegis::gateway::events::channel_create &channel);
