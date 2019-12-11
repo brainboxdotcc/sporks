@@ -68,6 +68,7 @@ public:
 };
 
 class Module {
+protected:
 	Bot* bot;
 public:
 	Module(Bot* instigator, ModuleLoader* ml);
