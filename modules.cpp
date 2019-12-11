@@ -23,14 +23,14 @@ ModuleLoader::~ModuleLoader()
 {
 }
 
-void ModuleLoader::Attach(Implementation* i, Module* mod, size_t sz)
+void ModuleLoader::Attach(const std::vector<Implementation> &i, Module* mod)
 {
-	for (size_t n = 0; n < sz; ++n) {
-		if (std::find(EventHandlers[i[n]].begin(), EventHandlers[i[n]].end(), mod) == EventHandlers[i[n]].end()) {
-			EventHandlers[i[n]].push_back(mod);
-			bot->core.log->debug("Module \"{}\" attached event \"{}\"", mod->GetDescription(), StringNames[i[n]]);
+	for (auto n = i.begin(); n != i.end(); ++n) {
+		if (std::find(EventHandlers[*n].begin(), EventHandlers[*n].end(), mod) == EventHandlers[*n].end()) {
+			EventHandlers[*n].push_back(mod);
+			bot->core.log->debug("Module \"{}\" attached event \"{}\"", mod->GetDescription(), StringNames[*n]);
 		} else {
-			bot->core.log->warn("Module \"{}\" is already attached to event \"{}\"", mod->GetDescription(), StringNames[i[n]]);
+			bot->core.log->warn("Module \"{}\" is already attached to event \"{}\"", mod->GetDescription(), StringNames[*n]);
 		}
 	}
 }

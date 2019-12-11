@@ -64,7 +64,7 @@ public:
 
 	ModuleLoader(Bot* creator);
 	virtual ~ModuleLoader();
-	void Attach(Implementation* i, Module* mod, size_t sz);
+	void Attach(const std::vector<Implementation> &i, Module* mod);
 	bool Load(const std::string &filename);
 	bool Unload(const std::string &filename);
 	bool Reload(const std::string &filename);

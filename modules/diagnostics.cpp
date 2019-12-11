@@ -9,8 +9,7 @@ class DiagnosticsModule : public Module
 public:
 	DiagnosticsModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml)
 	{
-		Implementation eventlist[] = { I_OnMessage };
-		ml->Attach(eventlist, this, sizeof(eventlist) / sizeof(Implementation));
+		ml->Attach({ I_OnMessage }, this);
 	}
 
 	virtual ~DiagnosticsModule()
