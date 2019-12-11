@@ -38,6 +38,8 @@ struct QueueStats {
 	size_t users;
 };
 
+class Module;
+
 class Bot {
 
 	/* True if bot is running in development mode */
@@ -96,6 +98,8 @@ public:
 	QueueStats GetQueueStats();
 
 	class JS* js;
+
+	std::vector<Module*> Modules;
 
 	/* Shorthand to get bot's user id */
 	int64_t getID();

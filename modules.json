@@ -1,0 +1,5 @@
+[
+	"libmodule_js.so",
+	"libmodule_infobot.so",
+	"libmodule_diagnostics.so"
+]
