@@ -18,6 +18,7 @@
 #include "help.h"
 #include "rss.h"
 #include "js.h"
+#include "modules.h"
 
 const int64_t TEST_SERVER_SNOWFLAKE_ID = 633212509242785792;
 int debug = 0;
@@ -38,6 +39,7 @@ Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
 
 	js = new JS(core.log, this);
+	Loader = new ModuleLoader(this);
 
 	thr_input = new std::thread(&Bot::InputThread, this);
 	thr_output = new std::thread(&Bot::OutputThread, this);
@@ -54,9 +56,6 @@ void Bot::DisposeThread(std::thread* t) {
 }
 
 Bot::~Bot() {
-	delete helpmessage;
-	delete configmessage;
-
 	terminate = true;
 
 	DisposeThread(thr_input);
@@ -64,7 +63,10 @@ Bot::~Bot() {
 	DisposeThread(thr_userqueue);
 	DisposeThread(thr_presence);
 
+	delete helpmessage;
+	delete configmessage;
 	delete js;
+	delete Loader;
 }
 
 std::string Bot::GetConfig(const std::string &name) {
@@ -275,6 +277,9 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 		}
 		/* Remove linefeeds, they mess with botnix */
 		mentions_removed = trim(ReplaceString(mentions_removed, "\r\n", " "));
+
+		/* Call modules */
+		FOREACH_MOD(I_OnMessage,OnMessage(message));
 
 		/* Hard coded commands, help/config */
 		std::vector<std::string> param;

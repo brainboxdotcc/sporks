@@ -39,6 +39,7 @@ struct QueueStats {
 };
 
 class Module;
+class ModuleLoader;
 
 class Bot {
 
@@ -99,7 +100,7 @@ public:
 
 	class JS* js;
 
-	std::vector<Module*> Modules;
+	ModuleLoader* Loader;
 
 	/* Shorthand to get bot's user id */
 	int64_t getID();

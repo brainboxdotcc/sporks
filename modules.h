@@ -3,6 +3,7 @@
 #include "bot.h"
 
 class Module;
+class ModuleLoader;
 
 /** Priority types which can be returned from Module::Prioritize()
  */
@@ -29,26 +30,38 @@ enum Implementation
  * 'FOREACH_MOD(I_OnGuildAdd,OnGuildAdd(guildinfo));'
  */
 #define FOREACH_MOD(y,x) do { \
-        auto safei; \
-        for (auto _i = Modules->EventHandlers[y].begin(); _i != Modules->EventHandlers[y].end(); ) \
+        for (auto _i = Loader->EventHandlers[y].begin(); _i != Loader->EventHandlers[y].end(); ++_i) \
         { \
-                safei = _i; \
-                ++safei; \
                 try \
                 { \
-                        (*_i)->x ; \
+                        if (!(*_i)->x) break; \
                 } \
                 catch (std::exception& modexcept) \
                 { \
                         core.log->error("Exception caught in module: {}",modexcept.what()); \
                 } \
-                _i = safei; \
         } \
 } while (0);
 
+
+typedef Module* (initfunctype) (Bot*, ModuleLoader*);
+
+struct ModuleNative {
+	initfunctype* init;
+	void* dlopen_handle;
+	const char *err;
+	Module* module_object;
+};
+
 class ModuleLoader {
 	Bot* bot;
+
+	std::map<std::string, ModuleNative> Modules;
+	bool GetSymbol(ModuleNative &native, const char *sym_name);
+
 public:
+	std::vector<Module*> EventHandlers[I_END];
+
 	ModuleLoader(Bot* creator);
 	void Attach(Implementation* i, Module* mod, size_t sz);
 	bool Load(const std::string &filename);
@@ -60,10 +73,14 @@ public:
 	Module(Bot* instigator, ModuleLoader* ml);
 	virtual std::string GetVersion();
 	virtual std::string GetDescription();
-	virtual void OnChannelCreate(const aegis::gateway::events::channel_create &channel);
-	virtual void OnReady(const aegis::gateway::events::ready &ready);
-	virtual void OnChannelDelete(const aegis::gateway::events::channel_delete &channel);
-	virtual void OnGuildCreate(const aegis::gateway::events::guild_create &guild);
-	virtual void OnGuildDelete(const aegis::gateway::events::guild_delete &guild);
-	virtual void OnGuildMemberAdd(const aegis::gateway::events::guild_member_add &gma);
+	virtual bool OnChannelCreate(const aegis::gateway::events::channel_create &channel);
+	virtual bool OnReady(const aegis::gateway::events::ready &ready);
+	virtual bool OnChannelDelete(const aegis::gateway::events::channel_delete &channel);
+	virtual bool OnGuildCreate(const aegis::gateway::events::guild_create &guild);
+	virtual bool OnGuildDelete(const aegis::gateway::events::guild_delete &guild);
+	virtual bool OnGuildMemberAdd(const aegis::gateway::events::guild_member_add &gma);
+	virtual bool OnMessage(const aegis::gateway::events::message_create &message);
 };
+
+#define MODULE_INIT(y) extern "C" Module* init_module(Bot* instigator, ModuleLoader* ml) { return new y(instigator, ml); }
+
