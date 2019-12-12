@@ -1,4 +1,5 @@
 [
+	"module_help.so",
 	"module_js.so",
 	"module_infobot.so",
 	"module_diagnostics.so"

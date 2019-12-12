@@ -46,6 +46,21 @@ void ModuleLoader::Detach(const std::vector<Implementation> &i, Module* mod)
 	}
 }
 
+void ModuleLoader::ClearEvent()
+{
+	claimed = false;
+}
+
+void ModuleLoader::ClaimEvent()
+{
+	claimed = true;
+}
+
+bool ModuleLoader::IsEventClaimed()
+{
+	return claimed;
+}
+
 const ModMap& ModuleLoader::GetModuleList() const
 {
 	return ModuleList;
