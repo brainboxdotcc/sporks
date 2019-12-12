@@ -8,11 +8,10 @@
  * swamping botnix with telnet connections and commands (like the PHP version has potential
  * to do by accident!) and outputs similarly queued to prevent flooding discord.
  *
- * There are two caching mechanisms for discord data, first is a set of unordered maps,
- * within this class, which hold servers, channels and users by Snowflake ID. The
+ * There are two caching mechanisms for discord data, first is aegis itself, and the
  * second level is a mysql databse, which exists to feed information to the dashboard
  * website and give some persistence to the data. Note that from the bot's perspective
- * this data is write-only and the bot will only ever look at its unordered_maps, and
+ * this data is write-only and the bot will only ever look at the data in aegis, and
  * from the website's perspective this data is read-only and it will look to the discord
  * API for authentication and current server list of a user.
  *
@@ -46,9 +45,6 @@ class Bot {
 	/* True if bot is running in development mode */
 	bool dev;
 	
-	/* Regexes for matching help and config commands */
-	class PCRE* configmessage;
-
 	/* Threads */
 	std::thread* thr_input;
 	std::thread* thr_output;

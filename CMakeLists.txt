@@ -22,9 +22,11 @@ add_library(module_js SHARED modules/js.cpp)
 add_library(module_infobot SHARED modules/infobot.cpp)
 add_library(module_diagnostics SHARED modules/diagnostics.cpp)
 add_library(module_help SHARED modules/help.cpp)
+add_library(module_config SHARED modules/config.cpp)
 
 set_target_properties(module_js PROPERTIES PREFIX "")
 set_target_properties(module_infobot PROPERTIES PREFIX "")
 set_target_properties(module_diagnostics PROPERTIES PREFIX "")
 set_target_properties(module_help PROPERTIES PREFIX "")
+set_target_properties(module_config PROPERTIES PREFIX "")
 

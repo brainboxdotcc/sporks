@@ -28,5 +28,3 @@ namespace settings {
 	void setJSConfig(int64_t channel_id, std::string variable, std::string value);
 }
 
-void DoConfig(class Bot* bot, const std::vector<std::string> &param, int64_t channelID, const aegis::gateway::objects::message &message);
-bool HasPermission(class Bot* bot, int64_t channelID, const aegis::gateway::objects::message &message);

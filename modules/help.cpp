@@ -23,6 +23,7 @@ public:
 
 	virtual ~HelpModule()
 	{
+		delete helpmessage;
 	}
 
 	virtual std::string GetVersion()

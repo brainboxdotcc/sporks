@@ -34,8 +34,6 @@ QueueStats Bot::GetQueueStats() {
 
 Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
 
-	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
-
 	js = new JS(core.log, this);
 	Loader = new ModuleLoader(this);
 
@@ -63,7 +61,6 @@ Bot::~Bot() {
 	DisposeThread(thr_userqueue);
 	DisposeThread(thr_presence);
 
-	delete configmessage;
 	delete js;
 	delete Loader;
 }
@@ -284,11 +281,7 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			return;
 		}
 
-		std::vector<std::string> param;
-		if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
-			/* Config command */
-			DoConfig(this, param, message.msg.get_channel_id().get(), message.msg);
-		} else if (!debug || message.msg.get_guild_id().get() == TEST_SERVER_SNOWFLAKE_ID) {
+		if (!debug || message.msg.get_guild_id().get() == TEST_SERVER_SNOWFLAKE_ID) {
 			/* Everything else goes to the input queue to be processed by botnix if we're not in dev mode OR we're on the test server */
 			QueueItem query;
 			query.message = mentions_removed;
