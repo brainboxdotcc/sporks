@@ -39,7 +39,7 @@ public:
 
 	virtual std::string GetDescription()
 	{
-		return "module_config.so - Config Commands";
+		return "Config Commands, '@Sporks config'";
 	}
 
 	bool HasPermission(int64_t channelID, const aegis::gateway::objects::message &message) {
@@ -54,26 +54,6 @@ public:
 			return (perms.can_manage_messages() || perms.is_admin());
 		}
 		return false;
-	}
-
-	void EmbedSimple(const std::string &message, int64_t channelID) {
-		std::stringstream s;
-		json embed_json;
-	
-		s << "{\"color\":16767488, \"description\": \"" << message << "\"}";
-	
-		try {
-			embed_json = json::parse(s.str());
-		}
-		catch (const std::exception &e) {
-			bot->core.log->error("Invalid json for channel {} created by EmbedSimple: ", channelID, s.str());
-		}
-		aegis::channel* channel = bot->core.find_channel(channelID);
-		if (channel) {
-			channel->create_message_embed("", embed_json);
-		} else {
-			bot->core.log->error("Invalid channel {} passed to EmbedSimple", channelID);
-		}
 	}
 
 	void DoConfigSet(std::stringstream &param, int64_t channelID, const aegis::gateway::objects::user& issuer) {

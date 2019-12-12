@@ -33,7 +33,7 @@ public:
 
 	virtual std::string GetDescription()
 	{
-		return "module_help.so - Help Commands";
+		return "Help Commands, '@Sporks help'";
 	}
 
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned)

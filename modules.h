@@ -106,17 +106,14 @@ public:
 	void Detach(const std::vector<Implementation> &i, Module* mod);
 
 	/* Load a module from a shared object file. The path is relative to the bot's executable.
-	 * NOTE: Locks mutex. You can't load a module from within the event of any module!
 	 */
 	bool Load(const std::string &filename);
 
 	/* Unload a module from memory. Calls the Module class's destructor and then dlclose().
-	 * NOTE: Locks mutex. You can't unload a module from within the event of any module!
 	 */
 	bool Unload(const std::string &filename);
 
 	/* Unload and then Load a module
-	 * NOTE: Locks mutex. You can't reload a module from within any module event!
 	 */
 	bool Reload(const std::string &filename);
 
@@ -165,6 +162,9 @@ public:
 	virtual bool OnGuildDelete(const aegis::gateway::events::guild_delete &guild);
 	virtual bool OnGuildMemberAdd(const aegis::gateway::events::guild_member_add &gma);
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned);
+
+	/* Emit a simple text only embed to a channel, many modules use this for error reporting */
+	void EmbedSimple(const std::string &message, int64_t channelID);
 };
 
 

@@ -68,8 +68,6 @@ const ModMap& ModuleLoader::GetModuleList() const
 
 bool ModuleLoader::Load(const std::string &filename)
 {
-	std::lock_guard<std::mutex> lock(mtx);
-
 	ModuleNative m;
 	m.err = nullptr;
 	m.dlopen_handle = nullptr;
@@ -113,8 +111,6 @@ bool ModuleLoader::Load(const std::string &filename)
 
 bool ModuleLoader::Unload(const std::string &filename)
 {
-	std::lock_guard<std::mutex> lock(mtx);
-
 	auto m = Modules.find(filename);
 
 	if (m == Modules.end()) {
@@ -233,3 +229,23 @@ bool Module::OnMessage(const aegis::gateway::events::message_create &message, co
 	return true;
 }
 
+void Module::EmbedSimple(const std::string &message, int64_t channelID)
+{
+	std::stringstream s;
+	json embed_json;
+
+	s << "{\"color\":16767488, \"description\": \"" << message << "\"}";
+
+	try {
+		embed_json = json::parse(s.str());
+	}
+	catch (const std::exception &e) {
+		bot->core.log->error("Invalid json for channel {} created by EmbedSimple: ", channelID, s.str());
+	}
+	aegis::channel* channel = bot->core.find_channel(channelID);
+	if (channel) {
+		channel->create_message_embed("", embed_json);
+	} else {
+		bot->core.log->error("Invalid channel {} passed to EmbedSimple", channelID);
+	}
+}
