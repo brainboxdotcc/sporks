@@ -2,7 +2,6 @@
 #include "config.h"
 #include "database.h"
 #include "stringops.h"
-#include "help.h"
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -10,6 +9,7 @@
 #include <cstdint>
 #include <mutex>
 #include <stdlib.h>
+#include "help.h"
 
 std::mutex config_sql_mutex;
 
@@ -129,12 +129,12 @@ namespace settings {
 void DoConfig(class Bot* bot, const std::vector<std::string> &param, int64_t channelID, const aegis::gateway::objects::message& message) {
 
 	if (!HasPermission(bot, channelID, message)) {
-		GetHelp(bot, "access-denied", channelID, bot->user.username, bot->getID(), message.author.username, message.author.id.get(), false);
+		EmbedSimple(bot, "Access denied: You need to be a server owner, have the \"administrator\" permission. or have the \"manage messages\" permission on this channel to edit its configuration.", channelID);
 		return;
 	}
 
 	if (param.size() < 3 || param[2] == "") {
-		GetHelp(bot, "missing-parameters", channelID, bot->user.username, bot->getID(), message.author.username, message.author.id.get(), false);
+		EmbedSimple(bot, "Missing parameters for config command, please see ``@:user: help config``", channelID);
 		return;
 	}
 	try {
@@ -149,7 +149,7 @@ void DoConfig(class Bot* bot, const std::vector<std::string> &param, int64_t cha
 		} else if (subcommand == "set") {
 			DoConfigSet(bot, tokens, channelID, message.author);
 		} else {
-			GetHelp(bot, "missing-parameters", channelID, bot->user.username, bot->getID(), message.author.username, message.author.id.get(), false);
+			EmbedSimple(bot, "Missing parameters for config command, please see ``@:user: help config``", channelID);
 		}
 	}
 	catch (const std::exception &e) {
@@ -185,11 +185,11 @@ void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, co
 	variable = lowercase(variable);
 	setting = lowercase(setting);
 	if (variable == "" || setting == "") {
-		GetHelp(bot, "missing-set-var-or-value", channelID, bot->user.username, bot->getID(), issuer.username, issuer.id.get(), false);
+		EmbedSimple(bot, "Missing parameters for config command, please see ``@:user: help config``", channelID);
 		return;
 	}
 	if (variable != "talkative" && variable != "learn") {
-		GetHelp(bot, "invalid-set-var-or-value", channelID, bot->user.username, bot->getID(), issuer.username, issuer.id.get(), false);
+		EmbedSimple(bot, "Missing parameters for config command, please see ``@:user: help config``", channelID);
 		return;
 	}
 	bool state = (setting == "yes" || setting == "true" || setting == "on" || setting == "1");

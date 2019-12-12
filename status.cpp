@@ -4,9 +4,9 @@
 #include <ctime>
 #include "status.h"
 #include "bot.h"
-#include "help.h"
 #include "regex.h"
 #include "stringops.h"
+#include "help.h"
 
 PCRE uptime_days("(\\d+) day");
 PCRE uptime_hours("(\\d+) hour");

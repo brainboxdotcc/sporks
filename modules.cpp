@@ -35,8 +35,26 @@ void ModuleLoader::Attach(const std::vector<Implementation> &i, Module* mod)
 	}
 }
 
+void ModuleLoader::Detach(const std::vector<Implementation> &i, Module* mod)
+{
+	for (auto n = i.begin(); n != i.end(); ++n) {
+		auto it = std::find(EventHandlers[*n].begin(), EventHandlers[*n].end(), mod);
+		if (it != EventHandlers[*n].end()) {
+			EventHandlers[*n].erase(it);
+			bot->core.log->debug("Module \"{}\" detached event \"{}\"", mod->GetDescription(), StringNames[*n]);
+		}
+	}
+}
+
+const ModMap& ModuleLoader::GetModuleList() const
+{
+	return ModuleList;
+}
+
 bool ModuleLoader::Load(const std::string &filename)
 {
+	std::lock_guard<std::mutex> lock(mtx);
+
 	ModuleNative m;
 	m.err = nullptr;
 	m.dlopen_handle = nullptr;
@@ -72,6 +90,7 @@ bool ModuleLoader::Load(const std::string &filename)
 			}
 		}
 		Modules[filename] = m;
+		ModuleList[filename] = m.module_object;
 		return true;
 	}
 	return false;
@@ -79,6 +98,8 @@ bool ModuleLoader::Load(const std::string &filename)
 
 bool ModuleLoader::Unload(const std::string &filename)
 {
+	std::lock_guard<std::mutex> lock(mtx);
+
 	auto m = Modules.find(filename);
 
 	if (m == Modules.end()) {
@@ -93,6 +114,11 @@ bool ModuleLoader::Unload(const std::string &filename)
 	}
 	/* Remove module entry */
 	Modules.erase(m);
+
+	auto v = ModuleList.find(filename);
+	if (v != ModuleList.end()) {
+		ModuleList.erase(v);
+	}
 
 	if (mod.module_object) {
 		delete mod.module_object;
@@ -187,7 +213,8 @@ bool Module::OnGuildMemberAdd(const aegis::gateway::events::guild_member_add &gm
 	return true;
 }
 
-bool Module::OnMessage(const aegis::gateway::events::message_create &message)
+bool Module::OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned)
 {
 	return true;
 }
+

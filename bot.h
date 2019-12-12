@@ -47,7 +47,6 @@ class Bot {
 	bool dev;
 	
 	/* Regexes for matching help and config commands */
-	class PCRE* helpmessage;
 	class PCRE* configmessage;
 
 	/* Threads */
@@ -77,6 +76,8 @@ class Bot {
 	void OutputThread();		/* Outputs lines due to be sent to channel messages, after being processed by the input thread */
 	void SaveCachedUsersThread();	/* If there are any users in the userqueue, this thread updates/inserts them on a mysql table in the background */
 	void UpdatePresenceThread();	/* Updates the bot presence every 120 seconds */
+
+	void SetSignals();
 
 public:
 	/* Aegis core */
@@ -126,5 +127,7 @@ public:
 	void onServerDelete(aegis::gateway::events::guild_delete gd);
 
 	static std::string GetConfig(const std::string &name);
+
+	static void SetSignal(int signal);
 };
 

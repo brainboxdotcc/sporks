@@ -26,12 +26,12 @@ public:
 		return "module_diagnostics.so - Diagnostic Commands";
 	}
 
-	virtual bool OnMessage(const aegis::gateway::events::message_create &message)
+	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned)
 	{
 		bot->core.log->debug("Diagnostics OnMessage: {}", message.msg.get_content());
 		return true;
 	}
 };
 
-MODULE_INIT(DiagnosticsModule);
+ENTRYPOINT(DiagnosticsModule);
 

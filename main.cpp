@@ -15,7 +15,6 @@
 #include "config.h"
 #include "regex.h"
 #include "stringops.h"
-#include "help.h"
 #include "rss.h"
 #include "js.h"
 #include "modules.h"
@@ -35,7 +34,6 @@ QueueStats Bot::GetQueueStats() {
 
 Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
 
-	helpmessage = new PCRE("^help(|\\s+(.+?))$", true);
 	configmessage = new PCRE("^config(|\\s+(.+?))$", true);
 
 	js = new JS(core.log, this);
@@ -65,7 +63,6 @@ Bot::~Bot() {
 	DisposeThread(thr_userqueue);
 	DisposeThread(thr_presence);
 
-	delete helpmessage;
 	delete configmessage;
 	delete js;
 	delete Loader;
@@ -281,17 +278,14 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 		mentions_removed = trim(ReplaceString(mentions_removed, "\r\n", " "));
 
 		/* Call modules */
-		FOREACH_MOD(I_OnMessage,OnMessage(message));
+		FOREACH_MOD(I_OnMessage,OnMessage(message, mentions_removed, mentioned));
 
-		/* Hard coded commands, help/config */
+		if (Loader->IsEventClaimed()) {
+			return;
+		}
+
 		std::vector<std::string> param;
-		if (mentioned && helpmessage->Match(mentions_removed, param)) {
-			std::string section = "basic";
-			if (param.size() > 2) {
-				section = param[2];
-			}
-			GetHelp(this, section, message.msg.get_channel_id().get(), botusername, user.id.get(), message.msg.get_user().get_username(), message.msg.get_user().get_id().get());
-		} else if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
+		if (mentioned && configmessage->Match(trim(mentions_removed), param)) {
 			/* Config command */
 			DoConfig(this, param, message.msg.get_channel_id().get(), message.msg);
 		} else if (!debug || message.msg.get_guild_id().get() == TEST_SERVER_SNOWFLAKE_ID) {
