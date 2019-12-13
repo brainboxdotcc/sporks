@@ -258,6 +258,7 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 		for (auto m = message.msg.mentions.begin(); m != message.msg.mentions.end(); ++m) {
 			stringmentions.push_back(std::to_string(m->get()));
 			mentions_removed = ReplaceString(mentions_removed, std::string("<@") + std::to_string(m->get()) + ">", core.find_user(*m)->get_username());
+			mentions_removed = ReplaceString(mentions_removed, std::string("<@!") + std::to_string(m->get()) + ">", core.find_user(*m)->get_username());
 			if (*m == user.id) {
 				mentioned = true;
 			}
