@@ -1,4 +1,8 @@
 #include "modules.h"
+#ifndef _GNU_SOURCE
+	#define _GNU_SOURCE
+#endif
+#include <link.h>
 #include <dlfcn.h>
 #include <sstream>
 
@@ -69,8 +73,11 @@ const ModMap& ModuleLoader::GetModuleList() const
 bool ModuleLoader::Load(const std::string &filename)
 {
 	ModuleNative m;
+
 	m.err = nullptr;
 	m.dlopen_handle = nullptr;
+	m.module_object = nullptr;
+	m.init = nullptr;
 
 	bot->core.log->info("Loading module \"{}\"", filename);
 
@@ -84,18 +91,24 @@ bool ModuleLoader::Load(const std::string &filename)
 		if (!m.dlopen_handle) {
 			m.err = dlerror();
 			Modules[filename] = m;
+			lasterror = m.err;
 			bot->core.log->error("Can't load module: {}", m.err);
 			return false;
 		} else {
 			if (!GetSymbol(m, "init_module")) {
 				bot->core.log->error("Can't load module: {}", m.err ? m.err : "General error");
 				Modules[filename] = m;
+				lasterror = m.err ? m.err : "General error";
 				return false;
 			} else {
 				bot->core.log->debug("Module {} loaded", filename);
 				m.module_object = m.init(bot, this);
-				if (!m.module_object) {
-					bot->core.log->error("Can't load module: Invalid module pointer returned");
+				/* In the event of a missing module_init symbol, dlsym() returns a valid pointer to a function that returns -1 as its pointer. Why? I don't know.
+				 * FIXME find out why.
+				*/
+				if (!m.module_object || (uint64_t)m.module_object == 0xffffffffffffffff) {
+					bot->core.log->error("Can't load module: Invalid module pointer returned. No symbol?");
+					lasterror = "Not a Sporks module (symbol init_module not found)";
 					Modules[filename] = m;
 					return false;
 				}
@@ -104,9 +117,15 @@ bool ModuleLoader::Load(const std::string &filename)
 		}
 		Modules[filename] = m;
 		ModuleList[filename] = m.module_object;
+		lasterror = "";
 		return true;
 	}
 	return false;
+}
+
+const std::string& ModuleLoader::GetLastError()
+{
+	return lasterror;
 }
 
 bool ModuleLoader::Unload(const std::string &filename)
@@ -114,6 +133,7 @@ bool ModuleLoader::Unload(const std::string &filename)
 	auto m = Modules.find(filename);
 
 	if (m == Modules.end()) {
+		lasterror = "Module is not loaded";
 		return false;
 	}
 
@@ -166,6 +186,7 @@ bool ModuleLoader::GetSymbol(ModuleNative &native, const char *sym_name)
 		dlerror(); // clear value
 		native.init = (initfunctype*)dlsym(native.dlopen_handle, sym_name);
 		native.err = dlerror();
+		//printf("dlopen_handle=0x%016x, native.init=0x%016x native.err=\"%s\" dlsym=0x%016x sym_name=%s\n", native.dlopen_handle, native.init, native.err ? native.err : "<NULL>", dlsym(native.dlopen_handle, sym_name), sym_name);
 		if (!native.init || native.err) {
 			return false;
 		}

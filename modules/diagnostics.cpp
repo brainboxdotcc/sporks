@@ -89,7 +89,7 @@ public:
 						if (bot->Loader->Load(modfile)) {
 							EmbedSimple("Loaded module: " + modfile, msg.get_channel_id().get());
 						} else {
-							EmbedSimple("Can't do that. Please check the logs.", msg.get_channel_id().get());
+							EmbedSimple(std::string("Can't do that: ``") + bot->Loader->GetLastError() + "``", msg.get_channel_id().get());
 						}
 					} else if (lowercase(subcommand) == "unload") {
 						std::string modfile;
@@ -100,7 +100,7 @@ public:
 							if (bot->Loader->Unload(modfile)) {
 								EmbedSimple("Unloaded module: " + modfile, msg.get_channel_id().get());
 							} else {
-								EmbedSimple("Can't do that. Please check the logs.", msg.get_channel_id().get());
+								EmbedSimple(std::string("Can't do that: ``") + bot->Loader->GetLastError() + "``", msg.get_channel_id().get());
 							}
 						}
 					} else if (lowercase(subcommand) == "reload") {
@@ -112,7 +112,7 @@ public:
 							if (bot->Loader->Reload(modfile)) {
 								EmbedSimple("Reloaded module: " + modfile, msg.get_channel_id().get());
 							} else {
-								EmbedSimple("Can't do that. Please check the logs.", msg.get_channel_id().get());
+								EmbedSimple(std::string("Can't do that: ``") + bot->Loader->GetLastError() + "``", msg.get_channel_id().get());
 							}
 						}
 					} else {

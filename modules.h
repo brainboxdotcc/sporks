@@ -85,6 +85,8 @@ class ModuleLoader {
 
 	bool claimed;
 
+	std::string lasterror;
+
 public:
 	/* Module loader mutex */
 	std::mutex mtx;
@@ -133,6 +135,9 @@ public:
 
 	/* Returns true if the last event was claimed */
 	bool IsEventClaimed();
+
+	/** Returns last error message from Load(), or empty string */
+	const std::string& GetLastError();
 };
 
 /**
