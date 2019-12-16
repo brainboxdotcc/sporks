@@ -1,5 +1,4 @@
 #include "bot.h"
-#include "js.h"
 #include "includes.h"
 #include "readline.h"
 #include "queue.h"
@@ -93,73 +92,63 @@ void Bot::InputThread()
 								readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							}
 
-							bool wake = true;
-							if (settings::channelHasJS(query.channelID)) {
-								js->run(query.channelID, query.jsonstore);
-								wake = !js->hasReplied();
+
+							/* Mangle common prefixes, so if someone asks "What is x" it is treated same as "x?" */
+							std::string cleaned_message = query.message;
+							std::vector<std::string> prefixes = {
+								"what is a",
+								"whats",
+								"whos",
+								"whats up with",
+								"whats going off with",
+								"what is",
+								"tell me about",
+								"who is",
+								"what are",
+								"who are",
+								"wtf is",
+								"tell me about",
+								"tell me",
+								"can someone help me with",
+								"can you help me with",
+								"can you help me",
+								"can someone help me",
+								"can i ask about",
+								"can i ask",
+								"do you",
+								"can you",
+								"will you",
+								"wont you",
+								"won't you",
+								"how do i",
+							};
+							for (auto p = prefixes.begin(); p != prefixes.end(); ++p) {
+								if (lowercase(trim(cleaned_message.substr(0, p->length()))) == *p) {
+									cleaned_message = trim(cleaned_message.substr(p->length(), cleaned_message.length() - p->length()));
+								}
 							}
-						       	if (wake) {
 
-								/* Mangle common prefixes, so if someone asks "What is x" it is treated same as "x?" */
-								std::string cleaned_message = query.message;
-								std::vector<std::string> prefixes = {
-									"what is a",
-									"whats",
-									"whos",
-									"whats up with",
-									"whats going off with",
-									"what is",
-									"tell me about",
-									"who is",
-									"what are",
-									"who are",
-									"wtf is",
-									"tell me about",
-									"tell me",
-									"can someone help me with",
-									"can you help me with",
-									"can you help me",
-									"can someone help me",
-									"can i ask about",
-									"can i ask",
-									"do you",
-									"can you",
-									"will you",
-									"wont you",
-									"won't you",
-									"how do i",
-								};
-								for (auto p = prefixes.begin(); p != prefixes.end(); ++p) {
-									if (lowercase(trim(cleaned_message.substr(0, p->length()))) == *p) {
-										cleaned_message = trim(cleaned_message.substr(p->length(), cleaned_message.length() - p->length()));
-									}
-								}
-
-								writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + cleaned_message);
-								readLine(sockfd, recvbuffer, sizeof(recvbuffer));
-								std::stringstream response(recvbuffer);
-								std::string text;
-								bool found;
-								response >> found;
-								std::getline(response, text);
-								readLine(sockfd, recvbuffer, sizeof(recvbuffer));
-								set_core_nickname(recvbuffer);
+							writeLine(sockfd, std::string(".DR ") + ReplaceString(query.username, " ", "_") + " " + core_nickname + " " + cleaned_message);
+							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+							std::stringstream response(recvbuffer);
+							std::string text;
+							bool found;
+							response >> found;
+							std::getline(response, text);
+							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
+							set_core_nickname(recvbuffer);
 	
-								if ((found || query.mentioned) && text != "*NOTHING*") {
-									QueueItem resp;
-									resp.username = query.username;
-									resp.message = text;
-									resp.channelID = query.channelID;
-									resp.serverID = query.serverID;
-									resp.mentioned = query.mentioned;
-									resp.jsonstore = query.jsonstore;
-									do {
-										 std::lock_guard<std::mutex> output_lock(this->output_mutex);
-										 outputs.push(resp);
-									} while (false);
-								}
-							} else {
-								core.log->debug("Not talking as script has output lines");
+							if ((found || query.mentioned) && text != "*NOTHING*") {
+								QueueItem resp;
+								resp.username = query.username;
+								resp.message = text;
+								resp.channelID = query.channelID;
+								resp.serverID = query.serverID;
+								resp.mentioned = query.mentioned;
+								do {
+									std::lock_guard<std::mutex> output_lock(this->output_mutex);
+									outputs.push(resp);
+								} while (false);
 							}
 
 							std::this_thread::sleep_for(std::chrono::milliseconds(10));

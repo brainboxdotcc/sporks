@@ -6,6 +6,7 @@
 #include "duktape.h"
 #include <spdlog/spdlog.h>
 #include <aegis.hpp>
+#include "../modules.h"
 
 using json = nlohmann::json; 
 
@@ -23,3 +24,15 @@ public:
 	void WebRequestWatch();
 	bool hasReplied();
 };
+
+class JSModule : public Module
+{
+	JS* js;
+public:
+        JSModule(Bot* instigator, ModuleLoader* ml);
+        virtual ~JSModule();
+        virtual std::string GetVersion();
+        virtual std::string GetDescription();
+        virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
+};
+

@@ -245,7 +245,7 @@ bool Module::OnGuildMemberAdd(const aegis::gateway::events::guild_member_add &gm
 	return true;
 }
 
-bool Module::OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned)
+bool Module::OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 {
 	return true;
 }

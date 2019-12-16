@@ -15,7 +15,6 @@ class QueueItem
 	std::string username;
 	std::string message;
 	bool mentioned;
-	std::unordered_map<std::string, json> jsonstore;
 };
 
 typedef std::queue<QueueItem> Queue;

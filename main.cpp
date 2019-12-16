@@ -16,7 +16,6 @@
 #include "regex.h"
 #include "stringops.h"
 #include "rss.h"
-#include "js.h"
 #include "modules.h"
 
 const int64_t TEST_SERVER_SNOWFLAKE_ID = 633212509242785792;
@@ -34,7 +33,6 @@ QueueStats Bot::GetQueueStats() {
 
 Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
 
-	js = new JS(core.log, this);
 	Loader = new ModuleLoader(this);
 
 	Loader->LoadAll();
@@ -61,7 +59,6 @@ Bot::~Bot() {
 	DisposeThread(thr_userqueue);
 	DisposeThread(thr_presence);
 
-	delete js;
 	delete Loader;
 }
 
@@ -276,7 +273,7 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 		mentions_removed = trim(ReplaceString(mentions_removed, "\r\n", " "));
 
 		/* Call modules */
-		FOREACH_MOD(I_OnMessage,OnMessage(message, mentions_removed, mentioned));
+		FOREACH_MOD(I_OnMessage,OnMessage(message, mentions_removed, mentioned, stringmentions));
 
 		if (Loader->IsEventClaimed()) {
 			return;
@@ -290,31 +287,6 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			query.serverID = message.msg.get_guild_id().get();
 			query.username = message.msg.get_user().get_username();
 			query.mentioned = mentioned;
-			json chan;
-			aegis::channel& c = message.channel;
-			chan["name"] = c.get_name();
-			chan["nsfw"] = c.nsfw();
-			chan["dm"] = c.is_dm();
-			json guild;
-			aegis::guild* g = core.find_guild(message.msg.get_guild_id());
-			if (g) {
-				guild["name"] = g->get_name();
-				guild["owner"] = std::to_string(g->get_owner());
-				guild["id"] = std::to_string(message.msg.get_guild_id());
-				guild["region"] = g->get_region();
-				guild["member_count"] = g->get_member_count();
-				query.jsonstore["guild"] = guild;
-			}
-			query.jsonstore["channel"] = chan;
-			aegis::gateway::objects::to_json(query.jsonstore["message"], message.msg);
-			aegis::gateway::objects::to_json(query.jsonstore["author"], message.msg.author);
-			query.jsonstore["message"]["id"] = std::to_string(message.msg.get_id());
-			query.jsonstore["message"]["nonce"] = std::to_string(message.msg.nonce);
-			query.jsonstore["mentions"] = stringmentions;
-			query.jsonstore["channel"]["id"] = std::to_string(c.get_id());
-			query.jsonstore["channel"]["guild_id"] = std::to_string(message.msg.get_guild_id().get());
-			query.jsonstore["author"]["id"] = std::to_string(message.msg.author.id);
-			query.jsonstore["author"]["guild_id"] = query.jsonstore["channel"]["guild_id"];
 			do {
 				std::lock_guard<std::mutex> input_lock(input_mutex);
 				inputs.push(query);

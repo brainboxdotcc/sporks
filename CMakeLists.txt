@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.6)
 project(bot)
-add_executable(bot main.cpp readline.cpp database.cpp infobot.cpp response.cpp stringops.cpp config.cpp regex.cpp status.cpp rss.cpp duktape.c js.cpp timeout.c modules.cpp signal.cpp)
+add_executable(bot main.cpp readline.cpp database.cpp infobot.cpp response.cpp stringops.cpp config.cpp regex.cpp status.cpp rss.cpp modules.cpp signal.cpp)
 
 include(buildtools/cmake/FindMYSQL.cmake)
 include(buildtools/cmake/FindPCRE.cmake)
@@ -18,15 +18,15 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3")
 
 target_link_libraries(bot)
 
-add_library(module_js SHARED modules/js.cpp)
 add_library(module_infobot SHARED modules/infobot.cpp)
 add_library(module_diagnostics SHARED modules/diagnostics.cpp)
 add_library(module_help SHARED modules/help.cpp)
 add_library(module_config SHARED modules/config.cpp)
+add_library(module_js SHARED modules/js.cpp modules/duktape.c modules/timeout.c)
 
-set_target_properties(module_js PROPERTIES PREFIX "")
 set_target_properties(module_infobot PROPERTIES PREFIX "")
 set_target_properties(module_diagnostics PROPERTIES PREFIX "")
 set_target_properties(module_help PROPERTIES PREFIX "")
 set_target_properties(module_config PROPERTIES PREFIX "")
+set_target_properties(module_js PROPERTIES PREFIX "")
 
