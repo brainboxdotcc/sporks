@@ -29,7 +29,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 4$";
+		std::string version = "$ModVer 5$";
 		return "1.0." + version.substr(8,version.length - 9);
 	}
 
@@ -53,7 +53,7 @@ public:
 		}
 		return true;
 	}
-
+	
 	void GetHelp(const std::string &section, int64_t channelID, const std::string &botusername, int64_t botid, const std::string &author, int64_t authorid, bool dm)
 	{
 		bool found = true;
