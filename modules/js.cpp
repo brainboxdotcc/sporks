@@ -780,7 +780,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer$";
+	std::string version = "$ModVer 3$";
 	return "1.0." + version.substr(8,version.length - 9);
 }
 
