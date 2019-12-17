@@ -27,7 +27,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 5$";
+		std::string version = "$ModVer 6$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -63,21 +63,14 @@ public:
 						const ModMap& modlist = bot->Loader->GetModuleList();
 
 						s << "```diff" << std::endl;
-						s << std::left << std::setw(32) << std::setfill(' ') << "- Filename";
-						s << std::left << std::setw(12) << std::setfill(' ') << "| Version";
-						s << std::left << std::setw(80) << std::setfill(' ') << "| Description";
-						s << std::endl;
-                                                s << std::left << std::setw(32) << std::setfill('-') << "- --------";
-                                                s << std::left << std::setw(12) << std::setfill('-') << "| -------";
-                                                s << std::left << std::setw(50) << std::setfill('-') << "| -----------";
-						s << std::endl;
+						s << fmt::format("- ╭─────────────────────────┬───────────┬────────────────────────────────────────────────╮") << std::endl;
+						s << fmt::format("- │ Filename                | Version   | Description                                    |") << std::endl;
+						s << fmt::format("- ├─────────────────────────┼───────────┼────────────────────────────────────────────────┤") << std::endl;
 
 						for (auto mod = modlist.begin(); mod != modlist.end(); ++mod) {
-							s << "+ " << std::left << std::setw(29) << std::setfill(' ') << mod->first;
-							s << " | " << std::left << std::setw(9) << std::setfill(' ') << mod->second->GetVersion();
-							s << " | " << std::left << mod->second->GetDescription();
-							s << std::endl;
+							s << fmt::format("+ │ {:23} | {:9} | {:46} |", mod->first, mod->second->GetVersion(), mod->second->GetDescription()) << std::endl;
 						}
+						s << fmt::format("+ ╰─────────────────────────┴───────────┴────────────────────────────────────────────────╯") << std::endl;
 						s << "```";
 
 						aegis::channel* c = bot->core.find_channel(msg.get_channel_id().get());
