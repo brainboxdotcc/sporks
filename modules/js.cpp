@@ -780,7 +780,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 4$";
+	std::string version = "$ModVer 5$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -825,7 +825,7 @@ bool JSModule::OnMessage(const aegis::gateway::events::message_create &message, 
 		js->run(c.get_id().get(), jsonstore);
 		return !js->hasReplied();
 	}
-	return false;
+	return true;
 }
 
 ENTRYPOINT(JSModule);

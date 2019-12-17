@@ -276,6 +276,8 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 		FOREACH_MOD(I_OnMessage,OnMessage(message, mentions_removed, mentioned, stringmentions));
 
 		if (Loader->IsEventClaimed()) {
+			core.log->info("Message was claimed by a module");
+			core.log->flush();
 			return;
 		}
 
