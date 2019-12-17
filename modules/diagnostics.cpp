@@ -60,23 +60,23 @@ public:
 						// NOTE: GetModuleList's reference is safe from within a module event
 						const ModMap& modlist = bot->Loader->GetModuleList();
 
-						s << "> ``";
-						s << std::left << std::setw(32) << std::setfill(' ') << "Filename";
-						s << std::left << std::setw(12) << std::setfill(' ') << "Version";
-						s << std::left << std::setw(80) << std::setfill(' ') << "Description";
-						s << "``" << std::endl << "> ``";
-                                                s << std::left << std::setw(32) << std::setfill(' ') << "--------";
-                                                s << std::left << std::setw(12) << std::setfill(' ') << "-------";
-                                                s << std::left << std::setw(80) << std::setfill(' ') << "-----------";
-						s << "``" << std::endl;
+						s << "```diff" << std::endl;
+						s << std::left << std::setw(32) << std::setfill(' ') << "- Filename";
+						s << std::left << std::setw(12) << std::setfill(' ') << "| Version";
+						s << std::left << std::setw(80) << std::setfill(' ') << "| Description";
+						s << std::endl;
+                                                s << std::left << std::setw(32) << std::setfill('-') << "- --------";
+                                                s << std::left << std::setw(12) << std::setfill('-') << "| -------";
+                                                s << std::left << std::setw(50) << std::setfill('-') << "| -----------";
+						s << std::endl;
 
 						for (auto mod = modlist.begin(); mod != modlist.end(); ++mod) {
-							s << "> ``";
-							s << std::left << std::setw(32) << std::setfill(' ') << mod->first;
-							s << std::left << std::setw(12) << std::setfill(' ') << mod->second->GetVersion();
-							s << std::left << std::setw(80) << std::setfill(' ') << mod->second->GetDescription();
-							s << "``" << std::endl;
+							s << "+ " << std::left << std::setw(29) << std::setfill(' ') << mod->first;
+							s << std::left << std::setw(9) << std::setfill(' ') << " | " << mod->second->GetVersion();
+							s << " | " << mod->second->GetDescription();
+							s << std::endl;
 						}
+						s << "```";
 
 						aegis::channel* c = bot->core.find_channel(msg.get_channel_id().get());
 						if (c) {
