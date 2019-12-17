@@ -26,7 +26,9 @@ public:
 
 	virtual std::string GetVersion()
 	{
-		return "1.0";
+		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
+		std::string version = "$ModVer 1$";
+		return "1.0." + version.substr(8,version.length - 9);
 	}
 
 	virtual std::string GetDescription()
