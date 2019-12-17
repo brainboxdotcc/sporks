@@ -27,8 +27,8 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 4$";
-		return "1.0." + version.substr(8,version.length - 9);
+		std::string version = "$ModVer 5$";
+		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
 	virtual std::string GetDescription()
@@ -74,8 +74,8 @@ public:
 
 						for (auto mod = modlist.begin(); mod != modlist.end(); ++mod) {
 							s << "+ " << std::left << std::setw(29) << std::setfill(' ') << mod->first;
-							s << std::left << std::setw(9) << std::setfill(' ') << " | " << mod->second->GetVersion();
-							s << " | " << mod->second->GetDescription();
+							s << " | " << std::left << std::setw(9) << std::setfill(' ') << mod->second->GetVersion();
+							s << " | " << std::left << mod->second->GetDescription();
 							s << std::endl;
 						}
 						s << "```";
