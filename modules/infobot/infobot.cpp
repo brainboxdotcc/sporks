@@ -89,7 +89,7 @@ void InfobotModule::InputThread()
 								 * B) Learning is enabled for the channel (default for all channels)
 								 */
 								has_item = query.mentioned || settings::IsLearningEnabled(channel_settings);
-								inputs.pop();
+								inputs.pop_front();
 							}
 						} while(false);
 						if (has_item) {
@@ -145,16 +145,17 @@ void InfobotModule::InputThread()
 							readLine(sockfd, recvbuffer, sizeof(recvbuffer));
 							set_core_nickname(recvbuffer);
 	
-							if ((found || query.mentioned) && text != "*NOTHING*") {
+							if ((found || query.mentioned) && text != "*NOTHING*" && query.tombstone == false) {
 								QueueItem resp;
 								resp.username = query.username;
+								resp.tombstone = query.tombstone;
 								resp.message = text;
 								resp.channelID = query.channelID;
 								resp.serverID = query.serverID;
 								resp.mentioned = query.mentioned;
 								do {
 									std::lock_guard<std::mutex> output_lock(this->output_mutex);
-									outputs.push(resp);
+									outputs.push_back(resp);
 								} while (false);
 							}
 
@@ -179,7 +180,7 @@ void InfobotModule::InputThread()
 
 InfobotModule::InfobotModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml), terminate(false), thr_input(nullptr), thr_output(nullptr)
 {
-	ml->Attach({ I_OnMessage, I_OnGuildCreate }, this);
+	ml->Attach({ I_OnMessage, I_OnGuildCreate, I_OnGuildDelete }, this);
 
 	thr_input = new std::thread(&InfobotModule::InputThread, this);
 	thr_output = new std::thread(&InfobotModule::OutputThread, this);	
@@ -195,7 +196,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 2$";
+	std::string version = "$ModVer 4$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -213,11 +214,30 @@ bool InfobotModule::OnGuildCreate(const aegis::gateway::events::guild_create &gc
 	return true;
 }
 
+bool InfobotModule::OnGuildDelete(const aegis::gateway::events::guild_delete &guild)
+{
+	// Clear any queue items for a server that no longer exists
+	std::lock_guard<std::mutex> input_lock(input_mutex);
+	std::lock_guard<std::mutex> output_lock(this->output_mutex);
+	for (auto i = inputs.begin(); i != inputs.end(); ++i) {
+		if (i->serverID == guild.guild_id.get()) {
+			i->tombstone = true;
+		}
+	}
+	for (auto i = outputs.begin(); i != outputs.end(); ++i) {
+		if (i->serverID == guild.guild_id.get()) {
+			i->tombstone = true; 
+		}
+	}
+	return true;
+}
+
 bool InfobotModule::OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 {
 	aegis::gateway::events::message_create msg = message;
 
 	QueueItem query;
+	query.tombstone = false;
 	query.message = clean_message;
 	query.channelID = msg.channel.get_id().get();
 	query.serverID = msg.msg.get_guild_id().get();
@@ -225,7 +245,7 @@ bool InfobotModule::OnMessage(const aegis::gateway::events::message_create &mess
 	query.mentioned = mentioned;
 	do {
 		std::lock_guard<std::mutex> input_lock(input_mutex);
-		inputs.push(query);
+		inputs.push_back(query);
 	} while (false);
 	
 	return true;

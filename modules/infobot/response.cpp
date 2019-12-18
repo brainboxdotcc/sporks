@@ -18,12 +18,12 @@ void InfobotModule::OutputThread() {
 
 	while (!this->terminate) {
 		try {
-			std::queue<QueueItem> done;
+			std::deque<QueueItem> done;
 			do {
 				std::lock_guard<std::mutex> output_lock(this->output_mutex);
 				while (!outputs.empty()) {
-					done.push(outputs.front());
-					outputs.pop();
+					done.push_back(outputs.front());
+					outputs.pop_front();
 				}
 			} while (false);
 			while (!done.empty()) {
@@ -60,7 +60,7 @@ void InfobotModule::OutputThread() {
 									urls_matched++;
 								}
 							}
-							if (message != "*NOTHING*") {
+							if (!done.front().tombstone && message != "*NOTHING*") {
 								/* Prevent training the bot with a @everyone or @here message
 								 * Note these are still stored as-is in the database as they arent harmful
 								 * on other mediums such as IRC.
@@ -93,7 +93,7 @@ void InfobotModule::OutputThread() {
 						bot->core.log->error("Can't send message to channel id {}, (talkative={},mentioned={}), error is: {}", done.front().channelID, settings::IsTalkative(channel_settings), done.front().mentioned, e.what());
 					}
 				}
-				done.pop();
+				done.pop_front();
 			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}

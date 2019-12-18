@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <queue>
+#include <deque>
 #include <aegis.hpp>
 #include <unordered_map>
 
@@ -15,6 +15,7 @@ class QueueItem
 	std::string username;
 	std::string message;
 	bool mentioned;
+	bool tombstone;
 };
 
-typedef std::queue<QueueItem> Queue;
+typedef std::deque<QueueItem> Queue;

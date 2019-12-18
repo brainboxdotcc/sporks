@@ -52,6 +52,7 @@ public:
 
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
 	virtual bool OnGuildCreate(const aegis::gateway::events::guild_create &gc);
+	virtual bool OnGuildDelete(const aegis::gateway::events::guild_delete &guild);
 
 	void set_core_nickname(const std::string &coredata);
 	int random(int min, int max);
