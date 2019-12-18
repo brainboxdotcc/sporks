@@ -8,7 +8,7 @@
 #include "../../database.h"
 
 /**
- * Provides help commands from JSON files in the help directory
+ * Provides a role on the home server when someone votes for the bot on various websites such as top.gg
  */
 
 class VotingModule : public Module
@@ -26,7 +26,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 2$";
+		std::string version = "$ModVer 3$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 

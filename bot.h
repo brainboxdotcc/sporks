@@ -71,6 +71,8 @@ public:
 	Bot(bool development, aegis::core &aegiscore);
 	virtual ~Bot();
 
+	bool IsDevMode();
+
 	ModuleLoader* Loader;
 
 	/* Join and delete a non-null pointer to std::thread */

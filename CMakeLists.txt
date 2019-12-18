@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.6)
 project(bot)
-add_executable(bot main.cpp database.cpp stringops.cpp config.cpp regex.cpp rss.cpp modules.cpp signal.cpp statusfield.cpp)
+add_executable(bot main.cpp database.cpp stringops.cpp config.cpp regex.cpp modules.cpp signal.cpp statusfield.cpp)
 
 include(buildtools/cmake/FindMYSQL.cmake)
 include(buildtools/cmake/FindPCRE.cmake)
@@ -24,6 +24,7 @@ add_library(module_help SHARED modules/help/help.cpp)
 add_library(module_config SHARED modules/config/config.cpp)
 add_library(module_js SHARED modules/js/js.cpp modules/js/duktape.c modules/js/timeout.c)
 add_library(module_voting SHARED modules/voting/voting.cpp)
+add_library(module_presence SHARED modules/presence/presence.cpp)
 
 set_target_properties(module_infobot PROPERTIES PREFIX "")
 set_target_properties(module_diagnostics PROPERTIES PREFIX "")
@@ -31,4 +32,4 @@ set_target_properties(module_help PROPERTIES PREFIX "")
 set_target_properties(module_config PROPERTIES PREFIX "")
 set_target_properties(module_js PROPERTIES PREFIX "")
 set_target_properties(module_voting PROPERTIES PREFIX "")
-
+set_target_properties(module_presence PROPERTIES PREFIX "")

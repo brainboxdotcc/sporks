@@ -14,7 +14,6 @@
 #include "config.h"
 #include "regex.h"
 #include "stringops.h"
-#include "rss.h"
 #include "modules.h"
 
 Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
@@ -49,6 +48,10 @@ std::string Bot::GetConfig(const std::string &name) {
 	std::ifstream configfile("../config.json");
 	configfile >> document;
 	return document[name].get<std::string>();
+}
+
+bool Bot::IsDevMode() {
+	return dev;
 }
 
 void Bot::onServer(aegis::gateway::events::guild_create gc) {
@@ -111,24 +114,8 @@ void Bot::SaveCachedUsersThread() {
 
 void Bot::UpdatePresenceThread() {
 	std::this_thread::sleep_for(std::chrono::seconds(120));
-	uint64_t minutes = 0;
-	while (!this->terminate) {
-		int64_t servers = core.get_guild_count();
-		int64_t users = core.get_member_count();
-		int64_t channel_count = core.channels.size();
-		int64_t ram = GetRSS();
 
-		db::resultset rs_fact = db::query("SELECT count(key_word) AS total FROM infobot", std::vector<std::string>());
-		core.update_presence(Comma(from_string<size_t>(rs_fact[0]["total"], std::dec)) + " facts, on " + Comma(servers) + " servers with " + Comma(users) + " users across " + Comma(core.shard_max_count) + " shards", aegis::gateway::objects::activity::Watching);
-		db::query("INSERT INTO infobot_discord_counts (shard_id, dev, user_count, server_count, shard_count, channel_count, sent_messages, received_messages, memory_usage) VALUES('?','?','?','?','?','?','?','?','?') ON DUPLICATE KEY UPDATE user_count = '?', server_count = '?', shard_count = '?', channel_count = '?', sent_messages = '?', received_messages = '?', memory_usage = '?'",
-				{std::to_string(0), std::to_string((uint32_t)dev), std::to_string(users), std::to_string(servers), std::to_string(core.shard_max_count),
-				std::to_string(channel_count), std::to_string(sent_messages), std::to_string(received_messages), std::to_string(ram),
-				std::to_string(users), std::to_string(servers), std::to_string(core.shard_max_count),
-				std::to_string(channel_count), std::to_string(sent_messages), std::to_string(received_messages), std::to_string(ram)
-				});
-		if (++minutes > 20) {
-			minutes = sent_messages = received_messages = 0;
-		}
+	while (!this->terminate) {
 
 		const aegis::shards::shard_mgr& s = core.get_shard_mgr();
 		const std::vector<std::unique_ptr<aegis::shards::shard>>& shards = s.get_shards();
