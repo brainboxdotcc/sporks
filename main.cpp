@@ -16,6 +16,9 @@
 #include "stringops.h"
 #include "modules.h"
 
+/**
+ * Constructor (creates threads, loads all modules)
+ */
 Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
 
 	Loader = new ModuleLoader(this);
@@ -26,6 +29,9 @@ Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_userq
 	thr_presence = new std::thread(&Bot::UpdatePresenceThread, this);
 }
 
+/**
+ * Join and delete a thread
+ */
 void Bot::DisposeThread(std::thread* t) {
 	if (t) {
 		t->join();
@@ -34,6 +40,9 @@ void Bot::DisposeThread(std::thread* t) {
 
 }
 
+/**
+ * Destructor
+ */
 Bot::~Bot() {
 	terminate = true;
 
@@ -43,6 +52,9 @@ Bot::~Bot() {
 	delete Loader;
 }
 
+/**
+ * Returns the named string value from config.json
+ */
 std::string Bot::GetConfig(const std::string &name) {
 	json document;
 	std::ifstream configfile("../config.json");
@@ -50,10 +62,19 @@ std::string Bot::GetConfig(const std::string &name) {
 	return document[name].get<std::string>();
 }
 
+/**
+ * Returns true if the bot is running in development mode (different token)
+ */
 bool Bot::IsDevMode() {
 	return dev;
 }
 
+/**
+ * On adding a new server, the details of that server are inserted or updated in the shard map. We also make sure settings
+ * exist for each channel on the server by calling getSettings() for each channel and throwing the result away, which causes
+ * record creation. New users for the guild are pushed into the userqueue which is processed in a separate thread within
+ * SaveCachedUsersThread().
+ */
 void Bot::onServer(aegis::gateway::events::guild_create gc) {
 
 	core.log->info("Adding server #{}: {}", gc.guild.id.get(), gc.guild.name);
@@ -86,6 +107,11 @@ void Bot::onServer(aegis::gateway::events::guild_create gc) {
 	FOREACH_MOD(I_OnGuildCreate, OnGuildCreate(gc));
 }
 
+/**
+ * This function runs in its own thread, which commits new users to the database (for dashboard use)
+ * when there are entries in the queue. We don't do this on guild creation, because this would slow
+ * down the bot too much.
+ */
 void Bot::SaveCachedUsersThread() {
 	time_t last_message = time(NULL);
 	aegis::gateway::objects::user u;
@@ -112,6 +138,11 @@ void Bot::SaveCachedUsersThread() {
 	}
 }
 
+/**
+ * This runs its own thread that wakes up every 30 seconds (after an initial 2 minute warmup).
+ * Modules can attach to it for a simple 30 second interval timer via the OnPresenceUpdate() method.
+ * The code here simply updates the stats on the shards in the database.
+ */
 void Bot::UpdatePresenceThread() {
 	std::this_thread::sleep_for(std::chrono::seconds(120));
 
@@ -144,6 +175,9 @@ void Bot::UpdatePresenceThread() {
 	}
 }
 
+/**
+ * Stores a new guild member to the database for use in the dashboard
+ */
 void Bot::onMember(aegis::gateway::events::guild_member_add gma) {
 	std::string userid = std::to_string(gma.member._user.id.get());
 	std::string bot = gma.member._user.is_bot() ? "1" : "0";
@@ -151,16 +185,28 @@ void Bot::onMember(aegis::gateway::events::guild_member_add gma) {
 	FOREACH_MOD(I_OnGuildMemberAdd, OnGuildMemberAdd(gma));
 }
 
+/**
+ * Returns the bot's snowflake id
+ */
 int64_t Bot::getID() {
 	return this->user.id.get();
 }
 
+/**
+ * Announces that the bot is online. Each shard receives one of the events.
+ */
 void Bot::onReady(aegis::gateway::events::ready ready) {
 	this->user = ready.user;
 	core.log->info("Ready! Online as {}#{} ({})", this->user.username, this->user.discriminator, this->getID());
 	FOREACH_MOD(I_OnReady, OnReady(ready));
 }
 
+/**
+ * Called on receipt of each message. We do our own cleanup of the message, sanitising any
+ * mentions etc from the text before passing it along to modules. The bot's builtin ignore list
+ * and a hard coded check against bots/webhooks and itself happen before any module calls,
+ * and can't be overridden.
+ */
 void Bot::onMessage(aegis::gateway::events::message_create message) {
 
 	json settings;
@@ -212,16 +258,26 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 	}
 }
 
+/**
+ * This reates a new settings entry in the database for a channel whenever a new channel is created
+ */
 void Bot::onChannel(aegis::gateway::events::channel_create channel_create) {
 	getSettings(this, channel_create.channel.id.get(), channel_create.channel.guild_id.get());
 	FOREACH_MOD(I_OnChannelCreate, OnChannelCreate(channel_create));
 }
 
+/**
+ * Removes settings entries from the database as channels that refer to them are removed
+ */
 void Bot::onChannelDelete(aegis::gateway::events::channel_delete cd) {
 	db::query("DELETE FROM infobot_discord_settings WHERE id = '?'", {std::to_string(cd.channel.id.get())});
 	FOREACH_MOD(I_OnChannelDelete, OnChannelDelete(cd));
 }
 
+/**
+ * Removes settings for all channels on a server if the bot is kicked from a server,
+ * also removes the entry with server details from the shard map.
+ */
 void Bot::onServerDelete(aegis::gateway::events::guild_delete gd) {
 	db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
 	db::query("DELETE FROM infobot_shard_map WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
