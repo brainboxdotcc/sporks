@@ -1,11 +1,11 @@
 #include "infobot.h"
-#include "../bot.h"
-#include "../includes.h"
-#include "../queue.h"
-#include "../config.h"
-#include "../stringops.h"
-#include "../regex.h"
-#include "../modules.h"
+#include "../../bot.h"
+#include "../../includes.h"
+#include "../../queue.h"
+#include "../../config.h"
+#include "../../stringops.h"
+#include "../../regex.h"
+#include "../../modules.h"
 #include <iostream>
 #include <sstream>
 #include <thread>
@@ -179,7 +179,7 @@ void InfobotModule::InputThread()
 
 InfobotModule::InfobotModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml), terminate(false), thr_input(nullptr), thr_output(nullptr)
 {
-	ml->Attach({ I_OnMessage }, this);
+	ml->Attach({ I_OnMessage, I_OnGuildCreate }, this);
 
 	thr_input = new std::thread(&InfobotModule::InputThread, this);
 	thr_output = new std::thread(&InfobotModule::OutputThread, this);	
@@ -195,7 +195,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 1$";
+	std::string version = "$ModVer 2$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 

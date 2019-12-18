@@ -15,6 +15,7 @@ const char* StringNames[I_END + 1] = {
 	"I_OnGuildMemberAdd",
 	"I_OnGuildCreate",
 	"I_OnGuildDelete",
+	"I_OnPresenceUpdate",
 	"I_END"
 };
 
@@ -246,6 +247,11 @@ bool Module::OnGuildMemberAdd(const aegis::gateway::events::guild_member_add &gm
 }
 
 bool Module::OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
+{
+	return true;
+}
+
+bool Module::OnPresenceUpdate()
 {
 	return true;
 }

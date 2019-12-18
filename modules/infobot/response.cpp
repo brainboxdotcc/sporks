@@ -2,13 +2,13 @@
 #include <mutex>
 #include <string>
 #include <sstream>
-#include "../bot.h"
-#include "../regex.h"
-#include "../queue.h"
-#include "../config.h"
-#include "../stringops.h"
-#include "../statusfield.h"
-#include "../modules.h"
+#include "../../bot.h"
+#include "../../regex.h"
+#include "../../queue.h"
+#include "../../config.h"
+#include "../../stringops.h"
+#include "../../statusfield.h"
+#include "../../modules.h"
 #include "infobot.h"
 
 void InfobotModule::OutputThread() {

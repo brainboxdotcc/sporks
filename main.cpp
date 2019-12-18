@@ -69,11 +69,9 @@ void Bot::onServer(aegis::gateway::events::guild_create gc) {
 		}
 	);
 
-	do {
-		for (auto i = gc.guild.channels.begin(); i != gc.guild.channels.end(); ++i) {
-			getSettings(this, i->id.get(), gc.guild.id.get());
-		}
-	} while (false);
+	for (auto i = gc.guild.channels.begin(); i != gc.guild.channels.end(); ++i) {
+		getSettings(this, i->id.get(), gc.guild.id.get());
+	}
 
 	for (auto i = gc.guild.members.begin(); i != gc.guild.members.end(); ++i) {
 		do {
@@ -128,7 +126,7 @@ void Bot::UpdatePresenceThread() {
 				std::to_string(users), std::to_string(servers), std::to_string(core.shard_max_count),
 				std::to_string(channel_count), std::to_string(sent_messages), std::to_string(received_messages), std::to_string(ram)
 				});
-		if (++minutes > 10) {
+		if (++minutes > 20) {
 			minutes = sent_messages = received_messages = 0;
 		}
 
@@ -153,43 +151,7 @@ void Bot::UpdatePresenceThread() {
 			);
 		}
 
-		db::resultset rs_votes = db::query("SELECT id, snowflake_id, UNIX_TIMESTAMP(vote_time) AS vote_time, origin, rolegiven FROM infobot_votes", {});
-		aegis::guild* home = core.find_guild(from_string<int64_t>(Bot::GetConfig("home"), std::dec));
-		if (home) {
-			/* Process removals first */
-			for (auto vote = rs_votes.begin(); vote != rs_votes.end(); ++vote) {
-				int64_t member_id = from_string<int64_t>((*vote)["snowflake_id"], std::dec);
-				aegis::user* user = core.find_user(member_id);
-				if (user) {
-					/* FIXME: If they've voted again, we shouldnt take their role away below. check for this. */
-					if ((*vote)["rolegiven"] == "1") {
-						/* Role was already given, take away the role and remove the vote IF the date is too far in the past.
-						 * Votes last 24 hours.
-						 */
-						uint64_t role_timestamp = from_string<uint64_t>((*vote)["vote_time"], std::dec);
-						if (time(NULL) - role_timestamp > 86400) {
-							db::query("DELETE FROM infobot_votes WHERE id = ?", {(*vote)["id"]});
-							home->remove_guild_member_role(member_id, from_string<int64_t>(Bot::GetConfig("vote_role"), std::dec));
-							core.log->info("Removing vanity role from {}", member_id);
-						}
-					}
-				}
-			}
-			/* Now additions, so that if they've re-voted, it doesnt remove it */
-			for (auto vote = rs_votes.begin(); vote != rs_votes.end(); ++vote) {
-				int64_t member_id = from_string<int64_t>((*vote)["snowflake_id"], std::dec);
-				aegis::user* user = core.find_user(member_id);
-				if (user) {
-					/* FIXME: If they've voted again, we shouldnt take their role away below. check for this. */
-					if ((*vote)["rolegiven"] == "0") {
-						/* Role not yet given, give the role and set rolegiven to 1 */
-						core.log->info("Adding vanity role to {}", member_id);
-						home->add_guild_member_role(member_id, from_string<int64_t>(Bot::GetConfig("vote_role"), std::dec));
-						db::query("UPDATE infobot_votes SET rolegiven = 1 WHERE snowflake_id = ?", {(*vote)["snowflake_id"]});
-					}
-				}
-			}
-		}
+		FOREACH_MOD(I_OnPresenceUpdate, OnPresenceUpdate());
 
 		std::this_thread::sleep_for(std::chrono::seconds(30));
 	}
@@ -199,6 +161,7 @@ void Bot::onMember(aegis::gateway::events::guild_member_add gma) {
 	std::string userid = std::to_string(gma.member._user.id.get());
 	std::string bot = gma.member._user.is_bot() ? "1" : "0";
 	db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar, bot, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar});
+	FOREACH_MOD(I_OnGuildMemberAdd, OnGuildMemberAdd(gma));
 }
 
 int64_t Bot::getID() {
@@ -208,6 +171,7 @@ int64_t Bot::getID() {
 void Bot::onReady(aegis::gateway::events::ready ready) {
 	this->user = ready.user;
 	core.log->info("Ready! Online as {}#{} ({})", this->user.username, this->user.discriminator, this->getID());
+	FOREACH_MOD(I_OnReady, OnReady(ready));
 }
 
 void Bot::onMessage(aegis::gateway::events::message_create message) {
@@ -263,15 +227,18 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 
 void Bot::onChannel(aegis::gateway::events::channel_create channel_create) {
 	getSettings(this, channel_create.channel.id.get(), channel_create.channel.guild_id.get());
+	FOREACH_MOD(I_OnChannelCreate, OnChannelCreate(channel_create));
 }
 
 void Bot::onChannelDelete(aegis::gateway::events::channel_delete cd) {
 	db::query("DELETE FROM infobot_discord_settings WHERE id = '?'", {std::to_string(cd.channel.id.get())});
+	FOREACH_MOD(I_OnChannelDelete, OnChannelDelete(cd));
 }
 
 void Bot::onServerDelete(aegis::gateway::events::guild_delete gd) {
 	db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
 	db::query("DELETE FROM infobot_shard_map WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
+	FOREACH_MOD(I_OnGuildDelete, OnGuildDelete(gd));
 }
 
 int main(int argc, char** argv) {

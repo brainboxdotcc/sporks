@@ -3,5 +3,6 @@
 	"module_config.so",
 	"module_diagnostics.so",
 	"module_js.so",
-	"module_infobot.so"
+	"module_infobot.so",
+	"module_voting.so"
 ]

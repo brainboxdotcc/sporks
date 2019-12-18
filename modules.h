@@ -17,6 +17,7 @@ enum Implementation
 	I_OnGuildMemberAdd,
 	I_OnGuildCreate,
 	I_OnGuildDelete,
+	I_OnPresenceUpdate,
         I_END
 };
 
@@ -167,6 +168,7 @@ public:
 	virtual bool OnGuildDelete(const aegis::gateway::events::guild_delete &guild);
 	virtual bool OnGuildMemberAdd(const aegis::gateway::events::guild_member_add &gma);
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
+	virtual bool OnPresenceUpdate();
 
 	/* Emit a simple text only embed to a channel, many modules use this for error reporting */
 	void EmbedSimple(const std::string &message, int64_t channelID);

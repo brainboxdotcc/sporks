@@ -4,8 +4,8 @@
 #include <thread>
 #include <mutex>
 #include <aegis.hpp>
-#include "../modules.h"
-#include "../queue.h"
+#include "../../modules.h"
+#include "../../queue.h"
 
 using json = nlohmann::json; 
 

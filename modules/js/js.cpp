@@ -1,7 +1,7 @@
 #include "js.h"
-#include "../bot.h"
-#include "../config.h"
-#include "../stringops.h"
+#include "../../bot.h"
+#include "../../config.h"
+#include "../../stringops.h"
 #include <thread>
 #include <streambuf>
 #include <fstream>
@@ -780,7 +780,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 5$";
+	std::string version = "$ModVer 6$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
