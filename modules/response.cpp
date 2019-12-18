@@ -2,14 +2,16 @@
 #include <mutex>
 #include <string>
 #include <sstream>
-#include "bot.h"
-#include "regex.h"
-#include "queue.h"
-#include "config.h"
-#include "stringops.h"
-#include "status.h"
+#include "../bot.h"
+#include "../regex.h"
+#include "../queue.h"
+#include "../config.h"
+#include "../stringops.h"
+#include "../statusfield.h"
+#include "../modules.h"
+#include "infobot.h"
 
-void Bot::OutputThread() {
+void InfobotModule::OutputThread() {
 	PCRE statsreply("Since (.+?), there have been (\\d+) modifications and (\\d+) questions. I have been alive for (.+?), I currently know (\\d+)");
 	PCRE url_sanitise("^https?://", true);
 	PCRE embed_reply("\\s*<embed:(.+)>\\s*$", true);
@@ -27,15 +29,15 @@ void Bot::OutputThread() {
 			while (!done.empty()) {
 				json channel_settings;
 				do {
-					std::lock_guard<std::mutex> hash_lock(this->channel_hash_mutex);
-					channel_settings = getSettings(this, done.front().channelID, done.front().serverID);
+					std::lock_guard<std::mutex> hash_lock(bot->channel_hash_mutex);
+					channel_settings = getSettings(bot, done.front().channelID, done.front().serverID);
 				} while (false);
 				if (done.front().mentioned || settings::IsTalkative(channel_settings)) {
 					try {
 						std::vector<std::string> m;
 						if (statsreply.Match(done.front().message, m)) {
 							/* Handle status reply */
-							ShowStatus(this, m, done.front().channelID);
+							this->ShowStatus(m, done.front().channelID);
 						} else {
 							/* Anything else */
 							std::string message = trim(done.front().message);
@@ -67,7 +69,7 @@ void Bot::OutputThread() {
 								message = ReplaceString(message, "@here", "@‎here");
 								message = ReplaceString(message, "<br>", "\n");
 								message = ReplaceString(message, "<s>", "|");
-								aegis::channel* channel = core.find_channel(done.front().channelID);
+								aegis::channel* channel = bot->core.find_channel(done.front().channelID);
 								if (channel) {
 									std::vector<std::string> embedmatches;
 									if (embed_reply.Match(message, embedmatches)) {
@@ -82,13 +84,13 @@ void Bot::OutputThread() {
 									} else {
 										channel->create_message(message);
 									}
-									sent_messages++;
+									bot->sent_messages++;
 								}
 							}
 						}
 					}
 					catch (std::exception e) {
-						core.log->error("Can't send message to channel id {}, (talkative={},mentioned={}), error is: {}", done.front().channelID, settings::IsTalkative(channel_settings), done.front().mentioned, e.what());
+						bot->core.log->error("Can't send message to channel id {}, (talkative={},mentioned={}), error is: {}", done.front().channelID, settings::IsTalkative(channel_settings), done.front().mentioned, e.what());
 					}
 				}
 				done.pop();
@@ -96,7 +98,7 @@ void Bot::OutputThread() {
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 		catch (std::exception e) {
-			core.log->error("Response Oof! {}", e.what());
+			bot->core.log->error("Response Oof! {}", e.what());
 		}
 	}
 }

@@ -1,5 +1,5 @@
 #include "bot.h"
-#include "config.h"
+#include "statusfield.h"
 #include "database.h"
 #include "stringops.h"
 #include <string>
@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <mutex>
 #include <stdlib.h>
-#include "help.h"
 
 std::mutex config_sql_mutex;
 

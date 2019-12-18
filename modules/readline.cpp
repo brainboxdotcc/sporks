@@ -8,11 +8,12 @@
 
 #include <cstddef>
 #include <iostream>
-#include "includes.h"
+#include "../includes.h"
+#include "infobot.h"
 
 using namespace std;
 
-size_t readLine(int fd, char *buffer, size_t n)
+size_t InfobotModule::readLine(int fd, char *buffer, size_t n)
 {
 	ssize_t numRead;					/* # of bytes fetched by last read() */
 	size_t totRead;					 /* Total bytes read so far */
@@ -54,7 +55,7 @@ size_t readLine(int fd, char *buffer, size_t n)
 	return totRead;
 }
 
-bool writeLine(int fd, const std::string &str)
+bool InfobotModule::writeLine(int fd, const std::string &str)
 {
 	if (write(fd, str.data(), str.length()) < 0) {
 		throw std::exception();
@@ -65,3 +66,4 @@ bool writeLine(int fd, const std::string &str)
 	}
 	return true;
 }
+

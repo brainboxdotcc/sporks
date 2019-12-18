@@ -2,27 +2,24 @@
 #include <sstream>
 #include <iostream>
 #include <ctime>
-#include "status.h"
-#include "bot.h"
-#include "regex.h"
-#include "stringops.h"
-#include "help.h"
+#include "../bot.h"
+#include "../regex.h"
+#include "../stringops.h"
+#include "../statusfield.h"
+#include "infobot.h"
 
 PCRE uptime_days("(\\d+) day");
 PCRE uptime_hours("(\\d+) hour");
 PCRE uptime_minutes("(\\d+) min");
 PCRE uptime_secs("(\\d+) second");
 
-statusfield::statusfield(const std::string &a, const std::string &b) : name(a), value(b) {
-}
-
-void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t channelID) {
+void InfobotModule::ShowStatus(const std::vector<std::string> &matches, int64_t channelID) {
 	std::stringstream s;
 
 	int64_t servers = bot->core.get_guild_count();
 	int64_t users = bot->core.get_member_count();
 
-	QueueStats qs = bot->GetQueueStats();
+	QueueStats qs = this->GetQueueStats();
 
 	std::vector<std::string> m;
 	int days = 0, hours = 0, minutes = 0, seconds = 0;
@@ -57,7 +54,7 @@ void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t chann
 
 	s << "{\"title\":\"" << bot->user.username;
 	s << " status\",\"color\":16767488,\"url\":\"https:\\/\\/sporks.gg\\/\\/\",\"image\":{\"url\":\"https:\\/\\/sporks.gg\\/graphs\\/daylearned.php?now=" << time(NULL);
-	s << "\"},\"footer\":{\"link\":\"https;\\/\\/sporks.gg\\/\",\"text\":\"Powered by Botnix 2.0 with the infobot and discord modules\",\"icon_url\":\"https:\\/\\/www.botnix.org\\/images\\/botnix.png\"},\"fields\":[";
+	s << "\"},\"footer\":{\"link\":\"https;\\/\\/sporks.gg\\/\",\"text\":\"Powered by Sporks!\",\"icon_url\":\"https:\\/\\/sporks.gg\\/images\\/sporks_2020.png\"},\"fields\":[";
 	for (int i = 0; statusfields[i].name != ""; ++i) {
 		s << "{\"name\":\"" +  statusfields[i].name + "\",\"value\":\"" + statusfields[i].value + "\", \"inline\": true}";
 		if (statusfields[i + 1].name != "") {
@@ -79,3 +76,4 @@ void ShowStatus(Bot* bot, const std::vector<std::string> &matches, int64_t chann
 		bot->sent_messages++;
 	}
 }
+

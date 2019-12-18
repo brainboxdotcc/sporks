@@ -1,7 +1,6 @@
 #include <aegis.hpp>
 #include "bot.h"
 #include "includes.h"
-#include "readline.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -18,27 +17,12 @@
 #include "rss.h"
 #include "modules.h"
 
-const int64_t TEST_SERVER_SNOWFLAKE_ID = 633212509242785792;
-int debug = 0;
-
-QueueStats Bot::GetQueueStats() {
-	QueueStats q;
-
-	q.inputs = inputs.size();
-	q.outputs = outputs.size();
-	q.users = userqueue.size();
-
-	return q;
-}
-
-Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_input(nullptr), thr_output(nullptr), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
+Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
 
 	Loader = new ModuleLoader(this);
 
 	Loader->LoadAll();
 
-	thr_input = new std::thread(&Bot::InputThread, this);
-	thr_output = new std::thread(&Bot::OutputThread, this);
 	thr_userqueue = new std::thread(&Bot::SaveCachedUsersThread, this);
 	thr_presence = new std::thread(&Bot::UpdatePresenceThread, this);
 }
@@ -54,8 +38,6 @@ void Bot::DisposeThread(std::thread* t) {
 Bot::~Bot() {
 	terminate = true;
 
-	DisposeThread(thr_input);
-	DisposeThread(thr_output);
 	DisposeThread(thr_userqueue);
 	DisposeThread(thr_presence);
 
@@ -93,14 +75,14 @@ void Bot::onServer(aegis::gateway::events::guild_create gc) {
 		}
 	} while (false);
 
-	this->nickList[gc.guild.id.get()] = std::vector<std::string>();
 	for (auto i = gc.guild.members.begin(); i != gc.guild.members.end(); ++i) {
 		do {
 			std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
 			userqueue.push(i->_user);
 		} while (false);
-		this->nickList[gc.guild.id.get()].push_back(i->_user.username);
 	}
+
+	FOREACH_MOD(I_OnGuildCreate, OnGuildCreate(gc));
 }
 
 void Bot::SaveCachedUsersThread() {
@@ -175,24 +157,24 @@ void Bot::UpdatePresenceThread() {
 		aegis::guild* home = core.find_guild(from_string<int64_t>(Bot::GetConfig("home"), std::dec));
 		if (home) {
 			/* Process removals first */
-                        for (auto vote = rs_votes.begin(); vote != rs_votes.end(); ++vote) {
-                                int64_t member_id = from_string<int64_t>((*vote)["snowflake_id"], std::dec);
-                                aegis::user* user = core.find_user(member_id);
-                                if (user) {
-                                        /* FIXME: If they've voted again, we shouldnt take their role away below. check for this. */
-                                        if ((*vote)["rolegiven"] == "1") {
-                                                /* Role was already given, take away the role and remove the vote IF the date is too far in the past.
-                                                 * Votes last 24 hours.
-                                                 */
-                                                uint64_t role_timestamp = from_string<uint64_t>((*vote)["vote_time"], std::dec);
-                                                if (time(NULL) - role_timestamp > 86400) {
-                                                        db::query("DELETE FROM infobot_votes WHERE id = ?", {(*vote)["id"]});
-                                                        home->remove_guild_member_role(member_id, from_string<int64_t>(Bot::GetConfig("vote_role"), std::dec));
-                                                        core.log->info("Removing vanity role from {}", member_id);
-                                                }
-                                        }
-                                }
-                        }
+			for (auto vote = rs_votes.begin(); vote != rs_votes.end(); ++vote) {
+				int64_t member_id = from_string<int64_t>((*vote)["snowflake_id"], std::dec);
+				aegis::user* user = core.find_user(member_id);
+				if (user) {
+					/* FIXME: If they've voted again, we shouldnt take their role away below. check for this. */
+					if ((*vote)["rolegiven"] == "1") {
+						/* Role was already given, take away the role and remove the vote IF the date is too far in the past.
+						 * Votes last 24 hours.
+						 */
+						uint64_t role_timestamp = from_string<uint64_t>((*vote)["vote_time"], std::dec);
+						if (time(NULL) - role_timestamp > 86400) {
+							db::query("DELETE FROM infobot_votes WHERE id = ?", {(*vote)["id"]});
+							home->remove_guild_member_role(member_id, from_string<int64_t>(Bot::GetConfig("vote_role"), std::dec));
+							core.log->info("Removing vanity role from {}", member_id);
+						}
+					}
+				}
+			}
 			/* Now additions, so that if they've re-voted, it doesnt remove it */
 			for (auto vote = rs_votes.begin(); vote != rs_votes.end(); ++vote) {
 				int64_t member_id = from_string<int64_t>((*vote)["snowflake_id"], std::dec);
@@ -275,26 +257,6 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 		/* Call modules */
 		FOREACH_MOD(I_OnMessage,OnMessage(message, mentions_removed, mentioned, stringmentions));
 
-		if (Loader->IsEventClaimed()) {
-			core.log->info("Message was claimed by a module");
-			core.log->flush();
-			return;
-		}
-
-		if (!debug || message.msg.get_guild_id().get() == TEST_SERVER_SNOWFLAKE_ID) {
-			/* Everything else goes to the input queue to be processed by botnix if we're not in dev mode OR we're on the test server */
-			QueueItem query;
-			query.message = mentions_removed;
-			query.channelID = message.channel.get_id().get();
-			query.serverID = message.msg.get_guild_id().get();
-			query.username = message.msg.get_user().get_username();
-			query.mentioned = mentioned;
-			do {
-				std::lock_guard<std::mutex> input_lock(input_mutex);
-				inputs.push(query);
-			} while (false);
-		}
-
 		core.log->flush();
 	}
 }
@@ -320,7 +282,6 @@ int main(int argc, char** argv) {
 	struct option longopts[] =
 	{
 		{ "dev",	   no_argument,		&dev,	1  },
-		{ "debug",	 no_argument,		&debug, 1  },
 		{ 0, 0, 0, 0 }
 	};
 

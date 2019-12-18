@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.6)
 project(bot)
-add_executable(bot main.cpp readline.cpp database.cpp infobot.cpp response.cpp stringops.cpp config.cpp regex.cpp status.cpp rss.cpp modules.cpp signal.cpp)
+add_executable(bot main.cpp database.cpp stringops.cpp config.cpp regex.cpp rss.cpp modules.cpp signal.cpp statusfield.cpp)
 
 include(buildtools/cmake/FindMYSQL.cmake)
 include(buildtools/cmake/FindPCRE.cmake)
@@ -18,7 +18,7 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3")
 
 target_link_libraries(bot)
 
-add_library(module_infobot SHARED modules/infobot.cpp)
+add_library(module_infobot SHARED modules/infobot.cpp modules/response.cpp modules/readline.cpp modules/status.cpp)
 add_library(module_diagnostics SHARED modules/diagnostics.cpp)
 add_library(module_help SHARED modules/help.cpp)
 add_library(module_config SHARED modules/config.cpp)

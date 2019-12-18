@@ -29,14 +29,6 @@
 
 using json = nlohmann::json;
 
-typedef std::unordered_map<int64_t, std::vector<std::string>> RandomNickCache;
-
-struct QueueStats {
-	size_t inputs;
-	size_t outputs;
-	size_t users;
-};
-
 class Module;
 class ModuleLoader;
 
@@ -46,40 +38,26 @@ class Bot {
 	bool dev;
 	
 	/* Threads */
-	std::thread* thr_input;
-	std::thread* thr_output;
 	std::thread* thr_userqueue;
 	std::thread* thr_presence;
-
-	/* Thread safety for caches and queues */
-	std::mutex input_mutex;
-	std::mutex output_mutex;
-	std::mutex channel_hash_mutex;
-	std::mutex user_cache_mutex;
-
-	/* Input and output queue, lists of messages awaiting processing, or to be sent to channels */
-	Queue inputs;
-	Queue outputs;
 
 	/* Set to true if all threads are to end */
 	bool terminate;
 
-	/* Join and delete a non-null pointer to std::thread */
-	void DisposeThread(std::thread* thread);
-
 	/* Thread handlers */
-	void InputThread();		/* Processes input lines from channel messages, complex responses can take upwards of 250ms */
-	void OutputThread();		/* Outputs lines due to be sent to channel messages, after being processed by the input thread */
 	void SaveCachedUsersThread();	/* If there are any users in the userqueue, this thread updates/inserts them on a mysql table in the background */
 	void UpdatePresenceThread();	/* Updates the bot presence every 120 seconds */
 
 	void SetSignals();
 
 public:
+
+        /* Thread safety for caches and queues */
+	std::mutex channel_hash_mutex;
+	std::mutex user_cache_mutex;
+
 	/* Aegis core */
 	aegis::core &core;
-
-	RandomNickCache nickList;	/* Special case, contains a vector of nicknames per-server for selecting a random nickname only */
 
 	/* Userqueue: a queue of users waiting to be written to SQL for the dashboard */
 	std::queue<aegis::gateway::objects::user> userqueue;
@@ -93,9 +71,10 @@ public:
 	Bot(bool development, aegis::core &aegiscore);
 	virtual ~Bot();
 
-	QueueStats GetQueueStats();
-
 	ModuleLoader* Loader;
+
+	/* Join and delete a non-null pointer to std::thread */
+	void DisposeThread(std::thread* thread);
 
 	/* Shorthand to get bot's user id */
 	int64_t getID();

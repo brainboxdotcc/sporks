@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <mutex>
 #include <stdlib.h>
-#include "../help.h"
+#include "../statusfield.h"
 #include "../regex.h"
 
 /**
@@ -35,7 +35,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 4$";
+		std::string version = "$ModVer 5$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
