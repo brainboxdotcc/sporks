@@ -791,7 +791,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 8$";
+	std::string version = "$ModVer 9$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -805,7 +805,7 @@ bool JSModule::OnMessage(const aegis::gateway::events::message_create &message, 
 	std::unordered_map<std::string, json> jsonstore;
 	aegis::gateway::events::message_create msg = message;
 
-	if (this->channelHasJS(msg.channel.get_id().get())) {
+	if (js->channelHasJS(msg.channel.get_id().get())) {
 
 		json chan;
 		const aegis::channel& c = message.channel;
