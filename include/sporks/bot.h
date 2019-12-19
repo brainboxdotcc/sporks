@@ -15,6 +15,9 @@
  * from the website's perspective this data is read-only and it will look to the discord
  * API for authentication and current server list of a user.
  *
+ * All major parts of this bot are modular, and can be hot-reloaded on the fly to prevent
+ * having to restart the shards. Please see the modules directory for source code.
+ *
  *************************************************************************************/
 #pragma once
 

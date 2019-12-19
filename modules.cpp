@@ -6,6 +6,9 @@
 #include <dlfcn.h>
 #include <sstream>
 
+/**
+ * String versions of the enum Implementation values, for display only
+ */
 const char* StringNames[I_END + 1] = {
 	"I_BEGIN",
 	"I_OnMessage",
@@ -28,6 +31,10 @@ ModuleLoader::~ModuleLoader()
 {
 }
 
+/**
+ * Attach an event to a module. Rather than just calling all events at all times, an event can be enabled or
+ * disabled with Attach() and Detach(), this allows a module to programatically turn events on and off for itself.
+ */
 void ModuleLoader::Attach(const std::vector<Implementation> &i, Module* mod)
 {
 	for (auto n = i.begin(); n != i.end(); ++n) {
@@ -40,6 +47,9 @@ void ModuleLoader::Attach(const std::vector<Implementation> &i, Module* mod)
 	}
 }
 
+/**
+ * Detach an event from a module, oppsite of Attach() above.
+ */
 void ModuleLoader::Detach(const std::vector<Implementation> &i, Module* mod)
 {
 	for (auto n = i.begin(); n != i.end(); ++n) {
@@ -51,26 +61,42 @@ void ModuleLoader::Detach(const std::vector<Implementation> &i, Module* mod)
 	}
 }
 
+/**
+ * Set event as unclaimed by a module
+ */
 void ModuleLoader::ClearEvent()
 {
 	claimed = false;
 }
 
+/**
+ * Set event as claimed by a module
+ */
 void ModuleLoader::ClaimEvent()
 {
 	claimed = true;
 }
 
+/**
+ * Returns true if the last event was claimed by a module
+ */
 bool ModuleLoader::IsEventClaimed()
 {
 	return claimed;
 }
 
+/**
+ * Return a reference to the module list
+ */
 const ModMap& ModuleLoader::GetModuleList() const
 {
 	return ModuleList;
 }
 
+/**
+ * Load a module. Returns false on failure, true on success.
+ * Sets the error message returned by GetLastError().
+ */
 bool ModuleLoader::Load(const std::string &filename)
 {
 	ModuleNative m;
@@ -124,11 +150,17 @@ bool ModuleLoader::Load(const std::string &filename)
 	return false;
 }
 
+/**
+ * Returns the last error caused by Load() or Unload(), or an empty string for no error.
+ */
 const std::string& ModuleLoader::GetLastError()
 {
 	return lasterror;
 }
 
+/**
+ * Unload a module from memory. Returns true on success or false on failure.
+ */
 bool ModuleLoader::Unload(const std::string &filename)
 {
 	auto m = Modules.find(filename);
@@ -164,11 +196,22 @@ bool ModuleLoader::Unload(const std::string &filename)
 	return true;
 }
 
+/**
+ * Unload, then reload a loaded module. Returns true on success or false on failure.
+ * Failure to unload causes load to be skipped, so you can't use this function to load
+ * a module that isnt loaded.
+ */
 bool ModuleLoader::Reload(const std::string &filename)
 {
+	/* Short-circuit evaluation here means that if Unload() returns false,
+	 * Load() won't be called at all.
+	 */
 	return (Unload(filename) && Load(filename));
 }
 
+/**
+ * Load all modules from the config file modules.json
+ */
 void ModuleLoader::LoadAll()
 {
 	json document;
@@ -180,6 +223,9 @@ void ModuleLoader::LoadAll()
 	}
 }
 
+/**
+ * Return a given symbol name from a shared object represented by the ModuleNative value.
+ */
 bool ModuleLoader::GetSymbol(ModuleNative &native, const char *sym_name)
 {
 	/* Find exported symbol in shared object */
@@ -256,6 +302,9 @@ bool Module::OnPresenceUpdate()
 	return true;
 }
 
+/**
+ * Output a simple embed to a channel consisting just of a message.
+ */
 void Module::EmbedSimple(const std::string &message, int64_t channelID)
 {
 	std::stringstream s;

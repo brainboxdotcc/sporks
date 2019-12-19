@@ -23,6 +23,7 @@ public:
 	bool run(int64_t channel_id, const std::unordered_map<std::string, json> &vars, const std::string &callback_fn = "", const std::string &callback_content = "");
 	void WebRequestWatch();
 	bool hasReplied();
+	bool channelHasJS(int64_t channel_id);
 };
 
 class JSModule : public Module

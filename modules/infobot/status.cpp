@@ -13,6 +13,9 @@ PCRE uptime_hours("(\\d+) hour");
 PCRE uptime_minutes("(\\d+) min");
 PCRE uptime_secs("(\\d+) second");
 
+/**
+ * Report status to discord as a pretty embed
+ */
 void InfobotModule::ShowStatus(const std::vector<std::string> &matches, int64_t channelID) {
 	std::stringstream s;
 

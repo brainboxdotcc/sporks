@@ -35,7 +35,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 7$";
+		std::string version = "$ModVer 8$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -44,6 +44,9 @@ public:
 		return "Config Commands, '@Sporks config'";
 	}
 
+	/**
+	 * Returns true if the user is a server owner, or has manage messages or admin permission on the server.
+	 */
 	bool HasPermission(int64_t channelID, const aegis::gateway::objects::message &message) {
 		aegis::guild* g = bot->core.find_guild(message.get_guild_id());
 		if (g) {
@@ -58,6 +61,9 @@ public:
 		return false;
 	}
 
+	/**
+	 * Config set command
+	 */
 	void DoConfigSet(std::stringstream &param, int64_t channelID, const aegis::gateway::objects::user& issuer) {
 		std::string variable;
 		std::string setting;
@@ -89,7 +95,9 @@ public:
 	}
 	
 	
-	/* Add, amend and show channel ignore list */
+	/**
+	 *  Add, amend and show channel ignore list
+	 */
 	void DoConfigIgnore(std::stringstream &param, int64_t channelID, const aegis::gateway::objects::message &message) {
 		json csettings = getSettings(bot, channelID, 0);
 		std::string operation;
@@ -162,7 +170,9 @@ public:
 		}
 	}
 	
-	/* Show current channel configuration */
+	/**
+	 * Show current channel configuration
+	 */
 	void DoConfigShow(int64_t channelID, const aegis::gateway::objects::user &issuer) {
 		json csettings = getSettings(bot, channelID, 0);
 		json embed_json;
@@ -197,6 +207,9 @@ public:
 		}	
 	}
 
+	/**
+	 * Main handler called by OnMessage().
+	 */
 	void DoConfig(const std::vector<std::string> &param, int64_t channelID, const aegis::gateway::objects::message& message) {
 
 		if (!HasPermission(channelID, message)) {
@@ -229,6 +242,9 @@ public:
 		}
 	}
 
+	/**
+	 * Uses a regular expression to identify the config command
+	 */
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 	{
 		std::vector<std::string> param;

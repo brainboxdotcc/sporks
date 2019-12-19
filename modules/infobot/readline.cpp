@@ -13,6 +13,7 @@
 
 using namespace std;
 
+/* Read line from socket, blocking */
 size_t InfobotModule::readLine(int fd, char *buffer, size_t n)
 {
 	ssize_t numRead;					/* # of bytes fetched by last read() */
@@ -55,6 +56,7 @@ size_t InfobotModule::readLine(int fd, char *buffer, size_t n)
 	return totRead;
 }
 
+/* Write line to socket, blocking */
 bool InfobotModule::writeLine(int fd, const std::string &str)
 {
 	if (write(fd, str.data(), str.length()) < 0) {

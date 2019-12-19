@@ -11,6 +11,9 @@
 #include <sporks/modules.h>
 #include "infobot.h"
 
+/**
+ * Process output queue from botnix to discord, identify status reports and pass them to the status system
+ */
 void InfobotModule::OutputThread() {
 	PCRE statsreply("Since (.+?), there have been (\\d+) modifications and (\\d+) questions. I have been alive for (.+?), I currently know (\\d+)");
 	PCRE url_sanitise("^https?://", true);

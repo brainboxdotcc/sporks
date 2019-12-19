@@ -12,23 +12,9 @@
 
 std::mutex config_sql_mutex;
 
-void DoConfigSet(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::gateway::objects::user &issuer);
-void DoConfigIgnore(class Bot* bot, std::stringstream &param, int64_t channelID, const aegis::gateway::objects::message &message);
-void DoConfigShow(class Bot* bot, int64_t channelID, const aegis::gateway::objects::user &issuer);
-
 namespace settings {
 
-bool channelHasJS(int64_t channel_id)
-{
-	db::resultset r = db::query("SELECT id FROM infobot_discord_javascript WHERE id = ?", {std::to_string(channel_id)});
-	/* No javascript configuration for this channel */
-	if (r.size() == 0) {
-		return false;
-	} else {
-		return true;
-	}
-}
-
+/* Get one configuration variable for a channel by ID */
 std::string getJSConfig(int64_t channel_id, std::string variable)
 {
 	db::resultset r = db::query("SELECT `" + variable + "` FROM infobot_discord_javascript WHERE id = ?", {std::to_string(channel_id)});
@@ -39,6 +25,7 @@ std::string getJSConfig(int64_t channel_id, std::string variable)
 	}
 }
 
+/* Set one configuration variable for a channel by ID */
 void setJSConfig(int64_t channel_id, std::string variable, std::string value)
 {
 	db::resultset r = db::query("UPDATE infobot_discord_javascript SET `" + variable + "` = '?' WHERE id = ?", {value, std::to_string(channel_id)});
@@ -46,6 +33,12 @@ void setJSConfig(int64_t channel_id, std::string variable, std::string value)
 
 };
 
+/**
+ * Get all configuration variables for a channel by ID.
+ *
+ * SIDE EFFECTS:
+ * If there are no configuration settings, create blank settings and return an empty set.
+ */
 json getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 {
 	std::lock_guard<std::mutex> sql_lock(config_sql_mutex);
@@ -101,18 +94,31 @@ json getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 
 namespace settings {
 
+	/**
+	 * Returns true if learning is disabled in the given settings
+	 */
 	bool IsLearningDisabled(const json& settings) {
 		return settings.value("learningdisabled", false);
 	}
 
+	/**
+	 * Returns true if learning is enabled in the given settings
+	 */
 	bool IsLearningEnabled(const json& settings) {
 		return !IsLearningDisabled(settings);
 	}
 
+	/**
+	 * Returns true if talkative is enabled in the given settings
+	 */
 	bool IsTalkative(const json& settings) {
 		return settings.value("talkative", false);
 	}
 
+	/**
+	 * Returns a vector of snowflake ids representing the ignore list,
+	 * from the given settings.
+	 */
 	std::vector<uint64_t> GetIgnoreList(const json& settings) {
 		std::vector<uint64_t> ignores;
 		if (settings.find("ignores") != settings.end()) {
@@ -123,7 +129,4 @@ namespace settings {
 		return ignores;
 	}
 };
-
-
-
 

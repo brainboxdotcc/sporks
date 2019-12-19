@@ -7,24 +7,25 @@
 
 using json = nlohmann::json;
 
+/* Get settings for a channel */
 json getSettings(class Bot* bot, int64_t channel_id, int64_t guild_id);
 
 namespace settings {
-	/* Create json from a simple std::initializer_list of string pairs */
-        const std::string createJSON(std::initializer_list<std::pair<std::string, std::string>> json);
-	/* Helper functions for types */
-        const std::string string(const std::string& s);
-        const std::string UInteger(const uint64_t num);
-        const std::string optionalUInteger(const uint64_t num);
-        const std::string integer(const int64_t num);
-        const std::string optionalInteger(const int64_t num);
-        const std::string boolean(const bool boolean);
+	/* Returns true if learning is disabled */
         bool IsLearningDisabled(const json& settings);
+	/* Returns true if learning is enabled */
         bool IsLearningEnabled(const json& settings);
+	/* Returns true if the bot is talkative */
         bool IsTalkative(const json& settings);
+	/* Returns the ignore list */
 	std::vector<uint64_t> GetIgnoreList(const json& settings);
-	bool channelHasJS(int64_t channel_id);
+	/* Returns javascript configuration.
+	 * FIXME: Move me to js module.
+	 */
 	std::string getJSConfig(int64_t channel_id, std::string variable);
+	/* Sets the JS configuration
+	 * FIXME: Move me to js module
+	 */
 	void setJSConfig(int64_t channel_id, std::string variable, std::string value);
 }
 

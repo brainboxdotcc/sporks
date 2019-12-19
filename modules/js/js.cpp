@@ -517,6 +517,17 @@ JS::~JS()
 	delete web_request_watcher;
 }
 
+bool JS::channelHasJS(int64_t channel_id)
+{
+	db::resultset r = db::query("SELECT id FROM infobot_discord_javascript WHERE id = ?", {std::to_string(channel_id)});
+	/* No javascript configuration for this channel */
+	if (r.size() == 0) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
 bool JS::hasReplied()
 {
 	return message_total > 0;
@@ -780,7 +791,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 7$";
+	std::string version = "$ModVer 8$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -794,7 +805,7 @@ bool JSModule::OnMessage(const aegis::gateway::events::message_create &message, 
 	std::unordered_map<std::string, json> jsonstore;
 	aegis::gateway::events::message_create msg = message;
 
-	if (settings::channelHasJS(msg.channel.get_id().get())) {
+	if (this->channelHasJS(msg.channel.get_id().get())) {
 
 		json chan;
 		const aegis::channel& c = message.channel;

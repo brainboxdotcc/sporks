@@ -27,7 +27,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 9$";
+		std::string version = "$ModVer 10$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -51,11 +51,14 @@ public:
 			/* Get owner snowflake id from config file */
 			int64_t owner_id = from_string<int64_t>(Bot::GetConfig("owner"), std::dec);
 
+			/* Only allow these commands to the bot owner */
 			if (msg.author.id.get() == owner_id) {
 
 				if (param.size() < 3) {
+					/* Invalid number of parameters */
 					EmbedSimple("Sudo make me a sandwich.", msg.get_channel_id().get());
 				} else {
+					/* Module list command */
 					if (lowercase(subcommand) == "modules") {
 						std::stringstream s;
 
@@ -79,6 +82,7 @@ public:
 						}
 						
 					} else if (lowercase(subcommand) == "load") {
+						/* Load a module */
 						std::string modfile;
 						tokens >> modfile;
 						if (bot->Loader->Load(modfile)) {
@@ -87,6 +91,7 @@ public:
 							EmbedSimple(std::string("Can't do that: ``") + bot->Loader->GetLastError() + "``", msg.get_channel_id().get());
 						}
 					} else if (lowercase(subcommand) == "unload") {
+						/* Unload a module */
 						std::string modfile;
 						tokens >> modfile;
 						if (modfile == "module_diagnostics,so") {
@@ -99,6 +104,7 @@ public:
 							}
 						}
 					} else if (lowercase(subcommand) == "reload") {
+						/* Reload a currently loaded module */
 						std::string modfile;
 						tokens >> modfile;
 						if (modfile == "module_diagnostics.so") {
@@ -111,13 +117,16 @@ public:
 							}
 						}
 					} else {
+						/* Invalid command */
 						EmbedSimple("Sudo **what**? I don't know what that command means.", msg.get_channel_id().get());
 					}
 				}
 			} else {
+				/* Access denied */
 				EmbedSimple("Make your own sandwich, mortal.", msg.get_channel_id().get());
 			}
 
+			/* Eat the event */
 			return false;
 		}
 		return true;

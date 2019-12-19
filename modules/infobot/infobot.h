@@ -17,31 +17,60 @@ struct QueueStats {
 	size_t users;
 };
 
+/**
+ * Infobot module: Allows smart responses from the botnix/infobot.pm system.
+ */
 class InfobotModule : public Module
 {
+	/**
+	 * The nickname of the bot on IRC as reported by botnix
+	 */
 	std::string core_nickname;
 
-	/* Threads */
+	/**
+	 * Threads
+	 */
 	std::thread* thr_input;
 	std::thread* thr_output;
 
-	/* Thread safety for caches and queues */
+	/**
+	 *  Thread safety for queues
+	 */
 	std::mutex input_mutex;
 	std::mutex output_mutex;
 
+	/** Set to true in destructor when threads are to terminte
+	 */
 	bool terminate;	
 
-	/* Input and output queue, lists of messages awaiting processing, or to be sent to channels */
+	/**
+	 *  Input and output queue, lists of messages awaiting processing, or to be sent to channels
+	 */
 	Queue inputs;
 	Queue outputs;
 
-	RandomNickCache nickList;       /* Special case, contains a vector of nicknames per-server for selecting a random nickname only */
+	/**
+	 *  Contains a vector of nicknames per-server for selecting a random nickname only
+	 */
+	RandomNickCache nickList;
 
+	/**
+	 * Read line from a socket
+	 */
 	size_t readLine(int fd, char *buffer, size_t n);
+	/**
+	 * Write line to a socket 
+	 */
 	bool writeLine(int fd, const std::string &str);
 
+	/**
+	 * Report bot status as an embed
+	 */
 	void ShowStatus(const std::vector<std::string> &matches, int64_t channelID);
 
+	/**
+	 * Get queue sizes for use in status report
+	 */
 	QueueStats GetQueueStats();
 
 public:
@@ -54,7 +83,14 @@ public:
 	virtual bool OnGuildCreate(const aegis::gateway::events::guild_create &gc);
 	virtual bool OnGuildDelete(const aegis::gateway::events::guild_delete &guild);
 
+	/**
+	 * Set the core IRC nickname used for queries to botnix
+	 */
 	void set_core_nickname(const std::string &coredata);
+
+	/**
+	 * Random integer in range
+	 */
 	int random(int min, int max);
 
 	/* Thread handlers */

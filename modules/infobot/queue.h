@@ -7,6 +7,12 @@
 
 using json = nlohmann::json;
 
+/**
+ * Contains an queued input or output item.
+ * These are messages in and out of the bot, they are queued
+ * because the request to process them can take some time and
+ * has to pass to an external program.
+ */
 class QueueItem
 {
   public:

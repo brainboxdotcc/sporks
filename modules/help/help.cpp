@@ -29,7 +29,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 9$";
+		std::string version = "$ModVer 10$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -38,6 +38,9 @@ public:
 		return "Help Commands, '@Sporks help'";
 	}
 
+	/**
+	 * Uses a regular expression to identify the help command and its single parameter
+	 */
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 	{
 		std::vector<std::string> param;
@@ -54,6 +57,9 @@ public:
 		return true;
 	}
 	
+	/**
+	 * Emit help via DM using a json file in the help/ directory. Missing help files emit a generic error message.
+	 */
 	void GetHelp(const std::string &section, int64_t channelID, const std::string &botusername, int64_t botid, const std::string &author, int64_t authorid, bool dm)
 	{
 		bool found = true;

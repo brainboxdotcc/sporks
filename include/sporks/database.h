@@ -14,10 +14,15 @@
 
 namespace db {
 
+	/* Definition of a row in a result set*/
 	typedef std::map<std::string, std::string> row;
+	/* Definition of a result set, a vector of maps */
 	typedef std::vector<row> resultset;
 
+	/* Connect to database */
 	bool connect(const std::string &host, const std::string &user, const std::string &pass, const std::string &db, int port);
+	/* Disconnect from database */
 	bool close();
+	/* Issue a database query and return results */
 	resultset query(const std::string &format, std::vector<std::string> parameters);
 };
