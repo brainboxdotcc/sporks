@@ -2,10 +2,10 @@
 #include <sstream>
 #include <iostream>
 #include <ctime>
-#include "../../bot.h"
-#include "../../regex.h"
-#include "../../stringops.h"
-#include "../../statusfield.h"
+#include <sporks/bot.h>
+#include <sporks/regex.h>
+#include <sporks/stringops.h>
+#include <sporks/statusfield.h>
 #include "infobot.h"
 
 PCRE uptime_days("(\\d+) day");

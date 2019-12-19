@@ -1,7 +1,7 @@
 #pragma once
 
 #include <aegis.hpp>
-#include "database.h"
+#include <sporks/database.h>
 #include <string>
 #include <cstdint>
 

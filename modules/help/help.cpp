@@ -1,11 +1,11 @@
-#include "../../modules.h"
-#include "../../regex.h"
+#include <sporks/modules.h>
+#include <sporks/regex.h>
 #include <string>
 #include <cstdint>
 #include <fstream>
 #include <streambuf>
-#include "../../stringops.h"
-#include "../../statusfield.h"
+#include <sporks/stringops.h>
+#include <sporks/statusfield.h>
 
 /**
  * Provides help commands from JSON files in the help directory
@@ -29,7 +29,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 8$";
+		std::string version = "$ModVer 9$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 

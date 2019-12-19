@@ -6,7 +6,7 @@
 #include "duktape.h"
 #include <spdlog/spdlog.h>
 #include <aegis.hpp>
-#include "../../modules.h"
+#include <sporks/modules.h>
 
 using json = nlohmann::json; 
 

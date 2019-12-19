@@ -1,5 +1,5 @@
 #include <signal.h>
-#include "bot.h"
+#include <sporks/bot.h>
 
 bool reload = false;
 

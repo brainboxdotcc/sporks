@@ -8,7 +8,7 @@
 
 #include <cstddef>
 #include <iostream>
-#include "../../includes.h"
+#include <sporks/includes.h>
 #include "infobot.h"
 
 using namespace std;

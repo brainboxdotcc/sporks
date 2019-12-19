@@ -2,13 +2,13 @@
 #include <mutex>
 #include <string>
 #include <sstream>
-#include "../../bot.h"
-#include "../../regex.h"
-#include "../../queue.h"
-#include "../../config.h"
-#include "../../stringops.h"
-#include "../../statusfield.h"
-#include "../../modules.h"
+#include <sporks/bot.h>
+#include <sporks/regex.h>
+#include "queue.h"
+#include <sporks/config.h>
+#include <sporks/stringops.h>
+#include <sporks/statusfield.h>
+#include <sporks/modules.h>
 #include "infobot.h"
 
 void InfobotModule::OutputThread() {
@@ -19,19 +19,19 @@ void InfobotModule::OutputThread() {
 	while (!this->terminate) {
 		try {
 			std::deque<QueueItem> done;
-			do {
+			{
 				std::lock_guard<std::mutex> output_lock(this->output_mutex);
 				while (!outputs.empty()) {
 					done.push_back(outputs.front());
 					outputs.pop_front();
 				}
-			} while (false);
+			};
 			while (!done.empty()) {
 				json channel_settings;
-				do {
+				{
 					std::lock_guard<std::mutex> hash_lock(bot->channel_hash_mutex);
 					channel_settings = getSettings(bot, done.front().channelID, done.front().serverID);
-				} while (false);
+				};
 				if (done.front().mentioned || settings::IsTalkative(channel_settings)) {
 					try {
 						std::vector<std::string> m;

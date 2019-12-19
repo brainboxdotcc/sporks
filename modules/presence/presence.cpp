@@ -1,11 +1,11 @@
-#include "../../bot.h"
-#include "../../modules.h"
+#include <sporks/bot.h>
+#include <sporks/modules.h>
 #include <string>
 #include <cstdint>
 #include <fstream>
 #include <streambuf>
-#include "../../stringops.h"
-#include "../../database.h"
+#include <sporks/stringops.h>
+#include <sporks/database.h>
 
 /**
  * Updates presence and counters on a schedule
@@ -27,7 +27,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 2$";
+		std::string version = "$ModVer 3$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 

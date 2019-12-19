@@ -1,6 +1,6 @@
 #include <aegis.hpp>
-#include "bot.h"
-#include "includes.h"
+#include <sporks/bot.h>
+#include <sporks/includes.h>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -8,13 +8,13 @@
 #include <queue>
 #include <stdlib.h>
 #include <getopt.h>
-#include "sys/types.h"
-#include "sys/sysinfo.h"
-#include "database.h"
-#include "config.h"
-#include "regex.h"
-#include "stringops.h"
-#include "modules.h"
+#include <sys/types.h>
+#include <sys/sysinfo.h>
+#include <sporks/database.h>
+#include <sporks/config.h>
+#include <sporks/regex.h>
+#include <sporks/stringops.h>
+#include <sporks/modules.h>
 
 /**
  * Constructor (creates threads, loads all modules)
@@ -98,10 +98,8 @@ void Bot::onServer(aegis::gateway::events::guild_create gc) {
 	}
 
 	for (auto i = gc.guild.members.begin(); i != gc.guild.members.end(); ++i) {
-		do {
-			std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
-			userqueue.push(i->_user);
-		} while (false);
+		std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
+		userqueue.push(i->_user);
 	}
 
 	FOREACH_MOD(I_OnGuildCreate, OnGuildCreate(gc));
@@ -117,11 +115,11 @@ void Bot::SaveCachedUsersThread() {
 	aegis::gateway::objects::user u;
 	while (!this->terminate) {
 		if (!userqueue.empty()) {
-			do {
+			{
 				std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
 				u = userqueue.front();
 				userqueue.pop();
-			} while (false);
+			};
 			std::string userid = std::to_string(u.id.get());
 			std::string bot = u.is_bot() ? "1" : "0";
 			db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, u.username, u.discriminator, u.avatar, bot, u.username, u.discriminator, u.avatar});
@@ -210,10 +208,10 @@ void Bot::onReady(aegis::gateway::events::ready ready) {
 void Bot::onMessage(aegis::gateway::events::message_create message) {
 
 	json settings;
-	do {
+	{
 		std::lock_guard<std::mutex> input_lock(channel_hash_mutex);
 		settings = getSettings(this, message.msg.get_channel_id().get(), message.msg.get_guild_id().get());
-	} while (false);
+	};
 
 	/* Ignore self, and bots */
 	if (message.msg.get_user().get_id() != user.id && message.msg.get_user().is_bot() == false) {

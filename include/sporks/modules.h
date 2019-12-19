@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bot.h"
+#include <sporks/bot.h>
 
 class Module;
 class ModuleLoader;

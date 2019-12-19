@@ -1,4 +1,4 @@
-#include "stringops.h"
+#include <sporks/stringops.h>
 #include <locale>
 #include <iostream>
 #include <algorithm>

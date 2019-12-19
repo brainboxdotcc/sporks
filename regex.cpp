@@ -1,9 +1,8 @@
-#include "regex.h"
+#include <sporks/regex.h>
 #include <pcre.h>
 #include <string>
 #include <vector>
 #include <iostream>
-#include "string.h"
 
 regex_exception::regex_exception(const std::string &_message) : std::exception(), message(_message) {
 }

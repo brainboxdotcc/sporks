@@ -1,11 +1,11 @@
 #include "infobot.h"
-#include "../../bot.h"
-#include "../../includes.h"
-#include "../../queue.h"
-#include "../../config.h"
-#include "../../stringops.h"
-#include "../../regex.h"
-#include "../../modules.h"
+#include <sporks/bot.h>
+#include <sporks/includes.h>
+#include "queue.h"
+#include <sporks/config.h>
+#include <sporks/stringops.h>
+#include <sporks/regex.h>
+#include <sporks/modules.h>
 #include <iostream>
 #include <sstream>
 #include <thread>
@@ -153,10 +153,10 @@ void InfobotModule::InputThread()
 								resp.channelID = query.channelID;
 								resp.serverID = query.serverID;
 								resp.mentioned = query.mentioned;
-								do {
+								{
 									std::lock_guard<std::mutex> output_lock(this->output_mutex);
 									outputs.push_back(resp);
-								} while (false);
+								};
 							}
 
 							std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -196,7 +196,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 4$";
+	std::string version = "$ModVer 5$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -243,12 +243,12 @@ bool InfobotModule::OnMessage(const aegis::gateway::events::message_create &mess
 	query.serverID = msg.msg.get_guild_id().get();
 	query.username = msg.msg.get_user().get_username();
 	query.mentioned = mentioned;
-	do {
-		std::lock_guard<std::mutex> input_lock(input_mutex);
-		inputs.push_back(query);
-	} while (false);
-	
+
+	std::lock_guard<std::mutex> input_lock(input_mutex);
+	inputs.push_back(query);
+
 	return true;
 }
 
 ENTRYPOINT(InfobotModule);
+

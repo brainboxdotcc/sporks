@@ -1,4 +1,4 @@
-#include "database.h"
+#include <sporks/database.h>
 #include <mysql/mysql.h>
 #include <iostream>
 #include <mutex>

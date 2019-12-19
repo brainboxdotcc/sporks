@@ -1,7 +1,7 @@
-#include "bot.h"
-#include "statusfield.h"
-#include "database.h"
-#include "stringops.h"
+#include <sporks/bot.h>
+#include <sporks/statusfield.h>
+#include <sporks/database.h>
+#include <sporks/stringops.h>
 #include <string>
 #include <iostream>
 #include <sstream>
