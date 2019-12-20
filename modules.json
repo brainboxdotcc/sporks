@@ -1,9 +1,0 @@
-[
-	"module_help.so",
-	"module_config.so",
-	"module_diagnostics.so",
-	"module_js.so",
-	"module_infobot.so",
-	"module_voting.so",
-	"module_presence.so"
-]

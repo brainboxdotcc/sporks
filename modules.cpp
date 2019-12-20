@@ -215,9 +215,10 @@ bool ModuleLoader::Reload(const std::string &filename)
 void ModuleLoader::LoadAll()
 {
 	json document;
-	std::ifstream configfile("../modules.json");
+	std::ifstream configfile("../config.json");
 	configfile >> document;
-	for (auto entry = document.begin(); entry != document.end(); ++entry) {
+	json modlist = document["modules"];
+	for (auto entry = modlist.begin(); entry != modlist.end(); ++entry) {
 		std::string modulename = entry->get<std::string>();
 		this->Load(modulename);
 	}
