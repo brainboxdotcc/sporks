@@ -12,7 +12,7 @@ Remember you can still find my original botnix version of Sporks on IRC at irc.c
 
 [![Discord Bots](https://top.gg/api/widget/630730262765895680.svg)](https://top.gg/bot/630730262765895680)
 ![Discord Boats](https://discord.boats/api/widget/630730262765895680) 
-![DiscordBotList](https://discordbotlist.com/bots/630730262765895680/widget)
+![DiscordBotList](https://discordbotlist.com/bots/630730262765895680/widget) [![Bots for Discord](https://botsfordiscord.com/api/bot/630730262765895680/widget)](https://botsfordiscord.com/bots/630730262765895680)
 
 ## Supported Platforms
 
@@ -36,7 +36,7 @@ Currently only Linux is supported, but other UNIX-style platforms should build a
 
     mkdir build
     cmake ..
-    make -j4
+    make -j8
     
 Replace the number after -j with a number suitable for your setup, usually the same as the number of cores on your machine.
 
