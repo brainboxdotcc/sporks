@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 3.6)
 project(bot)
-add_executable(bot main.cpp database.cpp stringops.cpp config.cpp regex.cpp modules.cpp signal.cpp statusfield.cpp)
+aux_source_directory("src" coresrc)
+add_executable(bot ${coresrc})
 
 string(ASCII 27 Esc)
 
