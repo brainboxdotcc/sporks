@@ -24,6 +24,18 @@
 #include <sporks/stringops.h>
 #include <sporks/database.h>
 #include <sstream>
+#include <chrono>
+
+struct guild_count_data
+{
+	size_t guilds;
+	size_t members;
+};
+
+struct shard_data
+{
+	std::chrono::time_point<std::chrono::steady_clock> last_message;
+};
 
 /**
  * Provides diagnostic commands for monitoring the bot and debugging it interactively while it's running.
@@ -32,11 +44,16 @@
 class DiagnosticsModule : public Module
 {
 	PCRE* diagnosticmessage;
+	std::vector<shard_data> shards;
 public:
 	DiagnosticsModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml)
 	{
 		ml->Attach({ I_OnMessage }, this);
 		diagnosticmessage = new PCRE("^sudo(|\\s+(.+?))$", true);
+
+		for (uint32_t i = 0; i < bot->core.get_shard_mgr().shard_max_count; ++i) {
+			shards.push_back({});
+		}
 	}
 
 	virtual ~DiagnosticsModule()
@@ -47,7 +64,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 12$";
+		std::string version = "$ModVer 13$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -61,6 +78,8 @@ public:
 		std::vector<std::string> param;
 		std::string botusername = bot->user.username;
 		aegis::gateway::objects::message msg = message.msg;
+
+		shards[message.shard.get_id()].last_message = std::chrono::steady_clock::now();
 
 		if (mentioned && diagnosticmessage->Match(clean_message, param)) {
 
@@ -87,7 +106,7 @@ public:
 
 						s << "```diff" << std::endl;
 						s << fmt::format("- ╭─────────────────────────┬───────────┬────────────────────────────────────────────────╮") << std::endl;
-						s << fmt::format("- │ Filename                | Version   | Description                                    |") << std::endl;
+						s << fmt::format("- │ Filename				| Version   | Description									|") << std::endl;
 						s << fmt::format("- ├─────────────────────────┼───────────┼────────────────────────────────────────────────┤") << std::endl;
 
 						for (auto mod = modlist.begin(); mod != modlist.end(); ++mod) {
@@ -146,6 +165,80 @@ public:
 						std::getline(tokens, keyword);
 						db::query("UPDATE infobot SET locked = 0 WHERE key_word = '?'", {keyword});
 						EmbedSimple("**Unlocked** key word: " + keyword, msg.get_channel_id().get());
+					} else if (lowercase(subcommand) == "reconnect") {
+						uint32_t snum = 0;
+						tokens >> snum;
+						auto & s = bot->core.get_shard_by_id(snum);
+						if (s.is_connected()) {
+							EmbedSimple("Shard is already connected.", msg.get_channel_id().get());
+						} else {
+							bot->core.get_shard_mgr().queue_reconnect(s);
+						}
+					} else if (lowercase(subcommand) == "forcereconnect") {
+						uint32_t snum = 0;
+						tokens >> snum;
+						auto & s = bot->core.get_shard_by_id(snum);
+						if (s.is_connected()) {
+							EmbedSimple("Shard is already connected.", msg.get_channel_id().get());
+						} else {
+							s.connect();
+						}
+					} else if (lowercase(subcommand) == "disconnect") {
+						uint32_t snum = 0;
+						tokens >> snum;
+						auto & s = bot->core.get_shard_by_id(snum);
+						bot->core.get_shard_mgr().close(s);
+						EmbedSimple("Shard disconnected.", msg.get_channel_id().get());
+					} else if (lowercase(subcommand) == "shardstats") {
+						std::stringstream w;
+						w << "```diff\n";
+
+						uint64_t count = 0, u_count = 0;
+						count = bot->core.get_shard_transfer();
+						u_count = bot->core.get_shard_u_transfer();
+
+						std::vector<guild_count_data> shard_guild_c(bot->core.shard_max_count);
+
+						for (auto & v : bot->core.guilds)
+						{
+							++shard_guild_c[v.second->shard_id].guilds;
+							shard_guild_c[v.second->shard_id].members += v.second->get_members().size();
+						}
+
+						w << fmt::format("  Total transfer: {} (U: {} | {:.2f}%) Memory usage: {}\n", aegis::utility::format_bytes(count), aegis::utility::format_bytes(u_count), (count / (double)u_count)*100, aegis::utility::format_bytes(aegis::utility::getCurrentRSS()));
+						w << fmt::format("- ╭──────┬──────────┬───────┬───────┬────────────────┬────────────┬───────────┬──────────╮\n");
+						w << fmt::format("- │shard#│  sequence│servers│members│uptime          │last message│transferred│reconnects│\n");
+						w << fmt::format("- ├──────┼──────────┼───────┼───────┼────────────────┼────────────┼───────────┼──────────┤\n");
+
+						for (uint32_t i = 0; i < bot->core.shard_max_count; ++i)
+						{
+							auto & s = bot->core.get_shard_by_id(i);
+							auto time_count = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - shards[s.get_id()].last_message).count();
+							if (s.is_connected())
+								w << "+ ";
+							else
+								w << "  ";
+							w << fmt::format("|{:6}|{:10}|{:7}|{:7}|{:>16}|{:10}ms|{:>11}|{:10}|",
+											 s.get_id(),
+											 s.get_sequence(),
+											 shard_guild_c[s.get_id()].guilds,
+											 shard_guild_c[s.get_id()].members,
+											 s.uptime_str(),
+											 time_count,
+											 s.get_transfer_str(),
+											 s.counters.reconnects);
+							if (message.shard.get_id() == s.get_id()) {
+								w << " *\n";
+							} else {
+								w << "\n";
+							}
+						}
+						w << fmt::format("- ╰──────┴──────────┴───────┴───────┴────────────────┴────────────┴───────────┴──────────╯\n");
+						w << "```";
+						aegis::channel *channel = bot->core.find_channel(msg.get_channel_id());
+						if (channel) {
+							channel->create_message(w.str());
+						}
 					} else {
 						/* Invalid command */
 						EmbedSimple("Sudo **what**? I don't know what that command means.", msg.get_channel_id().get());

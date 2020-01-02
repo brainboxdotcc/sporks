@@ -44,12 +44,7 @@ json configdocument;
  * Constructor (creates threads, loads all modules)
  */
 Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
-
-	std::ifstream configfile("../config.json");
-	configfile >> configdocument;
-
 	Loader = new ModuleLoader(this);
-
 	Loader->LoadAll();
 
 	thr_userqueue = new std::thread(&Bot::SaveCachedUsersThread, this);
@@ -334,6 +329,8 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	std::ifstream configfile("../config.json");
+	configfile >> configdocument;
 
 	/* Get the correct token from config file for either development or production environment */
 	std::string token = (dev ? Bot::GetConfig("devtoken") : Bot::GetConfig("livetoken"));
