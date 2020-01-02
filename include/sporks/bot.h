@@ -1,6 +1,20 @@
-/*************************************************************************************
+/************************************************************************************
+ * 
+ * Sporks, the learning, scriptable Discord bot!
  *
- * Sporks Discord Connector, version 3
+ * Copyright 2019 Craig Edwards <support@sporks.gg>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  * 
  * Sporks itself is a botnix instance, running the infobot and telnet modules. Rather
  * than rewrite this complex bit of code, we connect to it via this scalable connector,
@@ -18,7 +32,8 @@
  * All major parts of this bot are modular, and can be hot-reloaded on the fly to prevent
  * having to restart the shards. Please see the modules directory for source code.
  *
- *************************************************************************************/
+ ************************************************************************************/
+
 #pragma once
 
 #include <aegis.hpp>
