@@ -64,7 +64,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 13$";
+		std::string version = "$ModVer 14$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -189,6 +189,11 @@ public:
 						auto & s = bot->core.get_shard_by_id(snum);
 						bot->core.get_shard_mgr().close(s);
 						EmbedSimple("Shard disconnected.", msg.get_channel_id().get());
+					} else if (lowercase(subcommand) == "restart") {
+						EmbedSimple("Restarting...", msg.get_channel_id().get());
+						::sleep(5);
+						/* Note: exit here will restart, because we run the bot via run.sh which restarts the bot on quit. */
+						exit(0);
 					} else if (lowercase(subcommand) == "shardstats") {
 						std::stringstream w;
 						w << "```diff\n";
@@ -214,17 +219,27 @@ public:
 						{
 							auto & s = bot->core.get_shard_by_id(i);
 							auto time_count = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - shards[s.get_id()].last_message).count();
+							std::string divisor = "ms";
+							if (time_count >= 64000000000) {
+								divisor = " ";
+								time_count = 0;
+							}
+							if (time_count > 1000) {
+								time_count /= 1000;
+								divisor = "s ";
+							}
 							if (s.is_connected())
 								w << "+ ";
 							else
 								w << "  ";
-							w << fmt::format("|{:6}|{:10}|{:7}|{:7}|{:>16}|{:10}ms|{:>11}|{:10}|",
+							w << fmt::format("|{:6}|{:10}|{:7}|{:7}|{:>16}|{:10}{:2}|{:>11}|{:10}|",
 											 s.get_id(),
 											 s.get_sequence(),
 											 shard_guild_c[s.get_id()].guilds,
 											 shard_guild_c[s.get_id()].members,
 											 s.uptime_str(),
 											 time_count,
+											 divisor,
 											 s.get_transfer_str(),
 											 s.counters.reconnects);
 							if (message.shard.get_id() == s.get_id()) {
@@ -233,7 +248,7 @@ public:
 								w << "\n";
 							}
 						}
-						w << fmt::format("- ╰──────┴──────────┴───────┴───────┴────────────────┴────────────┴───────────┴──────────╯\n");
+						w << fmt::format("+ ╰──────┴──────────┴───────┴───────┴────────────────┴────────────┴───────────┴──────────╯\n");
 						w << "```";
 						aegis::channel *channel = bot->core.find_channel(msg.get_channel_id());
 						if (channel) {
