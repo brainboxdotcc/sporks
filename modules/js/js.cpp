@@ -22,6 +22,7 @@
 #include <sporks/bot.h>
 #include <sporks/config.h>
 #include <sporks/stringops.h>
+#include <sporks/database.h>
 #include <thread>
 #include <streambuf>
 #include <fstream>
@@ -811,7 +812,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 10$";
+	std::string version = "$ModVer 11$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 

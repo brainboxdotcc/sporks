@@ -22,6 +22,7 @@
 #include <sporks/regex.h>
 #include <sporks/modules.h>
 #include <sporks/stringops.h>
+#include <sporks/database.h>
 #include <sstream>
 
 /**
@@ -46,7 +47,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 11$";
+		std::string version = "$ModVer 12$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -135,6 +136,16 @@ public:
 								EmbedSimple(std::string("Can't do that: ``") + bot->Loader->GetLastError() + "``", msg.get_channel_id().get());
 							}
 						}
+					} else if (lowercase(subcommand) == "lock") {
+						std::string keyword;
+						std::getline(tokens, keyword);
+						db::query("UPDATE infobot SET locked = 1 WHERE key_word = '?'", {keyword});
+						EmbedSimple("**Locked** key word: " + keyword, msg.get_channel_id().get());
+					} else if (lowercase(subcommand) == "unlock") {
+						std::string keyword;
+						std::getline(tokens, keyword);
+						db::query("UPDATE infobot SET locked = 0 WHERE key_word = '?'", {keyword});
+						EmbedSimple("**Unlocked** key word: " + keyword, msg.get_channel_id().get());
 					} else {
 						/* Invalid command */
 						EmbedSimple("Sudo **what**? I don't know what that command means.", msg.get_channel_id().get());
