@@ -64,7 +64,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 14$";
+		std::string version = "$ModVer 15$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -194,6 +194,19 @@ public:
 						::sleep(5);
 						/* Note: exit here will restart, because we run the bot via run.sh which restarts the bot on quit. */
 						exit(0);
+					} else if (lowercase(subcommand) == "ping") {
+						auto & s = message.shard;
+						auto time_count = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - shards[s.get_id()].last_message).count();
+						EmbedSimple(fmt::format("**Pong!** Response time: {} ms", time_count), msg.get_channel_id().get());
+					} else if (lowercase(subcommand) == "lookup") {
+						int64_t gnum = 0;
+						tokens >> gnum;
+						aegis::guild* guild = bot->core.find_guild(gnum);
+						if (guild) {
+							EmbedSimple(fmt::format("**Guild** {} is on **shard** #{}", gnum, guild->shard_id), msg.get_channel_id().get());
+						} else {
+							EmbedSimple(fmt::format("**Guild** {} is not in my list!", gnum), msg.get_channel_id().get());
+						}
 					} else if (lowercase(subcommand) == "shardstats") {
 						std::stringstream w;
 						w << "```diff\n";
@@ -220,10 +233,6 @@ public:
 							auto & s = bot->core.get_shard_by_id(i);
 							auto time_count = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - shards[s.get_id()].last_message).count();
 							std::string divisor = "ms";
-							if (time_count >= 64000000000) {
-								divisor = " ";
-								time_count = 0;
-							}
 							if (time_count > 1000) {
 								time_count /= 1000;
 								divisor = "s ";
