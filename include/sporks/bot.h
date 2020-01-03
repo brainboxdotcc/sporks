@@ -118,6 +118,9 @@ public:
 	/* Deletes channel settings from SQL database for all channels on server */
 	void onServerDelete(aegis::gateway::events::guild_delete gd);
 
+	/* Returns details of time taken to execute a REST request */
+	void onRestEnd(std::chrono::steady_clock::time_point start_time, uint16_t code);
+
 	static std::string GetConfig(const std::string &name);
 
 	static void SetSignal(int signal);

@@ -45,10 +45,11 @@ class DiagnosticsModule : public Module
 {
 	PCRE* diagnosticmessage;
 	std::vector<shard_data> shards;
+	uint64_t microseconds_ping;
 public:
 	DiagnosticsModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml)
 	{
-		ml->Attach({ I_OnMessage }, this);
+		ml->Attach({ I_OnMessage, I_OnRestEnd }, this);
 		diagnosticmessage = new PCRE("^sudo(|\\s+(.+?))$", true);
 
 		for (uint32_t i = 0; i < bot->core.get_shard_mgr().shard_max_count; ++i) {
@@ -64,13 +65,19 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 15$";
+		std::string version = "$ModVer 16$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
 	virtual std::string GetDescription()
 	{
 		return "Diagnostic Commands (sudo), '@Sporks sudo'";
+	}
+
+	virtual bool OnRestEnd(std::chrono::steady_clock::time_point start_time, uint16_t code)
+	{
+		microseconds_ping = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count();
+		return true;
 	}
 
 	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
@@ -195,9 +202,7 @@ public:
 						/* Note: exit here will restart, because we run the bot via run.sh which restarts the bot on quit. */
 						exit(0);
 					} else if (lowercase(subcommand) == "ping") {
-						auto & s = message.shard;
-						auto time_count = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - shards[s.get_id()].last_message).count();
-						EmbedSimple(fmt::format("**Pong!** Response time: {} ms", time_count), msg.get_channel_id().get());
+						EmbedSimple(fmt::format("**Pong!** REST Response time: {} ms", microseconds_ping), msg.get_channel_id().get());
 					} else if (lowercase(subcommand) == "lookup") {
 						int64_t gnum = 0;
 						tokens >> gnum;

@@ -39,6 +39,7 @@ const char* StringNames[I_END + 1] = {
 	"I_OnGuildCreate",
 	"I_OnGuildDelete",
 	"I_OnPresenceUpdate",
+	"I_OnRestEnd",
 	"I_END"
 };
 
@@ -319,6 +320,11 @@ bool Module::OnMessage(const aegis::gateway::events::message_create &message, co
 }
 
 bool Module::OnPresenceUpdate()
+{
+	return true;
+}
+
+bool Module::OnRestEnd(std::chrono::steady_clock::time_point start_time, uint16_t code)
 {
 	return true;
 }

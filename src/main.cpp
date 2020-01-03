@@ -304,6 +304,10 @@ void Bot::onServerDelete(aegis::gateway::events::guild_delete gd) {
 	FOREACH_MOD(I_OnGuildDelete, OnGuildDelete(gd));
 }
 
+void Bot::onRestEnd(std::chrono::steady_clock::time_point start_time, uint16_t code) {
+	FOREACH_MOD(I_OnRestEnd, OnRestEnd(start_time, code));
+}
+
 int main(int argc, char** argv) {
 
 	int dev = 0;	/* Note: getopt expects ints, this is actually treated as bool */
@@ -362,6 +366,7 @@ int main(int argc, char** argv) {
 		aegis_bot.set_on_guild_create(std::bind(&Bot::onServer, &client, std::placeholders::_1));
 		aegis_bot.set_on_guild_delete(std::bind(&Bot::onServerDelete, &client, std::placeholders::_1));
 		aegis_bot.set_on_channel_delete(std::bind(&Bot::onChannelDelete, &client, std::placeholders::_1));
+		aegis_bot.set_on_rest_end(std::bind(&Bot::onRestEnd, &client, std::placeholders::_1, std::placeholders::_2));
 	
 		try {
 			/* Actually connect and start the event loop */
