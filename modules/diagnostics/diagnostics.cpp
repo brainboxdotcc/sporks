@@ -45,7 +45,7 @@ class DiagnosticsModule : public Module
 {
 	PCRE* diagnosticmessage;
 	std::vector<shard_data> shards;
-	uint64_t microseconds_ping;
+	double microseconds_ping;
 public:
 	DiagnosticsModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml)
 	{
@@ -65,7 +65,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 16$";
+		std::string version = "$ModVer 17$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -202,7 +202,7 @@ public:
 						/* Note: exit here will restart, because we run the bot via run.sh which restarts the bot on quit. */
 						exit(0);
 					} else if (lowercase(subcommand) == "ping") {
-						EmbedSimple(fmt::format("**Pong!** REST Response time: {} ms", microseconds_ping), msg.get_channel_id().get());
+						EmbedSimple(fmt::format("**Pong!** REST Response time: {0:f} ms", microseconds_ping / 1000, 4), msg.get_channel_id().get());
 					} else if (lowercase(subcommand) == "lookup") {
 						int64_t gnum = 0;
 						tokens >> gnum;
