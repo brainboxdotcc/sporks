@@ -78,23 +78,19 @@ enum Implementation
  * is running an event.
  */
 #define FOREACH_MOD(y,x) { \
-	std::lock_guard<std::mutex> lock(Loader->mtx); \
-	Loader->ClearEvent(); \
-		for (auto _i = Loader->EventHandlers[y].begin(); _i != Loader->EventHandlers[y].end(); ++_i) \
+	for (auto _i = Loader->EventHandlers[y].begin(); _i != Loader->EventHandlers[y].end(); ++_i) \
+	{ \
+		try \
 		{ \
-				try \
-				{ \
-						if (!(*_i)->x) { \
-				Loader->ClaimEvent(); \
+			if (!(*_i)->x) { \
 				break; \
 			} \
-				} \
-				catch (std::exception& modexcept) \
-				{ \
-						core.log->error("Exception caught in module: {}", modexcept.what()); \
-			Loader->ClaimEvent(); \
-				} \
 		} \
+		catch (std::exception& modexcept) \
+		{ \
+			core.log->error("Exception caught in module: {}", modexcept.what()); \
+		} \
+	} \
 };
 
 
