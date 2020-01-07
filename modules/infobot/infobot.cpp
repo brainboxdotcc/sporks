@@ -215,7 +215,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 6$";
+	std::string version = "$ModVer 7$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -224,7 +224,7 @@ std::string InfobotModule::GetDescription()
 	return "Infobot learning and responses";
 }
 
-bool InfobotModule::OnGuildCreate(const aegis::gateway::events::guild_create &gc)
+bool InfobotModule::OnGuildCreate(const modevent::guild_create &gc)
 {
 	this->nickList[gc.guild.id.get()] = std::vector<std::string>();
 	for (auto i = gc.guild.members.begin(); i != gc.guild.members.end(); ++i) {
@@ -233,7 +233,7 @@ bool InfobotModule::OnGuildCreate(const aegis::gateway::events::guild_create &gc
 	return true;
 }
 
-bool InfobotModule::OnGuildDelete(const aegis::gateway::events::guild_delete &guild)
+bool InfobotModule::OnGuildDelete(const modevent::guild_delete &guild)
 {
 	// Clear any queue items for a server that no longer exists
 	std::lock_guard<std::mutex> input_lock(input_mutex);
@@ -251,9 +251,9 @@ bool InfobotModule::OnGuildDelete(const aegis::gateway::events::guild_delete &gu
 	return true;
 }
 
-bool InfobotModule::OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
+bool InfobotModule::OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 {
-	aegis::gateway::events::message_create msg = message;
+	modevent::message_create msg = message;
 
 	QueueItem query;
 	query.tombstone = false;

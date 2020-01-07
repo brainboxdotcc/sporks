@@ -55,6 +55,6 @@ public:
         virtual ~JSModule();
         virtual std::string GetVersion();
         virtual std::string GetDescription();
-        virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
+        virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
 };
 

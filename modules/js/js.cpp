@@ -23,6 +23,7 @@
 #include <sporks/config.h>
 #include <sporks/stringops.h>
 #include <sporks/database.h>
+#include <sporks/modules.h>
 #include <thread>
 #include <streambuf>
 #include <fstream>
@@ -812,7 +813,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 11$";
+	std::string version = "$ModVer 12$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -821,10 +822,10 @@ std::string JSModule::GetDescription()
 	return "JavaScript Per-Channel Custom Events";
 }
 
-bool JSModule::OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
+bool JSModule::OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 {
 	std::unordered_map<std::string, json> jsonstore;
-	aegis::gateway::events::message_create msg = message;
+	modevent::message_create msg = message;
 
 	if (js->channelHasJS(msg.channel.get_id().get())) {
 

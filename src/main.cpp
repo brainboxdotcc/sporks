@@ -43,7 +43,7 @@ json configdocument;
 /**
  * Constructor (creates threads, loads all modules)
  */
-Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), core(aegiscore), sent_messages(0), received_messages(0) {
+Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), shard_init_count(0), core(aegiscore), sent_messages(0), received_messages(0) {
 	Loader = new ModuleLoader(this);
 	Loader->LoadAll();
 
@@ -216,6 +216,12 @@ void Bot::onReady(aegis::gateway::events::ready ready) {
 	this->user = ready.user;
 	core.log->info("Ready! Online as {}#{} ({})", this->user.username, this->user.discriminator, this->getID());
 	FOREACH_MOD(I_OnReady, OnReady(ready));
+
+	/* Event broadcast when all shards are ready */
+	shard_init_count++;
+	if (shard_init_count == core.shard_max_count) {
+		FOREACH_MOD(I_OnAllShardsReady, OnAllShardsReady());
+	}
 }
 
 /**
@@ -330,7 +336,7 @@ int main(int argc, char** argv) {
 			case '?':
 			default:
 				std::cerr << "Unknown parameter '" << argv[optind - 1] << "'" << std::endl;
-				std::cerr << "Usage: %s [--dev] [--shardid <n>] [--numshards <n>]" << std::endl;
+				std::cerr << "Usage: %s [--dev]" << std::endl;
 				exit(1);
 			break;
 		}
@@ -367,6 +373,32 @@ int main(int argc, char** argv) {
 		aegis_bot.set_on_guild_delete(std::bind(&Bot::onServerDelete, &client, std::placeholders::_1));
 		aegis_bot.set_on_channel_delete(std::bind(&Bot::onChannelDelete, &client, std::placeholders::_1));
 		aegis_bot.set_on_rest_end(std::bind(&Bot::onRestEnd, &client, std::placeholders::_1, std::placeholders::_2));
+		aegis_bot.set_on_typing_start(std::bind(&Bot::onTypingStart, &client, std::placeholders::_1));
+		aegis_bot.set_on_message_update(std::bind(&Bot::onMessageUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_message_delete(std::bind(&Bot::onMessageDelete, &client, std::placeholders::_1));
+		aegis_bot.set_on_message_delete_bulk(std::bind(&Bot::onMessageDeleteBulk, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_update(std::bind(&Bot::onGuildUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_message_reaction_add(std::bind(&Bot::onMessageReactionAdd, &client, std::placeholders::_1));
+		aegis_bot.set_on_message_reaction_remove(std::bind(&Bot::onMessageReactionRemove, &client, std::placeholders::_1));
+		aegis_bot.set_on_message_reaction_remove_all(std::bind(&Bot::onMessageReactionRemoveAll, &client, std::placeholders::_1));
+		aegis_bot.set_on_user_update(std::bind(&Bot::onUserUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_resumed(std::bind(&Bot::onResumed, &client, std::placeholders::_1));
+		aegis_bot.set_on_channel_update(std::bind(&Bot::onChannelUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_channel_pins_update(std::bind(&Bot::onChannelPinsUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_ban_add(std::bind(&Bot::onGuildBanAdd, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_ban_remove(std::bind(&Bot::onGuildBanRemove, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_emojis_update(std::bind(&Bot::onGuildEmojisUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_integrations_update(std::bind(&Bot::onGuildIntegrationsUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_member_remove(std::bind(&Bot::onGuildMemberRemove, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_member_update(std::bind(&Bot::onGuildMemberUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_member_chunk(std::bind(&Bot::onGuildMembersChunk, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_role_create(std::bind(&Bot::onGuildRoleCreate, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_role_update(std::bind(&Bot::onGuildRoleUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_guild_role_delete(std::bind(&Bot::onGuildRoleDelete, &client, std::placeholders::_1));
+		aegis_bot.set_on_presence_update(std::bind(&Bot::onPresenceUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_voice_state_update(std::bind(&Bot::onVoiceStateUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_voice_server_update(std::bind(&Bot::onVoiceServerUpdate, &client, std::placeholders::_1));
+		aegis_bot.set_on_webhooks_update(std::bind(&Bot::onWebhooksUpdate, &client, std::placeholders::_1));
 	
 		try {
 			/* Actually connect and start the event loop */

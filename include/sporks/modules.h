@@ -24,11 +24,13 @@
 class Module;
 class ModuleLoader;
 
+#define modevent aegis::gateway::events
+
 /** Implementation-specific flags which may be set in Module constructor by calling Attach()
  */
 enum Implementation
 {
-        I_BEGIN,
+	I_BEGIN,
 	I_OnMessage,
 	I_OnReady,
 	I_OnChannelCreate,
@@ -38,7 +40,34 @@ enum Implementation
 	I_OnGuildDelete,
 	I_OnPresenceUpdate,
 	I_OnRestEnd,
-        I_END
+	I_OnAllShardsReady,
+	I_OnTypingStart,
+	I_OnMessageUpdate,
+	I_OnMessageDelete,
+	I_OnMessageDeleteBulk,
+	I_OnGuildUpdate,
+	I_OnMessageReactionAdd,
+	I_OnMessageReactionRemove,
+	I_OnMessageReactionRemoveAll,
+	I_OnUserUpdate,
+	I_OnResumed,
+	I_OnChannelUpdate,
+	I_OnChannelPinsUpdate,
+	I_OnGuildBanAdd,
+	I_OnGuildBanRemove,
+	I_OnGuildEmojisUpdate,
+	I_OnGuildIntegrationsUpdate,
+	I_OnGuildMemberRemove,
+	I_OnGuildMemberUpdate,
+	I_OnGuildMembersChunk,
+	I_OnGuildRoleCreate,
+	I_OnGuildRoleUpdate,
+	I_OnGuildRoleDelete,
+	I_OnPresenceUpdateWS,
+	I_OnVoiceStateUpdate,
+	I_OnVoiceServerUpdate,
+	I_OnWebhooksUpdate,
+	I_END
 };
 
 /**
@@ -51,21 +80,21 @@ enum Implementation
 #define FOREACH_MOD(y,x) { \
 	std::lock_guard<std::mutex> lock(Loader->mtx); \
 	Loader->ClearEvent(); \
-        for (auto _i = Loader->EventHandlers[y].begin(); _i != Loader->EventHandlers[y].end(); ++_i) \
-        { \
-                try \
-                { \
-                        if (!(*_i)->x) { \
+		for (auto _i = Loader->EventHandlers[y].begin(); _i != Loader->EventHandlers[y].end(); ++_i) \
+		{ \
+				try \
+				{ \
+						if (!(*_i)->x) { \
 				Loader->ClaimEvent(); \
 				break; \
 			} \
-                } \
-                catch (std::exception& modexcept) \
-                { \
-                        core.log->error("Exception caught in module: {}", modexcept.what()); \
+				} \
+				catch (std::exception& modexcept) \
+				{ \
+						core.log->error("Exception caught in module: {}", modexcept.what()); \
 			Loader->ClaimEvent(); \
-                } \
-        } \
+				} \
+		} \
 };
 
 
@@ -181,15 +210,42 @@ public:
 	virtual std::string GetDescription();
 
 	/* Aegis events */
-	virtual bool OnChannelCreate(const aegis::gateway::events::channel_create &channel);
-	virtual bool OnReady(const aegis::gateway::events::ready &ready);
-	virtual bool OnChannelDelete(const aegis::gateway::events::channel_delete &channel);
-	virtual bool OnGuildCreate(const aegis::gateway::events::guild_create &guild);
-	virtual bool OnGuildDelete(const aegis::gateway::events::guild_delete &guild);
-	virtual bool OnGuildMemberAdd(const aegis::gateway::events::guild_member_add &gma);
-	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
+	virtual bool OnChannelCreate(const modevent::channel_create &channel);
+	virtual bool OnReady(const modevent::ready &ready);
+	virtual bool OnChannelDelete(const modevent::channel_delete &channel);
+	virtual bool OnGuildCreate(const modevent::guild_create &guild);
+	virtual bool OnGuildDelete(const modevent::guild_delete &guild);
+	virtual bool OnGuildMemberAdd(const modevent::guild_member_add &gma);
+	virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
 	virtual bool OnPresenceUpdate();
 	virtual bool OnRestEnd(std::chrono::steady_clock::time_point start_time, uint16_t code);
+	virtual bool OnAllShardsReady();
+	virtual bool OnTypingStart(const modevent::typing_start &obj);
+	virtual bool OnMessageUpdate(const modevent::message_update &obj);
+	virtual bool OnMessageDelete(const modevent::message_delete &obj);
+	virtual bool OnMessageDeleteBulk(const modevent::message_delete_bulk &obj);
+	virtual bool OnGuildUpdate(const modevent::guild_update &obj);
+	virtual bool OnMessageReactionAdd(const modevent::message_reaction_add &obj);
+	virtual bool OnMessageReactionRemove(const modevent::message_reaction_remove &obj);
+	virtual bool OnMessageReactionRemoveAll(const modevent::message_reaction_remove_all &obj);
+	virtual bool OnUserUpdate(const modevent::user_update &obj);
+	virtual bool OnResumed(const modevent::resumed &obj);
+	virtual bool OnChannelUpdate(const modevent::channel_update &obj);
+	virtual bool OnChannelPinsUpdate(const modevent::channel_pins_update &obj);
+	virtual bool OnGuildBanAdd(const modevent::guild_ban_add &obj);
+	virtual bool OnGuildBanRemove(const modevent::guild_ban_remove &obj);
+	virtual bool OnGuildEmojisUpdate(const modevent::guild_emojis_update &obj);
+	virtual bool OnGuildIntegrationsUpdate(const modevent::guild_integrations_update &obj);
+	virtual bool OnGuildMemberRemove(const modevent::guild_member_remove &obj);
+	virtual bool OnGuildMemberUpdate(const modevent::guild_member_update &obj);
+	virtual bool OnGuildMembersChunk(const modevent::guild_members_chunk &obj);
+	virtual bool OnGuildRoleCreate(const modevent::guild_role_create &obj);
+	virtual bool OnGuildRoleUpdate(const modevent::guild_role_update &obj);
+	virtual bool OnGuildRoleDelete(const modevent::guild_role_delete &obj);
+	virtual bool OnPresenceUpdateWS(const modevent::presence_update &obj);
+	virtual bool OnVoiceStateUpdate(const modevent::voice_state_update &obj);
+	virtual bool OnVoiceServerUpdate(const modevent::voice_server_update &obj);
+	virtual bool OnWebhooksUpdate(const modevent::webhooks_update &obj);
 
 	/* Emit a simple text only embed to a channel, many modules use this for error reporting */
 	void EmbedSimple(const std::string &message, int64_t channelID);

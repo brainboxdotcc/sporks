@@ -40,6 +40,33 @@ const char* StringNames[I_END + 1] = {
 	"I_OnGuildDelete",
 	"I_OnPresenceUpdate",
 	"I_OnRestEnd",
+	"I_OnAllShardsReady",
+	"I_OnTypingStart",
+	"I_OnMessageUpdate",
+	"I_OnMessageDelete",
+	"I_OnMessageDeleteBulk",
+	"I_OnGuildUpdate",
+	"I_OnMessageReactionAdd",
+	"I_OnMessageReactionRemove",
+	"I_OnMessageReactionRemoveAll",
+	"I_OnUserUpdate",
+	"I_OnResumed",
+	"I_OnChannelUpdate",
+	"I_OnChannelPinsUpdate",
+	"I_OnGuildBanAdd",
+	"I_OnGuildBanRemove",
+	"I_OnGuildEmojisUpdate",
+	"I_OnGuildIntegrationsUpdate",
+	"I_OnGuildMemberRemove",
+	"I_OnGuildMemberUpdate",
+	"I_OnGuildMembersChunk",
+	"I_OnGuildRoleCreate",
+	"I_OnGuildRoleUpdate",
+	"I_OnGuildRoleDelete",
+	"I_OnPresenceUpdateWS",
+	"I_OnVoiceStateUpdate",
+	"I_OnVoiceServerUpdate",
+	"I_OnWebhooksUpdate",
 	"I_END"
 };
 
@@ -284,37 +311,37 @@ std::string Module::GetDescription()
 	return "";
 }
 
-bool Module::OnChannelCreate(const aegis::gateway::events::channel_create &channel)
+bool Module::OnChannelCreate(const modevent::channel_create &channel)
 {
 	return true;
 } 
 
-bool Module::OnReady(const aegis::gateway::events::ready &ready)
+bool Module::OnReady(const modevent::ready &ready)
 {
 	return true;
 }
 
-bool Module::OnChannelDelete(const aegis::gateway::events::channel_delete &channel)
+bool Module::OnChannelDelete(const modevent::channel_delete &channel)
 {
 	return true;
 }
 
-bool Module::OnGuildCreate(const aegis::gateway::events::guild_create &guild)
+bool Module::OnGuildCreate(const modevent::guild_create &guild)
 {
 	return true;
 }
 
-bool Module::OnGuildDelete(const aegis::gateway::events::guild_delete &guild)
+bool Module::OnGuildDelete(const modevent::guild_delete &guild)
 {
 	return true;
 }
 
-bool Module::OnGuildMemberAdd(const aegis::gateway::events::guild_member_add &gma)
+bool Module::OnGuildMemberAdd(const modevent::guild_member_add &gma)
 {
 	return true;
 }
 
-bool Module::OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
+bool Module::OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 {
 	return true;
 }
@@ -328,6 +355,167 @@ bool Module::OnRestEnd(std::chrono::steady_clock::time_point start_time, uint16_
 {
 	return true;
 }
+
+bool Module::OnTypingStart(const modevent::typing_start &obj)
+{
+	return true;
+}
+
+
+bool Module::OnMessageUpdate(const modevent::message_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnMessageDelete(const modevent::message_delete &obj)
+{
+	return true;
+}
+
+
+bool Module::OnMessageDeleteBulk(const modevent::message_delete_bulk &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildUpdate(const modevent::guild_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnMessageReactionAdd(const modevent::message_reaction_add &obj)
+{
+	return true;
+}
+
+
+bool Module::OnMessageReactionRemove(const modevent::message_reaction_remove &obj)
+{
+	return true;
+}
+
+
+bool Module::OnMessageReactionRemoveAll(const modevent::message_reaction_remove_all &obj)
+{
+	return true;
+}
+
+
+bool Module::OnUserUpdate(const modevent::user_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnResumed(const modevent::resumed &obj)
+{
+	return true;
+}
+
+
+bool Module::OnChannelUpdate(const modevent::channel_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnChannelPinsUpdate(const modevent::channel_pins_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildBanAdd(const modevent::guild_ban_add &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildBanRemove(const modevent::guild_ban_remove &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildEmojisUpdate(const modevent::guild_emojis_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildIntegrationsUpdate(const modevent::guild_integrations_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildMemberRemove(const modevent::guild_member_remove &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildMemberUpdate(const modevent::guild_member_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildMembersChunk(const modevent::guild_members_chunk &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildRoleCreate(const modevent::guild_role_create &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildRoleUpdate(const modevent::guild_role_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnGuildRoleDelete(const modevent::guild_role_delete &obj)
+{
+	return true;
+}
+
+
+bool Module::OnPresenceUpdateWS(const modevent::presence_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnVoiceStateUpdate(const modevent::voice_state_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnVoiceServerUpdate(const modevent::voice_server_update &obj)
+{
+	return true;
+}
+
+
+bool Module::OnWebhooksUpdate(const modevent::webhooks_update &obj)
+{
+	return true;
+}
+
+bool Module::OnAllShardsReady()
+{
+	return true;
+}
+
 
 /**
  * Output a simple embed to a channel consisting just of a message.

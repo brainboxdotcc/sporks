@@ -65,7 +65,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 17$";
+		std::string version = "$ModVer 19$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -80,7 +80,7 @@ public:
 		return true;
 	}
 
-	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
+	virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 	{
 		std::vector<std::string> param;
 		std::string botusername = bot->user.username;
@@ -113,7 +113,7 @@ public:
 
 						s << "```diff" << std::endl;
 						s << fmt::format("- ╭─────────────────────────┬───────────┬────────────────────────────────────────────────╮") << std::endl;
-						s << fmt::format("- │ Filename				| Version   | Description									|") << std::endl;
+						s << fmt::format("- │ Filename                | Version   | Description                                    |") << std::endl;
 						s << fmt::format("- ├─────────────────────────┼───────────┼────────────────────────────────────────────────┤") << std::endl;
 
 						for (auto mod = modlist.begin(); mod != modlist.end(); ++mod) {

@@ -61,6 +61,8 @@ class Bot {
 	/* Set to true if all threads are to end */
 	bool terminate;
 
+	uint32_t shard_init_count;
+
 	/* Thread handlers */
 	void SaveCachedUsersThread();	/* If there are any users in the userqueue, this thread updates/inserts them on a mysql table in the background */
 	void UpdatePresenceThread();	/* Updates the bot presence every 120 seconds */
@@ -120,6 +122,33 @@ public:
 
 	/* Returns details of time taken to execute a REST request */
 	void onRestEnd(std::chrono::steady_clock::time_point start_time, uint16_t code);
+
+	void onTypingStart (aegis::gateway::events::typing_start obj);
+	void onMessageUpdate (aegis::gateway::events::message_update obj);
+	void onMessageDelete (aegis::gateway::events::message_delete obj);
+	void onMessageDeleteBulk (aegis::gateway::events::message_delete_bulk obj);
+	void onGuildUpdate (aegis::gateway::events::guild_update obj);
+	void onMessageReactionAdd (aegis::gateway::events::message_reaction_add obj);
+	void onMessageReactionRemove (aegis::gateway::events::message_reaction_remove obj);
+	void onMessageReactionRemoveAll (aegis::gateway::events::message_reaction_remove_all obj);
+	void onUserUpdate (aegis::gateway::events::user_update obj);
+	void onResumed (aegis::gateway::events::resumed obj);
+	void onChannelUpdate (aegis::gateway::events::channel_update obj);
+	void onChannelPinsUpdate (aegis::gateway::events::channel_pins_update obj);
+	void onGuildBanAdd (aegis::gateway::events::guild_ban_add obj);
+	void onGuildBanRemove (aegis::gateway::events::guild_ban_remove obj);
+	void onGuildEmojisUpdate (aegis::gateway::events::guild_emojis_update obj);
+	void onGuildIntegrationsUpdate (aegis::gateway::events::guild_integrations_update obj);
+	void onGuildMemberRemove (aegis::gateway::events::guild_member_remove obj);
+	void onGuildMemberUpdate (aegis::gateway::events::guild_member_update obj);
+	void onGuildMembersChunk (aegis::gateway::events::guild_members_chunk obj);
+	void onGuildRoleCreate (aegis::gateway::events::guild_role_create obj);
+	void onGuildRoleUpdate (aegis::gateway::events::guild_role_update obj);
+	void onGuildRoleDelete (aegis::gateway::events::guild_role_delete obj);
+	void onPresenceUpdate (aegis::gateway::events::presence_update obj);
+	void onVoiceStateUpdate (aegis::gateway::events::voice_state_update obj);
+	void onVoiceServerUpdate (aegis::gateway::events::voice_server_update obj);
+	void onWebhooksUpdate (aegis::gateway::events::webhooks_update obj);
 
 	static std::string GetConfig(const std::string &name);
 

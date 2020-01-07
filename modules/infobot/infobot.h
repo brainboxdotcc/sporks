@@ -99,9 +99,9 @@ public:
 	virtual std::string GetVersion();
 	virtual std::string GetDescription();
 
-	virtual bool OnMessage(const aegis::gateway::events::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
-	virtual bool OnGuildCreate(const aegis::gateway::events::guild_create &gc);
-	virtual bool OnGuildDelete(const aegis::gateway::events::guild_delete &guild);
+	virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
+	virtual bool OnGuildCreate(const modevent::guild_create &gc);
+	virtual bool OnGuildDelete(const modevent::guild_delete &guild);
 
 	/**
 	 * Set the core IRC nickname used for queries to botnix
