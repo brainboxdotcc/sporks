@@ -43,11 +43,10 @@ json configdocument;
 /**
  * Constructor (creates threads, loads all modules)
  */
-Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_userqueue(nullptr), thr_presence(nullptr), terminate(false), shard_init_count(0), core(aegiscore), sent_messages(0), received_messages(0) {
+Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_presence(nullptr), terminate(false), shard_init_count(0), core(aegiscore), sent_messages(0), received_messages(0) {
 	Loader = new ModuleLoader(this);
 	Loader->LoadAll();
 
-	thr_userqueue = new std::thread(&Bot::SaveCachedUsersThread, this);
 	thr_presence = new std::thread(&Bot::UpdatePresenceThread, this);
 }
 
@@ -68,7 +67,6 @@ void Bot::DisposeThread(std::thread* t) {
 Bot::~Bot() {
 	terminate = true;
 
-	DisposeThread(thr_userqueue);
 	DisposeThread(thr_presence);
 
 	delete Loader;
@@ -97,97 +95,17 @@ bool Bot::IsDevMode() {
 void Bot::onServer(aegis::gateway::events::guild_create gc) {
 
 	core.log->info("Adding server #{}: {}", gc.guild.id.get(), gc.guild.name);
-
-	db::query("INSERT INTO infobot_shard_map (guild_id, shard_id, name, icon, unavailable) VALUES('?','?','?','?','?') ON DUPLICATE KEY UPDATE shard_id = '?', name = '?', icon = '?', unavailable = '?'", 
-		{ 
-			std::to_string(gc.guild.id.get()),
-			std::to_string(gc.shard.get_id()),
-			gc.guild.name,
-			gc.guild.icon,
-			std::to_string(gc.guild.unavailable),
-			std::to_string(gc.shard.get_id()),
-			gc.guild.name,
-			gc.guild.icon,
-			std::to_string(gc.guild.unavailable)
-		}
-	);
-
-	for (auto i = gc.guild.channels.begin(); i != gc.guild.channels.end(); ++i) {
-		getSettings(this, i->id.get(), gc.guild.id.get());
-	}
-
-	for (auto i = gc.guild.members.begin(); i != gc.guild.members.end(); ++i) {
-		std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
-		userqueue.push(i->_user);
-	}
-
 	FOREACH_MOD(I_OnGuildCreate, OnGuildCreate(gc));
-}
-
-/**
- * This function runs in its own thread, which commits new users to the database (for dashboard use)
- * when there are entries in the queue. We don't do this on guild creation, because this would slow
- * down the bot too much.
- */
-void Bot::SaveCachedUsersThread() {
-	time_t last_message = time(NULL);
-	aegis::gateway::objects::user u;
-	while (!this->terminate) {
-		if (!userqueue.empty()) {
-			{
-				std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
-				u = userqueue.front();
-				userqueue.pop();
-			};
-			std::string userid = std::to_string(u.id.get());
-			std::string bot = u.is_bot() ? "1" : "0";
-			db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, u.username, u.discriminator, u.avatar, bot, u.username, u.discriminator, u.avatar});
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-		} else {
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-		}
-		if (time(NULL) > last_message) {
-			if (userqueue.size() > 0) {
-				core.log->info("User queue size: {} objects", userqueue.size());
-			}
-			last_message = time(NULL) + 60;
-		}
-	}
 }
 
 /**
  * This runs its own thread that wakes up every 30 seconds (after an initial 2 minute warmup).
  * Modules can attach to it for a simple 30 second interval timer via the OnPresenceUpdate() method.
- * The code here simply updates the stats on the shards in the database.
  */
 void Bot::UpdatePresenceThread() {
 	std::this_thread::sleep_for(std::chrono::seconds(120));
-
 	while (!this->terminate) {
-
-		const aegis::shards::shard_mgr& s = core.get_shard_mgr();
-		const std::vector<std::unique_ptr<aegis::shards::shard>>& shards = s.get_shards();
-		for (auto i = shards.begin(); i != shards.end(); ++i) {
-			const aegis::shards::shard* shard = i->get();
-			db::query("INSERT INTO infobot_shard_status (id, connected, online, uptime, transfer, transfer_compressed) VALUES('?','?','?','?','?','?') ON DUPLICATE KEY UPDATE connected = '?', online = '?', uptime = '?', transfer = '?', transfer_compressed = '?'", 
-				{
-					std::to_string(shard->get_id()),
-					std::to_string(shard->is_connected()),
-					std::to_string(shard->is_online()),
-					std::to_string(shard->uptime()),
-					std::to_string(shard->get_transfer_u()),
-					std::to_string(shard->get_transfer()),
-					std::to_string(shard->is_connected()),
-					std::to_string(shard->is_online()),
-					std::to_string(shard->uptime()),
-					std::to_string(shard->get_transfer_u()),
-					std::to_string(shard->get_transfer())
-				}
-			);
-		}
-
 		FOREACH_MOD(I_OnPresenceUpdate, OnPresenceUpdate());
-
 		std::this_thread::sleep_for(std::chrono::seconds(30));
 	}
 }
@@ -196,9 +114,6 @@ void Bot::UpdatePresenceThread() {
  * Stores a new guild member to the database for use in the dashboard
  */
 void Bot::onMember(aegis::gateway::events::guild_member_add gma) {
-	std::string userid = std::to_string(gma.member._user.id.get());
-	std::string bot = gma.member._user.is_bot() ? "1" : "0";
-	db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar, bot, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar});
 	FOREACH_MOD(I_OnGuildMemberAdd, OnGuildMemberAdd(gma));
 }
 
@@ -284,29 +199,15 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 	}
 }
 
-/**
- * This reates a new settings entry in the database for a channel whenever a new channel is created
- */
 void Bot::onChannel(aegis::gateway::events::channel_create channel_create) {
-	getSettings(this, channel_create.channel.id.get(), channel_create.channel.guild_id.get());
 	FOREACH_MOD(I_OnChannelCreate, OnChannelCreate(channel_create));
 }
 
-/**
- * Removes settings entries from the database as channels that refer to them are removed
- */
 void Bot::onChannelDelete(aegis::gateway::events::channel_delete cd) {
-	db::query("DELETE FROM infobot_discord_settings WHERE id = '?'", {std::to_string(cd.channel.id.get())});
 	FOREACH_MOD(I_OnChannelDelete, OnChannelDelete(cd));
 }
 
-/**
- * Removes settings for all channels on a server if the bot is kicked from a server,
- * also removes the entry with server details from the shard map.
- */
 void Bot::onServerDelete(aegis::gateway::events::guild_delete gd) {
-	db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
-	db::query("DELETE FROM infobot_shard_map WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
 	FOREACH_MOD(I_OnGuildDelete, OnGuildDelete(gd));
 }
 

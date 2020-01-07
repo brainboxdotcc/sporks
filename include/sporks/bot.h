@@ -55,7 +55,6 @@ class Bot {
 	bool dev;
 	
 	/* Threads */
-	std::thread* thr_userqueue;
 	std::thread* thr_presence;
 
 	/* Set to true if all threads are to end */
@@ -64,7 +63,6 @@ class Bot {
 	uint32_t shard_init_count;
 
 	/* Thread handlers */
-	void SaveCachedUsersThread();	/* If there are any users in the userqueue, this thread updates/inserts them on a mysql table in the background */
 	void UpdatePresenceThread();	/* Updates the bot presence every 120 seconds */
 
 	void SetSignals();
@@ -73,13 +71,12 @@ public:
 
         /* Thread safety for caches and queues */
 	std::mutex channel_hash_mutex;
-	std::mutex user_cache_mutex;
 
 	/* Aegis core */
 	aegis::core &core;
 
-	/* Userqueue: a queue of users waiting to be written to SQL for the dashboard */
-	std::queue<aegis::gateway::objects::user> userqueue;
+	/* Generic named counters */
+	std::map<std::string, uint64_t> counters;
 
 	/* The bot's user details from ready event */
 	aegis::gateway::objects::user user;
@@ -101,28 +98,13 @@ public:
 	int64_t getID();
 
 	void onReady(aegis::gateway::events::ready ready);
-
-	/* Caches server entry, iterates and caches channels, iterates and caches users, queues users to be stored in SQL */
 	void onServer(aegis::gateway::events::guild_create gc);
-
-	/* Caches user, also stores user in SQL */
 	void onMember(aegis::gateway::events::guild_member_add gma);
-
-	/* Caches channel, also creates channel settings row in SQL if needed */
 	void onChannel(aegis::gateway::events::channel_create channel);
-
-	/* Passes incoming messages to the input queue, and directly handles commands */
 	void onMessage(aegis::gateway::events::message_create message);
-
-	/* Deletes channel settings from SQL database */
 	void onChannelDelete(aegis::gateway::events::channel_delete cd);
-
-	/* Deletes channel settings from SQL database for all channels on server */
 	void onServerDelete(aegis::gateway::events::guild_delete gd);
-
-	/* Returns details of time taken to execute a REST request */
 	void onRestEnd(std::chrono::steady_clock::time_point start_time, uint16_t code);
-
 	void onTypingStart (aegis::gateway::events::typing_start obj);
 	void onMessageUpdate (aegis::gateway::events::message_update obj);
 	void onMessageDelete (aegis::gateway::events::message_delete obj);

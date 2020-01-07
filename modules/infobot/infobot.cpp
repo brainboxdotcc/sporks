@@ -56,7 +56,10 @@ QueueStats InfobotModule::GetQueueStats() {
 
 	q.inputs = inputs.size();
 	q.outputs = outputs.size();
-	q.users = bot->userqueue.size();
+	q.users = 0;
+	if (bot->counters.find("userqueue") != bot->counters.end()) {
+		q.users = bot->counters["userqueue"];
+	}
 
 	return q;
 }
@@ -215,7 +218,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 7$";
+	std::string version = "$ModVer 8$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
