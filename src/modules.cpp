@@ -70,7 +70,7 @@ const char* StringNames[I_END + 1] = {
 	"I_END"
 };
 
-ModuleLoader::ModuleLoader(Bot* creator) : bot(creator)
+ModuleLoader::ModuleLoader(Bot* creator) : bot(creator), busy(false)
 {
 	bot->core.log->info("Module loader initialising...");
 }
@@ -110,30 +110,6 @@ void ModuleLoader::Detach(const std::vector<Implementation> &i, Module* mod)
 }
 
 /**
- * Set event as unclaimed by a module
- */
-void ModuleLoader::ClearEvent()
-{
-	claimed = false;
-}
-
-/**
- * Set event as claimed by a module
- */
-void ModuleLoader::ClaimEvent()
-{
-	claimed = true;
-}
-
-/**
- * Returns true if the last event was claimed by a module
- */
-bool ModuleLoader::IsEventClaimed()
-{
-	return claimed;
-}
-
-/**
  * Return a reference to the module list
  */
 const ModMap& ModuleLoader::GetModuleList() const
@@ -156,6 +132,8 @@ bool ModuleLoader::Load(const std::string &filename)
 
 	bot->core.log->info("Loading module \"{}\"", filename);
 
+	busy = true;
+
 	if (Modules.find(filename) == Modules.end() || Modules[filename].err) {
 
 		char buffer[PATH_MAX + 1];
@@ -168,12 +146,14 @@ bool ModuleLoader::Load(const std::string &filename)
 			Modules[filename] = m;
 			lasterror = m.err;
 			bot->core.log->error("Can't load module: {}", m.err);
+			busy = false;
 			return false;
 		} else {
 			if (!GetSymbol(m, "init_module")) {
 				bot->core.log->error("Can't load module: {}", m.err ? m.err : "General error");
 				Modules[filename] = m;
 				lasterror = m.err ? m.err : "General error";
+				busy = false;
 				return false;
 			} else {
 				bot->core.log->debug("Module {} loaded", filename);
@@ -185,6 +165,7 @@ bool ModuleLoader::Load(const std::string &filename)
 					bot->core.log->error("Can't load module: Invalid module pointer returned. No symbol?");
 					lasterror = "Not a Sporks module (symbol init_module not found)";
 					Modules[filename] = m;
+					busy = false;
 					return false;
 				}
 				bot->core.log->debug("Module {} initialised", filename);
@@ -193,8 +174,10 @@ bool ModuleLoader::Load(const std::string &filename)
 		Modules[filename] = m;
 		ModuleList[filename] = m.module_object;
 		lasterror = "";
+		busy = false;
 		return true;
 	}
+	busy = false;
 	return false;
 }
 
@@ -211,10 +194,13 @@ const std::string& ModuleLoader::GetLastError()
  */
 bool ModuleLoader::Unload(const std::string &filename)
 {
+	busy = true;
+
 	auto m = Modules.find(filename);
 
 	if (m == Modules.end()) {
 		lasterror = "Module is not loaded";
+		busy = false;
 		return false;
 	}
 
@@ -241,6 +227,7 @@ bool ModuleLoader::Unload(const std::string &filename)
 		dlclose(mod.dlopen_handle);
 	}
 
+	busy = false;
 	return true;
 }
 

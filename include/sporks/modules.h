@@ -20,6 +20,7 @@
 
 #pragma once
 #include <sporks/bot.h>
+#include <atomic>
 
 class Module;
 class ModuleLoader;
@@ -78,6 +79,9 @@ enum Implementation
  * is running an event.
  */
 #define FOREACH_MOD(y,x) { \
+	while (!Loader || Loader->busy) { \
+		std::this_thread::sleep_for(std::chrono::milliseconds(10)); \
+	} \
 	for (auto _i = Loader->EventHandlers[y].begin(); _i != Loader->EventHandlers[y].end(); ++_i) \
 	{ \
 		try \
@@ -129,13 +133,13 @@ class ModuleLoader {
 	 */
 	ModMap ModuleList;
 
-	bool claimed;
-
 	std::string lasterror;
 
 public:
 	/* Module loader mutex */
 	std::mutex mtx;
+
+	bool busy;
 
 	/* An array of vectors indicating which modules are watching which events */
 	std::vector<Module*> EventHandlers[I_END];
@@ -173,16 +177,6 @@ public:
 	/* Get a list of all loaded modules */
 	const ModMap& GetModuleList() const;
 
-	/* Claim an event so that the core stops processing it */
-	void ClaimEvent();
-
-	/* Cler an event so that the core can continue processing it */
-	void ClearEvent();
-
-	/* Returns true if the last event was claimed */
-	bool IsEventClaimed();
-
-	/** Returns last error message from Load(), or empty string */
 	const std::string& GetLastError();
 };
 
