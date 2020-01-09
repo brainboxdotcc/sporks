@@ -57,16 +57,19 @@ std::map<std::string, std::vector<std::string>> replies = {
 void InfobotModule::ProcessEmbed(const std::string &embed_json, int64_t channelID)
 {
 	json embed;
+	std::string cleaned_json = embed_json;
+	cleaned_json = ReplaceString(cleaned_json, "@everyone", "@‎everyone");
+	cleaned_json = ReplaceString(cleaned_json, "@here", "@‎here");
 	aegis::channel* channel = bot->core.find_channel(channelID);
 	try {
-		std::string s = ReplaceString(embed_json, "```js", "");
+		std::string s = ReplaceString(cleaned_json, "```js", "");
 		s = ReplaceString(s, "```", "");
 		s = ReplaceString(s, "\t", " ");
 		embed = json::parse(s);
 	}
 	catch (const std::exception &e) {
 		if (channel) {
-			channel->create_message("<:sporks_error:664735896251269130> I can't make an **embed** from this: ```js\n" + embed_json + "\n```**Error:** ``" + e.what() + "``");
+			channel->create_message("<:sporks_error:664735896251269130> I can't make an **embed** from this: ```js\n" + cleaned_json + "\n```**Error:** ``" + e.what() + "``");
 			bot->sent_messages++;
 		}
 	}
