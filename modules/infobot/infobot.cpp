@@ -122,8 +122,9 @@ void InfobotModule::InputThread()
 						}
 					}
 
-					std::string text = infobot_response(bot->user.username, cleaned_message, query.username, randnick, query.channelID);
-					bool found = !text.empty();
+					infodef def;
+					std::string text = infobot_response(bot->user.username, cleaned_message, query.username, randnick, query.channelID, def);
+					bool found = def.found;
 		
 					if ((found || query.mentioned) && query.tombstone == false) {
 						QueueItem resp;
@@ -171,7 +172,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 9$";
+	std::string version = "$ModVer 10$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 

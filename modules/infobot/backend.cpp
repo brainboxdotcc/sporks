@@ -91,7 +91,7 @@ std::string removepunct(std::string word)
 	return word;
 }
 
-std::string InfobotModule::infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID)
+std::string InfobotModule::infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def)
 {
 	reply_level level = NOT_ADDRESSED;
 	std::string rpllist = "";
@@ -152,6 +152,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			int days = diff;
 
 			ShowStatus(days, hours, minutes, seconds, stats.modcount, stats.qcount, get_phrase_count(), stats.startup, channelID);
+			def.found = false;
 			return "";
 		}
 		// Literal command, print out key and value with no parsing
@@ -159,6 +160,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			std::string key = removepunct(matches[1]);
 			// This bit is a bit different, it bypasses a lot of the parsing for stuff like %n
 			reply = get_def(key);
+			def.found = true;
 			if (reply.found) {
 				return key + " is " + reply.value;
 			} else {
@@ -174,6 +176,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			value.erase(value.find_last_not_of(" \t") + 1);
 
 			if (key == "") {
+				def.found = false;
 				return "";
 			}
 			
@@ -246,6 +249,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 
 			// Gobble up empty reply
 			if (lowercase(reply.value) == "<reply>" && rpllist == "replies") {
+				def.found = false;
 				return "";
 			}
 
@@ -255,6 +259,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 				infodef r = get_def(reply.key);
 				if (!r.found) {
 					/* Broken alias */
+					def.found = false;
 					return "";
 				}
 				reply = r;
@@ -271,11 +276,13 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			std::string ml_reply = reply.value.substr(matches[0].length(), reply.value.length() - matches[0].length());
 			/* Just a <reply>? bog off... */
 			if (trim(ml_reply) == "") {
+				def.found = false;
 				return "";
 			}
 
 			if (matches[1] == "embed") {
 				ProcessEmbed(ReplaceString(ml_reply, "<embed>", ""), channelID);
+				def.found = false;
 				return "";
 			}
 
@@ -283,20 +290,25 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 
 			std::string x = expand(ml_reply, usernick, reply.whenset, mynick, randuser);
 			if (x == "%v") {
+				def.found = false;
 				return "";
 			}
 
+			def = reply;
 			return x;
 		}
 
 		s_reply = ReplaceString(s_reply, "%v", reply.value);
 
 		if (s_reply == "%v" || s_reply == "") {
+			def.found = false;
 			return "";
 		}
 
+		def = reply;
 		return s_reply;
 	}
+	def.found = false;
 	return "";
 }
 

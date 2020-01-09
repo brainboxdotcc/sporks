@@ -26,6 +26,7 @@
 #include <aegis.hpp>
 #include <sporks/modules.h>
 #include "queue.h"
+#include "backend.h"
 
 using json = nlohmann::json; 
 
@@ -80,7 +81,7 @@ class InfobotModule : public Module
 	QueueStats GetQueueStats();
 
 	void infobot_init();
-	std::string infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID);
+	std::string infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def);
 
 	void ProcessEmbed(const std::string &embed_json, int64_t channelID);
 
