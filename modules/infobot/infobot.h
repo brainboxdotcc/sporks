@@ -43,11 +43,6 @@ struct QueueStats {
 class InfobotModule : public Module
 {
 	/**
-	 * The nickname of the bot on IRC as reported by botnix
-	 */
-	std::string core_nickname;
-
-	/**
 	 * Threads
 	 */
 	std::thread* thr_input;
@@ -75,23 +70,17 @@ class InfobotModule : public Module
 	RandomNickCache nickList;
 
 	/**
-	 * Read line from a socket
-	 */
-	size_t readLine(int fd, char *buffer, size_t n);
-	/**
-	 * Write line to a socket 
-	 */
-	bool writeLine(int fd, const std::string &str);
-
-	/**
 	 * Report bot status as an embed
 	 */
-	void ShowStatus(const std::vector<std::string> &matches, int64_t channelID);
+	void ShowStatus(int days, int hours, int minutes, int seconds, uint64_t db_changes, uint64_t questions, uint64_t facts, time_t startup, int64_t channelID);
 
 	/**
 	 * Get queue sizes for use in status report
 	 */
 	QueueStats GetQueueStats();
+
+	void infobot_init();
+	std::string infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID);
 
 public:
 	InfobotModule(Bot* instigator, ModuleLoader* ml);
@@ -102,11 +91,6 @@ public:
 	virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
 	virtual bool OnGuildCreate(const modevent::guild_create &gc);
 	virtual bool OnGuildDelete(const modevent::guild_delete &guild);
-
-	/**
-	 * Set the core IRC nickname used for queries to botnix
-	 */
-	void set_core_nickname(const std::string &coredata);
 
 	/**
 	 * Random integer in range

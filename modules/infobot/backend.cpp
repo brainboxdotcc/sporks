@@ -21,31 +21,13 @@
 #include <random>
 #include <iterator>
 #include <vector>
+#include <unordered_map>
+#include <iostream>
 #include <sporks/regex.h>
 #include <sporks/database.h>
 #include <sporks/stringops.h>
-
-enum reply_level {
-	NOT_ADDRESSED = 0,
-	ADDRESSED_BY_NICKNAME = 1,
-	ADDRESSED_BY_NICKNAME_CORRECTION = 2
-};
-
-struct infostats {
-	time_t startup;
-	uint64_t modcount;
-	uint64_t qcount;
-};
-
-struct infodef {
-	bool found;
-	std::string key;
-	std::string value;
-	std::string word;
-	std::string setby;
-	time_t whenset;
-	bool locked;
-};
+#include "backend.h"
+#include "infobot.h"
 
 infostats stats;
 
@@ -55,9 +37,9 @@ bool found = false;
 infodef get_def(const std::string &key);
 uint64_t get_phrase_count();
 void set_def(std::string key, const std::string &value, const std::string &word, const std::string &setby, time_t when, bool locked);
-std::string expand(std::string str, const std::string &nick, time_t timeval, const std::string &mynick);
+std::string expand(std::string str, const std::string &nick, time_t timeval, const std::string &mynick, const std::string &randuser);
 void del_def(const std::string &key);
-std::string getreply(std::string s);
+std::string getreply(std::string s, const std::string &delim = "|");
 bool locked(const std::string &key);
 std::string getreply(std::vector<std::string> v);
 
@@ -72,7 +54,7 @@ std::map<std::string, std::vector<std::string>> replies = {
 	{"forgot",   {"I forgot %k", "%k is gone from my mind, %n", "As you wish.", "It's history.", "Done." }}
 };
 
-void init()
+void InfobotModule::infobot_init()
 {
 	stats.startup = time(NULL);
 	stats.modcount = stats.qcount = 0;
@@ -87,7 +69,7 @@ std::string removepunct(std::string word)
 	return word;
 }
 
-std::string response(const std::string &mynick, std::string otext, const std::string &usernick)
+std::string InfobotModule::infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID)
 {
 	reply_level level = NOT_ADDRESSED;
 	std::string rpllist = "";
@@ -95,12 +77,13 @@ std::string response(const std::string &mynick, std::string otext, const std::st
 	bool direct_question = (PCRE("[\\?!]$").Match(otext));
 	std::vector<std::string> matches;
 
+	otext = mynick + " " + otext;
+
 	if (PCRE("^(no\\s*" + mynick + "[,: ]+|" + mynick + "[,: ]+|)(.*?)$", true).Match(otext, matches)) {
 		std::string address = matches[1];
 		std::string text = matches[2];
 		
 		// If it was addressing us, remove the part with our nick in it, and any punctuation after it...
-		
 		if (PCRE("^no\\s*" + mynick + "[,: ]+$", true).Match(address)) {
 			level = ADDRESSED_BY_NICKNAME_CORRECTION;
 		}
@@ -136,16 +119,18 @@ std::string response(const std::string &mynick, std::string otext, const std::st
 		}
 		// status command
 		else if (level >= ADDRESSED_BY_NICKNAME && PCRE("^status\\?*$", true).Match(text)) {
-			/* FIXME: We don't need to generate a text version of this only to then turn it into an embed. merge with status.cpp. */
 			
-			/*
-			main::lprint("*** infobot status report ***");
-			my $phrases = get_phrase_count();
-			my ($days, $hours, $mins, $secs) = main::get_uptime();
-			my $status = "Since " . gmtime($stats{'startup'}) . ", there have been " . $stats{'modcount'} . " modifications and " . $stats{'qcount'} . " questions. I have been alive for $days days, $hours hours, $mins mins, and $secs seconds, I currently know " . $phrases . " phrases of rubbish";
-			main::send_privmsg($nid, $target, $status);
-			return;
-			*/
+			time_t diff = time(NULL) - stats.startup;
+			int seconds = diff % 60;
+			diff /= 60;
+			int minutes = diff % 60;
+			diff /= 60;
+			int hours = diff % 24;
+			diff /= 24;
+			int days = diff;
+
+			ShowStatus(days, hours, minutes, seconds, stats.modcount, stats.qcount, get_phrase_count(), stats.startup, channelID);
+			return "";
 		}
 		// Literal command, print out key and value with no parsing
 		else if (PCRE("^literal (.*)\\?*$", true).Match(text, matches)) {
@@ -179,7 +164,7 @@ std::string response(const std::string &mynick, std::string otext, const std::st
 					rpllist = "confirm";
 				}
 			} else {
-				if (PCRE("^also\\s+(.*)$", true).Match(reply.value, matches)) {
+				if (PCRE("^also\\s+(.*)$", true).Match(value, matches)) {
 					std::string newvalue = matches[1];
 					if (PCRE("^\\|").Match(newvalue)) {
 						reply.value = reply.value + " " + newvalue;
@@ -202,7 +187,7 @@ std::string response(const std::string &mynick, std::string otext, const std::st
 			std::string key = removepunct(matches[1]);
 			stats.qcount++;
 			reply = get_def(key);
-			
+
 			if (reply.found) {
 				if (direct_question || level >= ADDRESSED_BY_NICKNAME /* did contain: || rand(15) > 13 */) {
 					rpllist = "replies";
@@ -221,7 +206,7 @@ std::string response(const std::string &mynick, std::string otext, const std::st
 		
 		do {
 			repeat = false;
-			s_reply = expand(getreply(replies[rpllist]), usernick, reply.whenset, mynick);
+			s_reply = expand(getreply(replies[rpllist]), usernick, reply.whenset, mynick, randuser);
 
 			char timestr[256];
 			tm* _tm = gmtime(&reply.whenset);
@@ -256,15 +241,20 @@ std::string response(const std::string &mynick, std::string otext, const std::st
 			}
 		} while (repeat);
 
+		reply.value = getreply(reply.value);
+
 		if (rpllist == "replies" && PCRE("<(reply|action)>\\s*(.*)", true).Match(reply.value, matches)) {
-			/* Just a <reply>> bog off... */
+			/* Just a <reply>? bog off... */
 			if (PCRE("^\\s*<reply>\\s*$", true).Match(reply.value)) {
 				return "";
 			}
 
+			matches[2] = ReplaceString(matches[2], "<action>", "");
+			matches[2] = ReplaceString(matches[2], "<reply>", "");
+
 			reply.value = (lowercase(matches[1]) == "action") ? "*" + trim(matches[2]) + "*" : matches[2];
 
-			std::string x = expand(reply.value, usernick, reply.whenset, mynick);
+			std::string x = expand(reply.value, usernick, reply.whenset, mynick, randuser);
 			if (x == "%v") {
 				return "";
 			}
@@ -272,7 +262,8 @@ std::string response(const std::string &mynick, std::string otext, const std::st
 			return x;
 		}
 
-		s_reply = ReplaceString(s_reply, "%v", getreply(reply.value));
+		s_reply = ReplaceString(s_reply, "%v", reply.value);
+
 		if (s_reply == "%v" || s_reply == "") {
 			return "";
 		}
@@ -322,29 +313,10 @@ void del_def(const std::string &key)
 	db::query("DELETE FROM infobot WHERE key_word = '?'", {key});
 }
 
-/*
- TODO
-sub expand
-{
-	# Randomised string lists
-	while ($str =~ /<list:.+?>/) {
-		my ($choicelist) = $str =~ m/<list:(.+?)>/;
-		my @opts = split /,/, $choicelist;
-		my $opt = @opts[int rand @opts];
-		$str =~ s/<list:.+?>/$opt/;
-	}
-
-	# Blank things that couldnt be defined at all
-	$str = "" if ($str eq '%v');
-
-	return $str;
-}*/
-
-std::string expand(std::string str, const std::string &nick, time_t timeval, const std::string &mynick)
+std::string expand(std::string str, const std::string &nick, time_t timeval, const std::string &mynick, const std::string &randuser)
 {
 	char timestr[256];
 	tm* _tm;
-	std::string randuser = "";
 	_tm = gmtime(&timeval);
 	strftime(timestr, 255, "%c", _tm);
 
@@ -352,6 +324,13 @@ std::string expand(std::string str, const std::string &nick, time_t timeval, con
 	str = ReplaceString(str, "<who>", nick);
 	str = ReplaceString(str, "<random>", randuser);
 	str = ReplaceString(str, "<date>", std::string(timestr));
+
+	std::vector<std::string> m;
+	while (PCRE("<list:(.+?)>", true).Match(str, m)) {
+		std::string list = m[1];
+		std::string choice = getreply(m[1], ",");
+		str = ReplaceString(str, m[0], choice);
+	}
 
 	if (str == "%v") {
 		return "";
@@ -362,23 +341,31 @@ std::string expand(std::string str, const std::string &nick, time_t timeval, con
 std::string getreply(std::vector<std::string> v)
 {
 	auto randIt = v.begin();
-	std::advance(randIt, std::rand() % v.size());
-	return *randIt;
+	if (v.begin() != v.end()) {
+		std::advance(randIt, std::rand() % v.size());
+		return *randIt;
+	} else {
+		return "";
+	}
 }
 
-std::string getreply(std::string s)
+std::string getreply(std::string s, const std::string &delim)
 {
 	size_t pos = 0;
 	std::vector<std::string> v;
 	std::string token;
-	while ((pos = s.find("|")) != std::string::npos) {
+	while ((pos = s.find(delim)) != std::string::npos) {
 		token = s.substr(0, pos);
 		v.push_back(token);
-		s.erase(0, pos + 1);
+		s.erase(0, pos + delim.length());
 	}
 	auto randIt = v.begin();
-	std::advance(randIt, std::rand() % v.size());
-	return *randIt;
+	if (v.begin() != v.end()) {
+		std::advance(randIt, std::rand() % v.size());
+		return *randIt;
+	} else {
+		return s;
+	}
 }
 
 bool locked(const std::string &key)

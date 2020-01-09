@@ -28,44 +28,29 @@
 #include <sporks/statusfield.h>
 #include "infobot.h"
 
-PCRE uptime_days("(\\d+) day");
-PCRE uptime_hours("(\\d+) hour");
-PCRE uptime_minutes("(\\d+) min");
-PCRE uptime_secs("(\\d+) second");
-
 /**
  * Report status to discord as a pretty embed
  */
-void InfobotModule::ShowStatus(const std::vector<std::string> &matches, int64_t channelID) {
+void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, uint64_t db_changes, uint64_t questions, uint64_t facts, time_t startup, int64_t channelID) {
 	std::stringstream s;
 
 	int64_t servers = bot->core.get_guild_count();
 	int64_t users = bot->core.get_member_count();
 
 	QueueStats qs = this->GetQueueStats();
-
-	std::vector<std::string> m;
-	int days = 0, hours = 0, minutes = 0, seconds = 0;
-	if (uptime_days.Match(matches[4], m)) {
-		days = from_string<int>(m[1], std::dec);
-	}
-	if (uptime_hours.Match(matches[4], m)) {
-		hours = from_string<int>(m[1], std::dec);
-	}
-	if (uptime_minutes.Match(matches[4], m)) {
-		minutes = from_string<int>(m[1], std::dec);
-	}
-	if (uptime_secs.Match(matches[4], m)) {
-		seconds = from_string<int>(m[1], std::dec);
-	}
 	char uptime[32];
-	sprintf(uptime, "%02d days, %02d:%02d:%02d", days, hours, minutes, seconds);
+	sprintf(uptime, "%d day%s, %02d:%02d:%02d", days, (days != 1 ? "s" : ""), hours, minutes, seconds);
+
+	char startstr[256];
+	tm* _tm;
+	_tm = gmtime(&startup);
+	strftime(startstr, 255, "%c", _tm);
 
 	const statusfield statusfields[] = {
-		statusfield("Database Changes", Comma(from_string<size_t>(matches[2], std::dec))),
-		statusfield("Connected Since", matches[1]),
-		statusfield("Questions", Comma(from_string<size_t>(matches[3], std::dec))),
-		statusfield("Facts in database", Comma(from_string<size_t>(matches[5], std::dec))),
+		statusfield("Database Changes", Comma(db_changes)),
+		statusfield("Connected Since", startstr),
+		statusfield("Questions", Comma(questions)),
+		statusfield("Facts in database", Comma(facts)),
 		statusfield("Total Servers", Comma(servers)),
 		statusfield("Online Users", Comma(users)),
 		statusfield("Input Queue", Comma(qs.inputs)),
