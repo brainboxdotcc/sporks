@@ -36,7 +36,6 @@
 void InfobotModule::OutputThread() {
 	PCRE statsreply("Since (.+?), there have been (\\d+) modifications and (\\d+) questions. I have been alive for (.+?), I currently know (\\d+)");
 	PCRE url_sanitise("^https?://", true);
-	PCRE embed_reply("\\s*<embed:(.+)>\\s*$", true);
 
 	while (!this->terminate) {
 		try {
@@ -76,7 +75,7 @@ void InfobotModule::OutputThread() {
 								urls_matched++;
 							}
 						}
-						if (!done.front().tombstone && message != "*NOTHING*") {
+						if (!done.front().tombstone) {
 							/* Prevent training the bot with a @everyone or @here message
 							 * Note these are still stored as-is in the database as they arent harmful
 							 * on other mediums such as IRC.
@@ -87,19 +86,7 @@ void InfobotModule::OutputThread() {
 							message = ReplaceString(message, "<s>", "|");
 							aegis::channel* channel = bot->core.find_channel(done.front().channelID);
 							if (channel) {
-								std::vector<std::string> embedmatches;
-								if (embed_reply.Match(message, embedmatches)) {
-									json embed_json;
-									try {
-										embed_json = json::parse(embedmatches[1]);
-										channel->create_message_embed("", embed_json);
-									}
-									catch (const std::exception &e) {
-										channel->create_message(message);
-									}
-								} else {
-									channel->create_message(message);
-								}
+								channel->create_message(message);
 								bot->sent_messages++;
 							}
 						}

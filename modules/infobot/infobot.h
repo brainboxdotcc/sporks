@@ -82,6 +82,8 @@ class InfobotModule : public Module
 	void infobot_init();
 	std::string infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID);
 
+	void ProcessEmbed(const std::string &embed_json, int64_t channelID);
+
 public:
 	InfobotModule(Bot* instigator, ModuleLoader* ml);
 	virtual ~InfobotModule();

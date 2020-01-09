@@ -190,7 +190,7 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			mentions_removed = trim(mentions_removed.substr(botusername.length(), mentions_removed.length()));
 		}
 		/* Remove linefeeds, they mess with botnix */
-		mentions_removed = trim(ReplaceString(mentions_removed, "\r\n", " "));
+		mentions_removed = trim(mentions_removed);
 
 		/* Call modules */
 		FOREACH_MOD(I_OnMessage,OnMessage(message, mentions_removed, mentioned, stringmentions));

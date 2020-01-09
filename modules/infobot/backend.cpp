@@ -54,6 +54,28 @@ std::map<std::string, std::vector<std::string>> replies = {
 	{"forgot",   {"I forgot %k", "%k is gone from my mind, %n", "As you wish.", "It's history.", "Done." }}
 };
 
+void InfobotModule::ProcessEmbed(const std::string &embed_json, int64_t channelID)
+{
+	json embed;
+	aegis::channel* channel = bot->core.find_channel(channelID);
+	try {
+		std::string s = ReplaceString(embed_json, "```js", "");
+		s = ReplaceString(s, "```", "");
+		s = ReplaceString(s, "\t", " ");
+		embed = json::parse(s);
+	}
+	catch (const std::exception &e) {
+		if (channel) {
+			channel->create_message("<:sporks_error:664735896251269130> I can't make an **embed** from this: ```js\n" + embed_json + "\n```**Error:** ``" + e.what() + "``");
+			bot->sent_messages++;
+		}
+	}
+	if (channel) {
+		channel->create_message_embed("", embed);
+		bot->sent_messages++;
+	}
+}
+
 void InfobotModule::infobot_init()
 {
 	stats.startup = time(NULL);
@@ -81,7 +103,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 
 	if (PCRE("^(no\\s*" + mynick + "[,: ]+|" + mynick + "[,: ]+|)(.*?)$", true).Match(otext, matches)) {
 		std::string address = matches[1];
-		std::string text = matches[2];
+		std::string text = otext.substr(matches[1].length(), otext.length() - matches[1].length());
 		
 		// If it was addressing us, remove the part with our nick in it, and any punctuation after it...
 		if (PCRE("^no\\s*" + mynick + "[,: ]+$", true).Match(address)) {
@@ -144,11 +166,13 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			}
 		}
 		// Next option, someone is either adding a new phrase to the bot or editing an old one, a bit trickier...
-		else if ((PCRE("^(.*?)\\s+=(is|are|was|arent|aren't|can|can't|cant|will|has|had|r|might|may)=\\s+(.*)\\s*$", true).Match(text, matches) || PCRE("^(.*?)\\s+(is|are|was|arent|aren't|can|can't|cant|will|has|had|r|might|may)\\s+(.*)\\s*$", true).Match(text, matches)) && (rpllist == "")) {
+		else if ((PCRE("^(.*?)\\s+=(is|are|was|arent|aren't|can|can't|cant|will|has|had|r|might|may)=\\s+", true).Match(text, matches) || PCRE("^(.*?)\\s+(is|are|was|arent|aren't|can|can't|cant|will|has|had|r|might|may)\\s+", true).Match(text, matches)) && (rpllist == "")) {
 			std::string key = removepunct(matches[1]);
 			std::string word = matches[2];
-			std::string value = matches[3];
-			
+			std::string value = text.substr(matches[0].length(), text.length() - matches[0].length());
+			// remove trailing tab/space only
+			value.erase(value.find_last_not_of(" \t") + 1);
+
 			if (key == "") {
 				return "";
 			}
@@ -243,18 +267,21 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 
 		reply.value = getreply(reply.value);
 
-		if (rpllist == "replies" && PCRE("<(reply|action)>\\s*(.*)", true).Match(reply.value, matches)) {
+		if (rpllist == "replies" && PCRE("<(reply|action|embed)>\\s*", true).Match(reply.value, matches)) {
+			std::string ml_reply = reply.value.substr(matches[0].length(), reply.value.length() - matches[0].length());
 			/* Just a <reply>? bog off... */
-			if (PCRE("^\\s*<reply>\\s*$", true).Match(reply.value)) {
+			if (trim(ml_reply) == "") {
 				return "";
 			}
 
-			matches[2] = ReplaceString(matches[2], "<action>", "");
-			matches[2] = ReplaceString(matches[2], "<reply>", "");
+			if (matches[1] == "embed") {
+				ProcessEmbed(ReplaceString(ml_reply, "<embed>", ""), channelID);
+				return "";
+			}
 
-			reply.value = (lowercase(matches[1]) == "action") ? "*" + trim(matches[2]) + "*" : matches[2];
+			reply.value = (lowercase(matches[1]) == "action") ? "*" + ml_reply + "*" : ml_reply;
 
-			std::string x = expand(reply.value, usernick, reply.whenset, mynick, randuser);
+			std::string x = expand(ml_reply, usernick, reply.whenset, mynick, randuser);
 			if (x == "%v") {
 				return "";
 			}
@@ -267,6 +294,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 		if (s_reply == "%v" || s_reply == "") {
 			return "";
 		}
+
 		return s_reply;
 	}
 	return "";

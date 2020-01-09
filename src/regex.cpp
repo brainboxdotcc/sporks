@@ -36,7 +36,7 @@ regex_exception::regex_exception(const std::string &_message) : std::exception()
  * Construction compiles the regex, which for a well formed regex may be more expensive than matching against a string.
  */
 PCRE::PCRE(const std::string &match, bool case_insensitive) {
-	compiled_regex = pcre_compile(match.c_str(), case_insensitive ? PCRE_CASELESS : 0, &pcre_error, &pcre_error_ofs, NULL);
+	compiled_regex = pcre_compile(match.c_str(), case_insensitive ? PCRE_CASELESS | PCRE_MULTILINE : PCRE_MULTILINE, &pcre_error, &pcre_error_ofs, NULL);
 	if (!compiled_regex) {
 		throw new regex_exception(pcre_error);
 	}
