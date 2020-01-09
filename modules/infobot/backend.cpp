@@ -54,6 +54,17 @@ std::map<std::string, std::vector<std::string>> replies = {
 	{"forgot",   {"I forgot %k", "%k is gone from my mind, %n", "As you wish.", "It's history.", "Done." }}
 };
 
+void copy_to_def(const infodef &source, infodef &dest)
+{
+	dest.found = source.found;
+	dest.key = source.key;
+	dest.value = source.value;
+	dest.word = source.word;
+	dest.setby = source.setby;
+	dest.whenset = source.whenset;
+	dest.locked = source.locked;
+}
+
 void InfobotModule::ProcessEmbed(const std::string &embed_json, int64_t channelID)
 {
 	json embed;
@@ -297,7 +308,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 				return "";
 			}
 
-			def = reply;
+			copy_to_def(reply, def);
 			return x;
 		}
 
@@ -308,7 +319,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			return "";
 		}
 
-		def = reply;
+		copy_to_def(reply, def);
 		return s_reply;
 	}
 	def.found = false;
