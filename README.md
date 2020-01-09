@@ -1,6 +1,6 @@
 # Sporks, the backchatting, learning, scriptable discord bot
-This github project contains the source code for the Discord enhancements for Sporks, the infobot/botnix bot, written in C++ using the aegis.cpp library.
-Remember you can still find my original botnix version of Sporks on IRC at irc.chatspike.net!
+This github project contains the source code for Sporks, the learning, scriptable Discord chat bot, written in C++ using the aegis.cpp library.
+Remember you can still find my original perl/botnix version of Sporks on IRC at irc.chatspike.net!
 
 ## Project and System status
 
@@ -20,7 +20,6 @@ Currently only Linux is supported, but other UNIX-style platforms should build a
 
 ## Dependencies
 
-* [botnix](https://github.com/braindigitalis/botnix) (version 2.0 running infobot.pm and telnet.pm)
 * [cmake](https://cmake.org/) (version 3.13+)
 * [g++](https://gcc.gnu.org) (version 8+)
 * [aegis.cpp](https://github.com/zeroxs/aegis.cpp) (development branch)
@@ -42,7 +41,7 @@ Replace the number after -j with a number suitable for your setup, usually the s
 
 ## Database
 
-You should have a database configured with the mysql schemas from the [botnix repository](https://github.com/braindigitalis/botnix). This will include discord-specific tables.
+You should have a database configured with the mysql schemas from the mysql-schemas directory. use mysqlimport to import this.
 
 ## Configuration
 
@@ -62,7 +61,6 @@ run.sh will restart the bot executable continually if it dies.
 | Argument        | Meaning                                                |
 | --------------- |------------------------------------------------------- |
 | --dev           | Run using the development token in the config file     |
-| --debug         | Run using the live token but only respond on the development server  |
 
 
 ## Reporting to bot list sites
