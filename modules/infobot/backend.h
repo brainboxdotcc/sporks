@@ -42,5 +42,8 @@ struct infodef {
 	std::string setby;
 	time_t whenset;
 	bool locked;
+
+	infodef();
+	~infodef();
 };
 
