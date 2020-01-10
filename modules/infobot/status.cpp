@@ -53,8 +53,6 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 		statusfield("Facts in database", Comma(facts)),
 		statusfield("Total Servers", Comma(servers)),
 		statusfield("Online Users", Comma(users)),
-		statusfield("Input Queue", Comma(qs.inputs)),
-		statusfield("Output Queue", Comma(qs.outputs)),
 		statusfield("User Queue", Comma(qs.users)),
 		statusfield("Uptime", std::string(uptime)),
 		statusfield("","")

@@ -32,39 +32,11 @@ using json = nlohmann::json;
 
 typedef std::unordered_map<int64_t, std::vector<std::string>> RandomNickCache;
 
-struct QueueStats {
-	size_t inputs;
-	size_t outputs;
-	size_t users;
-};
-
 /**
  * Infobot module: Allows smart responses from the botnix/infobot.pm system.
  */
 class InfobotModule : public Module
 {
-	/**
-	 * Threads
-	 */
-	std::thread* thr_input;
-	std::thread* thr_output;
-
-	/**
-	 *  Thread safety for queues
-	 */
-	std::mutex input_mutex;
-	std::mutex output_mutex;
-
-	/** Set to true in destructor when threads are to terminte
-	 */
-	bool terminate;	
-
-	/**
-	 *  Input and output queue, lists of messages awaiting processing, or to be sent to channels
-	 */
-	Queue inputs;
-	Queue outputs;
-
 	/**
 	 *  Contains a vector of nicknames per-server for selecting a random nickname only
 	 */
@@ -93,7 +65,6 @@ public:
 
 	virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
 	virtual bool OnGuildCreate(const modevent::guild_create &gc);
-	virtual bool OnGuildDelete(const modevent::guild_delete &guild);
 
 	/**
 	 * Random integer in range
@@ -101,7 +72,7 @@ public:
 	int random(int min, int max);
 
 	/* Thread handlers */
-	void InputThread();	     /* Processes input lines from channel messages, complex responses can take upwards of 250ms */
-	void OutputThread();	    /* Outputs lines due to be sent to channel messages, after being processed by the input thread */
+	void Input(QueueItem &queueitem);		/* Processes input lines from channel messages */
+	void Output(QueueItem &queueitem);	/* Outputs lines due to be sent to channel messages */
 };
 

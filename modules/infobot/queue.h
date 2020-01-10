@@ -26,6 +26,10 @@
 
 using json = nlohmann::json;
 
+struct QueueStats {
+	uint64_t users;
+};
+
 /**
  * Contains an queued input or output item.
  * These are messages in and out of the bot, they are queued
@@ -40,7 +44,5 @@ class QueueItem
 	std::string username;
 	std::string message;
 	bool mentioned;
-	bool tombstone;
 };
 
-typedef std::deque<QueueItem> Queue;
