@@ -65,7 +65,8 @@ namespace db {
 		 * Escape all parameters properly
 		 */
 		for (unsigned int i = 0; i < parameters.size(); ++i) {
-			char out[parameters[i].length() + 1];
+			/* Worst case scenario: Every character becomes two, plus NULL terminator*/
+			char out[parameters[i].length() * 2 + 1];
 			mysql_real_escape_string(&connection, out, parameters[i].c_str(), parameters[i].length());
 			parameters[i] = out;
 		}
