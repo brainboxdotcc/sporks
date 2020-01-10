@@ -34,6 +34,12 @@ infostats stats;
 bool quiet = false;
 bool found = false;
 
+infodef::infodef() : key(""), value(""), word(""), setby(""), whenset(0), locked(false), found(false) {
+}
+
+infodef::~infodef() {
+}
+
 infodef get_def(const std::string &key);
 uint64_t get_phrase_count();
 void set_def(std::string key, const std::string &value, const std::string &word, const std::string &setby, time_t when, bool locked);
@@ -329,9 +335,6 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 infodef get_def(const std::string &key)
 {
 	infodef d;
-	d.key = d.value = d.word = d.setby = "";
-	d.whenset = 0;
-	d.locked = d.found = false;
 	db::resultset r = db::query("SELECT key_word, value, word, setby, whenset, locked FROM infobot WHERE key_word = '?'", {key});
 	if (r.size()) {
 		d.key = r[0]["key_word"];
