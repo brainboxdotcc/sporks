@@ -1,9 +1,6 @@
 {
 	"devtoken": "<dev bot token>",
 	"livetoken": "<live bot token>",
-	"telnetport": "12345",
-	"telnetuser": "<botnix telnet username>",
-	"telnetpass": "<botnix telnet password>",
 	"dbhost": "<mysql host>",
 	"dbuser": "<mysql user>",
 	"dbpass": "<mysql pass>",
