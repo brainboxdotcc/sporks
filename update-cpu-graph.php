@@ -29,7 +29,7 @@ if (!$conn) {
 
 mysqli_select_db($conn, $settings->dbname);
 
-mysqli_query($conn, "DELETE FROM infobot_cpu_graph WHERE logdate < now() - INTERVAL 3 DAY");
+mysqli_query($conn, "DELETE FROM infobot_cpu_graph WHERE logdate < now() - INTERVAL 1 DAY");
 $cpu_percent =  trim(`ps aux | grep ./bot$ | awk -F ' ' '{ print $3 }'`);
 mysqli_query($conn, "INSERT INTO infobot_cpu_graph (logdate, percent) VALUES(now(), '" . $cpu_percent . "')");
 
