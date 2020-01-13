@@ -63,19 +63,3 @@ run.sh will restart the bot executable continually if it dies.
 | --dev           | Run using the development token in the config file     |
 
 
-## Reporting to bot list sites
-
-To report your bot's server count to bot list sites (really, you shouldn't even do this, as you'd be running a fork of an existing bot!) you should add the simple script "update-bot-lists.php" to your crontab:
-
-    user@server:~/bot$ crontab -l
-    # m h  dom mon dow   command
-    0,30 * * * *    cd /home/user/bot && /usr/bin/php update-bot-lists.php
-    
-and configure the infobot_discord_list_sites table with the sites your bot is registered upon:
-
-    INSERT INTO `infobot_discord_list_sites` (`name`, `url`, `server_count_field`, `user_count_field`, `authorization`) VALUES
-    ('Top.gg', 'https://top.gg/api/bots/your-bot-id/stats', 'server_count', NULL, 'your api key goes here'),
-    ('DiscordBotList', 'https://discordbotlist.com/api/bots/your-bot-id/stats', 'guilds', 'users', 'another api key'),
-    ('Bots On Discord', 'https://bots.ondiscord.xyz/bot-api/bots/your-bot-id/guilds', 'guildCount', NULL, 'api key for this other site'),
-    ('Divine Discord Bots', 'https://divinediscordbots.com/bot/your-bot-id/stats', 'server_count', NULL, 'guess what goes here?');
-
