@@ -25,6 +25,12 @@
 #include <sporks/database.h>
 #include <sstream>
 #include <chrono>
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
 
 struct guild_count_data
 {
@@ -36,6 +42,19 @@ struct shard_data
 {
 	std::chrono::time_point<std::chrono::steady_clock> last_message;
 };
+
+std::string exec(const char* cmd) {
+	std::array<char, 128> buffer;
+	std::string result;
+	std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+	if (!pipe) {
+		return "";
+	}
+	while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+		result += buffer.data();
+	}
+	return result;
+}
 
 /**
  * Provides diagnostic commands for monitoring the bot and debugging it interactively while it's running.
@@ -65,7 +84,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 19$";
+		std::string version = "$ModVer 20$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -161,6 +180,12 @@ public:
 							} else {
 								EmbedSimple(std::string("Can't do that: ``") + bot->Loader->GetLastError() + "``", msg.get_channel_id().get());
 							}
+						}
+					} else if (lowercase(subcommand) == "threadstats") {
+						std::string result = exec("top -b -n1 -d0 | head -n7 && top -b -n1 -d0 -H | grep \"./bot\\|run.sh\" | grep -v grep | grep -v perl");
+						aegis::channel* c = bot->core.find_channel(msg.get_channel_id().get());
+						if (c) {
+							c->create_message("```" + result + "```");
 						}
 					} else if (lowercase(subcommand) == "lock") {
 						std::string keyword;
