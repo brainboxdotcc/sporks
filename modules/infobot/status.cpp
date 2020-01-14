@@ -50,11 +50,12 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 		statusfield("Database Changes", Comma(db_changes)),
 		statusfield("Connected Since", startstr),
 		statusfield("Questions", Comma(questions)),
-		statusfield("Facts in database", Comma(facts)),
+		statusfield("Approx. Fact Count", Comma(facts)),
 		statusfield("Total Servers", Comma(servers)),
 		statusfield("Online Users", Comma(users)),
 		statusfield("User Queue", Comma(qs.users)),
 		statusfield("Uptime", std::string(uptime)),
+		statusfield("Shards", Comma(bot->core.shard_max_count)),
 		statusfield("","")
 	};
 

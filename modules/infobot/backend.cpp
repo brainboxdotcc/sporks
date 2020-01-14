@@ -350,8 +350,9 @@ infodef get_def(const std::string &key)
 
 uint64_t get_phrase_count()
 {
-	db::resultset r = db::query("SELECT COUNT(key_word) AS total FROM infobot", {});
-	return r.size() > 0 ? from_string<uint64_t>(r[0]["total"], std::dec) : 0;
+	/* Don't use `SELECT COUNT(*)` here. It will take seconds to complete, as opposed to `SHOW TABLE STATUS` which returns near-instantly. */
+	db::resultset r = db::query("show table status like '?'", {"infobot"});
+	return r.size() > 0 ? from_string<uint64_t>(r[0]["Rows"], std::dec) : 0;
 }
 
 void set_def(std::string key, const std::string &value, const std::string &word, const std::string &setby, time_t when, bool locked)
