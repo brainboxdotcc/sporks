@@ -13,7 +13,7 @@
 	"fields": [
 		{
 			"name": "Online Help",
-			"value": "All help listed here is a summary of the full help which can be found on the [Sporks Wiki on GitHub](https://github.com/braindigitalis/botnix-discord-cpp/wiki).",
+			"value": "All help listed here is a summary of the full help which can be found on the [Sporks Wiki on GitHub](https://github.com/brainboxdotcc/sporks/wiki).",
 			"inline": false
 		},
 		{
@@ -26,11 +26,11 @@
 			"value": "You can make the bot forget a phrase with\n```@:user: forget <keyword>```\nIf the bot already knows a fact, you will usually have to tell it to forget the fact, before it will accept a new one.\n",
 			"inline": false
 		},
-	{
-		"name": "Configuration",
-		"value": "Users with the manage messages permission on channel can configure channel-specific bot settings. For help on these settings, type ```@:user: help config``` on channel.",
-		"inline": false
-	},
+		{
+			"name": "Configuration",
+			"value": "Users with the manage messages permission on channel can configure channel-specific bot settings. For help on these settings, type ```@:user: help config``` on channel.",
+			"inline": false
+		},
 		{
 			"name": "Other commands",
 			"value": "You can ask the bot where he learned a phrase by asking:\n```@:user:, who told you about <keyword>?```\nA status report can be obtained by asking the bot:\n```@:user: status```\nNote that the bot will only talk on channels, and not in private message, and will only respond when mentioned, although it will silently learn all it observes.",

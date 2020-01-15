@@ -78,6 +78,7 @@ void InfobotModule::Input(QueueItem &query)
 			"what is a",
 			"whats",
 			"whos",
+			"where's",
 			"whats up with",
 			"whats going off with",
 			"what is",
@@ -130,7 +131,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 11$";
+	std::string version = "$ModVer 12$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
