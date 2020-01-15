@@ -56,6 +56,7 @@ class InfobotModule : public Module
 	std::string infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def);
 
 	void ProcessEmbed(const std::string &embed_json, int64_t channelID);
+	void EmbedWithFields(const std::string &title, std::map<std::string, std::string> fields, int64_t channelID);
 
 public:
 	InfobotModule(Bot* instigator, ModuleLoader* ml);

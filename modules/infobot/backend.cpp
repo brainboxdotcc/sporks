@@ -53,7 +53,7 @@ std::map<std::string, std::vector<std::string>> replies = {
 	{"replies",  {"I heard %k %w %v", "They say %k %w %v", "%k %w %v... I think", "someone said %k %w %v", "%k %w like, %v", "%k %w %v", "%k %w %v, maybe?", "%s once said %k %w %v"}},
 	{"dontknow", {"Sorry %n I don't know what %k is.", "%k? no idea %n.", "I'm not a genius, %n...", "Its best to ask a real person about %k.", "Not a clue.", "Don't you know, %n?"}},
 	{"notnew",   {"but %k %w %v :(", "fool, %k %w %v :p", "%k already %w %v...", "Are you sure, %n? I am sure that %k %w %v!"}},
-	{"heard",    {"%s told me about %k on %d", "I learned that on %d, and i think it was %s that told me it.", "I think it was %s who said that, way back on %d...", "%n: Back on %d, %s told me about %k"}},
+	{"heard",	{"%s told me about %k on %d", "I learned that on %d, and i think it was %s that told me it.", "I think it was %s who said that, way back on %d...", "%n: Back on %d, %s told me about %k"}},
 	{"confirm",  {"Ok, %n", "Your wish is my command.", "Okay.", "Whatever...", "Gotcha.", "Ok.", "Right."}},
 	{"loggedout",{"You're a mild idiot %n, log in and try again", "I can't do that %n because you dont have the power!", "I would do what you ask, but you are not logged in!", "Oh dear, someone locked that. log in and try again %n."}},
 	{"locked",   {"You can't edit that! The keyword '%k' has been locked against changes!"}},
@@ -94,6 +94,43 @@ void InfobotModule::ProcessEmbed(const std::string &embed_json, int64_t channelI
 		channel->create_message_embed("", embed);
 		bot->sent_messages++;
 	}
+}
+
+std::string escape_json(const std::string &s) {
+	std::ostringstream o;
+	for (auto c = s.cbegin(); c != s.cend(); c++) {
+		switch (*c) {
+		case '"': o << "\\\""; break;
+		case '\\': o << "\\\\"; break;
+		case '\b': o << "\\b"; break;
+		case '\f': o << "\\f"; break;
+		case '\n': o << "\\n"; break;
+		case '\r': o << "\\r"; break;
+		case '\t': o << "\\t"; break;
+		default:
+			if ('\x00' <= *c && *c <= '\x1f') {
+				o << "\\u"
+				  << std::hex << std::setw(4) << std::setfill('0') << (int)*c;
+			} else {
+				o << *c;
+			}
+		}
+	}
+	return o.str();
+}
+
+void InfobotModule::EmbedWithFields(const std::string &title, std::map<std::string, std::string> fields, int64_t channelID)
+{
+	std::string json = "{\"title\":\"" + title + "\",\"color\":16767488,\"fields\":[";
+	for (auto v = fields.begin(); v != fields.end(); ++v) {
+		json += "{\"name\":\"" + v->first + "\",\"value\":\"" + v->second + "\",\"inline\":true}";
+		auto n = v;
+		if (++n != fields.end()) {
+			json += ",";
+		}
+	}
+	json += "],\"footer\":{\"link\":\"https://sporks.gg/\",\"text\":\"Powered by Sporks!\",\"icon_url\":\"https://www.sporks.gg/images/sporks_2020.png\"}}";
+	ProcessEmbed(json, channelID);
 }
 
 void InfobotModule::infobot_init()
@@ -182,8 +219,17 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			reply = get_def(key);
 			def.found = true;
 			if (reply.found) {
-				return key + " is " + reply.value;
+				std::string e = escape_json(reply.value);
+				if (e.length() < 1020 && reply.key.length() < 254) {
+					/* Send a fancy embed if its not excessively too long */
+					EmbedWithFields("Literal Definition", {{"Key", escape_json(reply.key)}, {"Value", "```" + escape_json(reply.value) + "```"}}, channelID);
+					return "";
+				} else {
+					return reply.key + " **is** " + reply.value;
+				}
+				return "";
 			} else {
+				reply.key = key;
 				rpllist = "dontknow";
 			}
 		}
@@ -211,7 +257,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 					rpllist = "confirm";
 				}
 			} else {
-				if (PCRE("^also\\s+(.*)$", true).Match(value, matches)) {
+				if (PCRE("^also\\s+(.*)$", true).Match(value, matches) || PCRE("^(.*)\\s(as well|too)$", true).Match(value, matches)) {
 					std::string newvalue = matches[1];
 					if (PCRE("^\\|").Match(newvalue)) {
 						reply.value = reply.value + " " + newvalue;
@@ -240,6 +286,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 					rpllist = "replies";
 				}
 			} else if (level >= ADDRESSED_BY_NICKNAME) {
+				reply.key = key;
 				rpllist = "dontknow";
 			}
 		}
