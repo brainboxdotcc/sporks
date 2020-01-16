@@ -2,44 +2,50 @@
 	"title": ":user: help",
 	"color": 16767488,
 	"url": "https://sporks.gg",
+	"timestamp": ":ts:",
 	"thumbnail": {
-		"url": "https://www.sporks.gg/images/sporks_2020.png"
+		"url": "https://www.sporks.gg/images/sporks-adopt.png"
 	},
 	"footer": {
 		"link": "https://sporks.gg/",
-		"text": "Powered by Sporks!",
+		"text": "Powered by Sporks! - help requested by :author:",
 		"icon_url": "https://www.sporks.gg/images/sporks_2020.png"
 	},
 	"fields": [
 		{
-			"name": "Online Help",
-			"value": "All help listed here is a summary of the full help which can be found on the [Sporks Wiki on GitHub](https://github.com/brainboxdotcc/sporks/wiki).",
+			"name": "Find help on the official wiki!",
+			"value": "All help for this bot can be found on the [Sporks Wiki on GitHub](https://github.com/brainboxdotcc/sporks/wiki). For further assistance, please join the [official brainbox.cc discord server](https://discord.gg/brainbox).\n<:blank:667278047006949386>",
 			"inline": false
 		},
 		{
-			"name": "Teaching :user:",
-			"value": "Any declaritive statement will teach the bot. For example someone saying ```twitch is down again``` will teach the bot this response, asking later ```@:user: twitch``` will make the bot respond\n```I heard twitch is down again```\n",
-			"inline": false
+			"name": ":brain: Teaching Sporks",
+			"value": "[How to teach things to Sporks](https://github.com/brainboxdotcc/sporks/wiki/Teaching-Sporks)\n<:blank:667278047006949386>",
+			"inline": true
 		},
 		{
-			"name": "Giving :user: amnesia",
-			"value": "You can make the bot forget a phrase with\n```@:user: forget <keyword>```\nIf the bot already knows a fact, you will usually have to tell it to forget the fact, before it will accept a new one.\n",
-			"inline": false
+			"name": ":gear: Configuration",
+			"value": "[Setting up Sporks for your server](https://github.com/brainboxdotcc/sporks/wiki/Configuration)\n<:blank:667278047006949386>",
+			"inline": true
 		},
 		{
-			"name": "Configuration",
-			"value": "Users with the manage messages permission on channel can configure channel-specific bot settings. For help on these settings, type ```@:user: help config``` on channel.",
-			"inline": false
+			"name": "<:testtube:667275669323120661> Advanced",
+			"value": "[Embeds, random choices, and more](https://github.com/brainboxdotcc/sporks/wiki/Advanced-Chat-Commands)\n<:blank:667278047006949386>",
+			"inline": true
 		},
 		{
-			"name": "Other commands",
-			"value": "You can ask the bot where he learned a phrase by asking:\n```@:user:, who told you about <keyword>?```\nA status report can be obtained by asking the bot:\n```@:user: status```\nNote that the bot will only talk on channels, and not in private message, and will only respond when mentioned, although it will silently learn all it observes.",
-			"inline": false
+			"name": "<:variables:667275003473166336> Variables",
+			"value": "[Special values you can put in a reply](https://github.com/brainboxdotcc/sporks/wiki/Variables)\n<:blank:667278047006949386>",
+			"inline": true
 		},
 		{
-			"name": "Advanced commands",
-			"value": "Further advanced commands are available, for info on them type ```@:user: help advanced```",
-			"inline": false
+			"name": "<:download:667274535254360084> Script Repository",
+			"value": "[Finding Scripts to add to Sporks](https://github.com/brainboxdotcc/sporks/wiki/Downloading-scripts-from-codebottle.io-into-Sporks)\n<:blank:667278047006949386>",
+			"inline": true
+		},
+		{
+			"name": "<:javascript:667272799240585236> Programming",
+			"value": "[Adding your own JavaScript to Sporks](https://github.com/brainboxdotcc/sporks/wiki/Programming-Reference)\n<:blank:667278047006949386>",
+			"inline": true
 		}
 	],
 	"description": ""

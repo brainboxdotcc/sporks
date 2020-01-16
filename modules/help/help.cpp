@@ -49,7 +49,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 12$";
+		std::string version = "$ModVer 13$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -78,12 +78,14 @@ public:
 	}
 	
 	/**
-	 * Emit help via DM using a json file in the help/ directory. Missing help files emit a generic error message.
+	 * Emit help using a json file in the help/ directory. Missing help files emit a generic error message.
 	 */
 	void GetHelp(const std::string &section, int64_t channelID, const std::string &botusername, int64_t botid, const std::string &author, int64_t authorid, bool dm)
 	{
 		bool found = true;
 		json embed_json;
+		char timestamp[256];
+		time_t timeval = time(NULL);
 		aegis::channel* channel = bot->core.find_channel(channelID);
 
 		if (!channel) {
@@ -98,10 +100,15 @@ public:
 		}
 		std::string json((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 
+		tm* _tm;
+		_tm = gmtime(&timeval);
+		strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", _tm);
+
 		json = ReplaceString(json, ":section:" , section);
 		json = ReplaceString(json, ":user:", botusername);
 		json = ReplaceString(json, ":id:", std::to_string(botid));
 		json = ReplaceString(json, ":author:", author);
+		json = ReplaceString(json, ":ts:", timestamp);
 	
 		try {
 			embed_json = json::parse(json);
@@ -113,22 +120,8 @@ public:
 			return;
 		}
 
-		if (dm) {
-			aegis::create_message_t dmobj;
-			try {
-				dmobj.user_id(authorid).embed(embed_json).nonce(authorid);
-				// FIXME: Don't use .get() on the promise here until it's confirmed that promises are fixed and don't cause segfaults!
-				bot->core.create_dm_message(dmobj); //.get();
-				channel->create_message("<@" + std::to_string(authorid) + ">, please see your DMs for help text.");
-				bot->sent_messages += 2;
-			}
-			catch (const aegis::exception &e) {
-				channel->create_message("<@" + std::to_string(authorid) + ">, I couldn't send help text to you via DM. Please check your privacy settings and try again.");
-				bot->sent_messages++;
-			}
-		} else {
-			channel->create_message_embed("", embed_json);
-		}
+		channel->create_message_embed("", embed_json);
+		bot->sent_messages++;
 	}
 };
 
