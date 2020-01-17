@@ -55,7 +55,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 10$";
+		std::string version = "$ModVer 11$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -91,11 +91,11 @@ public:
 		variable = lowercase(variable);
 		setting = lowercase(setting);
 		if (variable == "" || setting == "") {
-			EmbedSimple(std::string("Missing parameters for config command, please see ``@") + bot->user.username + " help config``", channelID);
+			EmbedSimple("Missing parameters for config command, please see [the wiki](https://github.com/brainboxdotcc/sporks/wiki/Configuration)", channelID);
 			return;
 		}
 		if (variable != "talkative" && variable != "learn") {
-			EmbedSimple(std::string("Missing parameters for config command, please see ``@") + bot->user.username + " help config``", channelID);
+			EmbedSimple("Missing parameters for config command, please see [the wiki](https://github.com/brainboxdotcc/sporks/wiki/Configuration)", channelID);
 			return;
 		}
 		bool state = (setting == "yes" || setting == "true" || setting == "on" || setting == "1");
@@ -212,7 +212,7 @@ public:
 				s << ",";
 			}
 		}
-		s << "],\"description\":\"For help on changing these settings, type ``@" << bot->user.username << " help config``.\"}";
+		s << "],\"description\":\"For help on changing these settings, please see [the wiki](https://github.com/brainboxdotcc/sporks/wiki/Configuration)\"}";
 		try {
 			embed_json = json::parse(s.str());
 		}

@@ -31,9 +31,7 @@
 
 infostats stats;
 
-bool quiet = false;
-bool found = false;
-
+/* Infodef represents a definition from the database */
 infodef::infodef() : key(""), value(""), word(""), setby(""), whenset(0), locked(false), found(false) {
 }
 
@@ -49,16 +47,32 @@ std::string getreply(std::string s, const std::string &delim = "|");
 bool locked(const std::string &key);
 std::string getreply(std::vector<std::string> v);
 
+/* Reply templates */
 std::map<std::string, std::vector<std::string>> replies = {
+
+	/* Positive replies to question: Response found */
 	{"replies",  {"I heard %k %w %v", "They say %k %w %v", "%k %w %v... I think", "someone said %k %w %v", "%k %w like, %v", "%k %w %v", "%k %w %v, maybe?", "%s once said %k %w %v"}},
+
+	/* Negative replies to question: No response found */
 	{"dontknow", {"Sorry %n I don't know what %k is.", "%k? no idea %n.", "I'm not a genius, %n...", "Its best to ask a real person about %k.", "Not a clue.", "Don't you know, %n?", "If i knew about %k i'd tell you.", "Never heard of %k", "%k isn't something im aware of", "%n, what are you jabbering about, fool?", "%n, i've not got any idea what %k is."}},
+
+	/* Negative replies: Response found, but refusing to overwrite it */
 	{"notnew",   {"but %k %w %v :(", "fool, %k %w %v :p", "%k already %w %v...", "Are you sure, %n? I am sure that %k %w %v!", "NO! %k %w %v!!!"}},
+
+	/* Confirmation that the bot has learned a phrase */
 	{"confirm",  {"Ok, %n", "Your wish is my command.", "Okay.", "Whatever...", "Gotcha.", "Ok.", "Right.", "If you say so.", "I understand", "Really? OK...", "Understood."}},
+
+	/* Rejection of a new phrase due to the existing phrase being locked */
 	{"locked",   {"You don't have the power, %n.", "No, I like that just the way it is.", "You can't edit that! The keyword '%k' has been locked against changes!"}},
+
+	/* Plaintext version of the "who told you about" embed for talkative mode */
 	{"heard", {"%s told me about %k on %d", "I learned that on %d, and i think it was %s that told me it.", "I think it was %s who said that, way back on %d...",  "%n: Back on %d, %s told me about %k"}},
+
+	/* Confirmation that the bot has deleted a phrase */
 	{"forgot",   {"I forgot %k", "%k is gone from my mind, %n", "As you wish.", "It's history.", "Done.", "%k is no more.", "Consider it gone.", "It's vanished." }}
 };
 
+/* Emoji to use in embeds for positive/negative feedback */
 std::map<std::string, std::string> emoji = {
 	{"replies", ""},
 	{"dontknow", "<:wc_rs:667695516737470494>"},
@@ -80,16 +94,20 @@ void copy_to_def(const infodef &source, infodef &dest)
 	dest.locked = source.locked;
 }
 
+/* Create an embed from a JSON string and send it to a channel */
 void InfobotModule::ProcessEmbed(const std::string &embed_json, int64_t channelID)
 {
 	json embed;
 	std::string cleaned_json = embed_json;
+	/* Put unicode zero-width spaces in @everyone and @here */
 	cleaned_json = ReplaceString(cleaned_json, "@everyone", "@‎everyone");
 	cleaned_json = ReplaceString(cleaned_json, "@here", "@‎here");
 	aegis::channel* channel = bot->core.find_channel(channelID);
 	try {
+		/* Remove code markdown from the start and end of the code block if there is any */
 		std::string s = ReplaceString(cleaned_json, "```js", "");
 		s = ReplaceString(s, "```", "");
+		/* Tabs to spaces */
 		s = ReplaceString(s, "\t", " ");
 		embed = json::parse(s);
 	}
@@ -105,6 +123,7 @@ void InfobotModule::ProcessEmbed(const std::string &embed_json, int64_t channelI
 	}
 }
 
+/* Make a string safe to send as a JSON literal */
 std::string escape_json(const std::string &s) {
 	std::ostringstream o;
 	for (auto c = s.cbegin(); c != s.cend(); c++) {
@@ -128,6 +147,7 @@ std::string escape_json(const std::string &s) {
 	return o.str();
 }
 
+/* Send an embed containing one or more fields */
 void InfobotModule::EmbedWithFields(const std::string &title, std::map<std::string, std::string> fields, int64_t channelID)
 {
 	std::string json = "{\"title\":\"" + title + "\",\"color\":16767488,\"fields\":[";
@@ -142,12 +162,14 @@ void InfobotModule::EmbedWithFields(const std::string &title, std::map<std::stri
 	ProcessEmbed(json, channelID);
 }
 
+/* Infobot initialisation */
 void InfobotModule::infobot_init()
 {
 	stats.startup = time(NULL);
 	stats.modcount = stats.qcount = 0;
 }
 
+/* Remove trailing punctuation from a string, e.g. ?, !, . etc */
 std::string removepunct(std::string word)
 {
 	// $key =~ s/(\.|\,|\!|\?|\s+)$//g;
@@ -157,11 +179,15 @@ std::string removepunct(std::string word)
 	return word;
 }
 
+/* Process input from discord and produce a response, returning it as a string, or if talkative this function may directly generate an embed and send it */
 std::string InfobotModule::infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def, bool mentioned)
 {
+	/* Default reply level for the command is NOT_ADDRESSED which doesn't generate any feedback to the user */
 	reply_level level = NOT_ADDRESSED;
+	/* rpllist contains the name of the reply list to get the reply template from (see `replies` above) */
 	std::string rpllist = "";
 	infodef reply;
+	/* Regex for identifying direct questions, e.g. ends in '?' */
 	bool direct_question = (PCRE("[\\?!]$").Match(otext));
 	std::vector<std::string> matches;
 
@@ -189,6 +215,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			std::string key = removepunct(matches[1]);
 			reply = get_def(key);
 			if (reply.found) {
+				/* Bot was mentioned and reply and key are short enough to fit in the embed fields */
 				if (mentioned && reply.key.length() + reply.value.length() < 800) {
 					char timestamp[255];
 					reply.found = false;
@@ -197,6 +224,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 					EmbedWithFields("Fact Information", {{"Key", escape_json(reply.key)}, {"Set By", escape_json(reply.setby)},{"Set Date", escape_json(timestamp)}, {"Value", "```" + escape_json(reply.value) + "```"}}, channelID);
 					return "";
 				} else {
+					/* Not mentioned or key+reply too long, return plaintext */
 					rpllist = "heard";
 				}
 			} else {
@@ -210,12 +238,15 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			reply = get_def(key);
 			if (reply.found) {
 				if (reply.locked) {
+					/* Fact is locked, don't delete it */
 					rpllist = "locked";
 				} else {
+					/* Fact is not locked, delete it and confirm */
 					del_def(key);
 					rpllist = "forgot";
 				}
 			} else {
+				/* Fact didn't exist */
 				reply.key = key;
 				rpllist = "dontknow";
 			}
@@ -244,15 +275,18 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			def.found = true;
 			if (reply.found) {
 				std::string e = escape_json(reply.value);
+				/* If bot is mentioned and key length and reply length short enough, send as a nice embed */
 				if (mentioned && e.length() < 1020 && reply.key.length() < 254) {
 					/* Send a fancy embed if its not excessively too long */
 					EmbedWithFields("Literal Definition", {{"Key", escape_json(reply.key)}, {"Value", "```" + escape_json(reply.value) + "```"}}, channelID);
 					return "";
 				} else {
+					/* Key or reply too long, or bot not mentioned, return plain text */
 					return reply.key + " **is** " + reply.value;
 				}
 				return "";
 			} else {
+				/* Key not found */
 				reply.key = key;
 				rpllist = "dontknow";
 			}
