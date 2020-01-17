@@ -51,13 +51,20 @@ std::string getreply(std::vector<std::string> v);
 
 std::map<std::string, std::vector<std::string>> replies = {
 	{"replies",  {"I heard %k %w %v", "They say %k %w %v", "%k %w %v... I think", "someone said %k %w %v", "%k %w like, %v", "%k %w %v", "%k %w %v, maybe?", "%s once said %k %w %v"}},
-	{"dontknow", {"Sorry %n I don't know what %k is.", "%k? no idea %n.", "I'm not a genius, %n...", "Its best to ask a real person about %k.", "Not a clue.", "Don't you know, %n?"}},
-	{"notnew",   {"but %k %w %v :(", "fool, %k %w %v :p", "%k already %w %v...", "Are you sure, %n? I am sure that %k %w %v!"}},
-	{"heard",	{"%s told me about %k on %d", "I learned that on %d, and i think it was %s that told me it.", "I think it was %s who said that, way back on %d...", "%n: Back on %d, %s told me about %k"}},
-	{"confirm",  {"Ok, %n", "Your wish is my command.", "Okay.", "Whatever...", "Gotcha.", "Ok.", "Right."}},
-	{"loggedout",{"You're a mild idiot %n, log in and try again", "I can't do that %n because you dont have the power!", "I would do what you ask, but you are not logged in!", "Oh dear, someone locked that. log in and try again %n."}},
-	{"locked",   {"You can't edit that! The keyword '%k' has been locked against changes!"}},
-	{"forgot",   {"I forgot %k", "%k is gone from my mind, %n", "As you wish.", "It's history.", "Done." }}
+	{"dontknow", {"Sorry %n I don't know what %k is.", "%k? no idea %n.", "I'm not a genius, %n...", "Its best to ask a real person about %k.", "Not a clue.", "Don't you know, %n?", "If i knew about %k i'd tell you.", "Never heard of %k", "%k isn't something im aware of", "%n, what are you jabbering about, fool?", "%n, i've not got any idea what %k is."}},
+	{"notnew",   {"but %k %w %v :(", "fool, %k %w %v :p", "%k already %w %v...", "Are you sure, %n? I am sure that %k %w %v!", "NO! %k %w %v!!!"}},
+	{"confirm",  {"Ok, %n", "Your wish is my command.", "Okay.", "Whatever...", "Gotcha.", "Ok.", "Right.", "If you say so.", "I understand", "Really? OK...", "Understood."}},
+	{"locked",   {"You don't have the power, %n.", "No, I like that just the way it is.", "You can't edit that! The keyword '%k' has been locked against changes!"}},
+	{"forgot",   {"I forgot %k", "%k is gone from my mind, %n", "As you wish.", "It's history.", "Done.", "%k is no more.", "Consider it gone.", "It's vanished." }}
+};
+
+std::map<std::string, std::string> emoji = {
+	{"replies", ""},
+	{"dontknow", ":negative_squared_cross_mark:"},
+	{"notnew", ":negative_squared_cross_mark:"},
+	{"confirm", ":white_check_mark:"},
+	{"locked", ":negative_squared_cross_mark:"},
+	{"forgot", ":white_check_mark:"}
 };
 
 void copy_to_def(const infodef &source, infodef &dest)
@@ -148,7 +155,7 @@ std::string removepunct(std::string word)
 	return word;
 }
 
-std::string InfobotModule::infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def)
+std::string InfobotModule::infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def, bool mentioned)
 {
 	reply_level level = NOT_ADDRESSED;
 	std::string rpllist = "";
@@ -179,7 +186,17 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 		if (PCRE("^who told you about (.*?)\\?*$", true).Match(text, matches)) {
 			std::string key = removepunct(matches[1]);
 			reply = get_def(key);
-			rpllist = reply.found ? "heard" : "dontknow";
+			if (reply.found) {
+				char timestamp[255];
+				reply.found = false;
+				tm* _tm = gmtime(&reply.whenset);
+				strftime(timestamp, sizeof(timestamp), "%H:%M:%S %d-%b-%Y", _tm);
+				EmbedWithFields("Fact Information", {{"Key", escape_json(reply.key)}, {"Set By", escape_json(reply.setby)},{"Set Date", escape_json(timestamp)}, {"Value", "```" + escape_json(reply.value) + "```"}}, channelID);
+				return "";
+			} else {
+				reply.key = key;
+				rpllist = "dontknow";
+			}
 		}
 		// Forget command
 		else if (level == ADDRESSED_BY_NICKNAME && PCRE("^forget (.*?)$", true).Match(text, matches)) {
@@ -193,6 +210,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 					rpllist = "forgot";
 				}
 			} else {
+				reply.key = key;
 				rpllist = "dontknow";
 			}
 		}
@@ -368,6 +386,16 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 		s_reply = ReplaceString(s_reply, "%v", reply.value);
 
 		if (s_reply == "%v" || s_reply == "") {
+			def.found = false;
+			return "";
+		}
+
+		// If the bot is directly mentioned, we can answer with an embed.
+		// Otherwise it's plaintext all the way and it can be discarded if the channel
+		// isnt a talkative channel.
+		if (mentioned && rpllist != "replies") {
+			std::string json = "{\"color\":16767488,\"description\":\"" + emoji[rpllist] + " " + escape_json(s_reply) + "\"}";
+			ProcessEmbed(json, channelID);
 			def.found = false;
 			return "";
 		}
