@@ -55,16 +55,18 @@ std::map<std::string, std::vector<std::string>> replies = {
 	{"notnew",   {"but %k %w %v :(", "fool, %k %w %v :p", "%k already %w %v...", "Are you sure, %n? I am sure that %k %w %v!", "NO! %k %w %v!!!"}},
 	{"confirm",  {"Ok, %n", "Your wish is my command.", "Okay.", "Whatever...", "Gotcha.", "Ok.", "Right.", "If you say so.", "I understand", "Really? OK...", "Understood."}},
 	{"locked",   {"You don't have the power, %n.", "No, I like that just the way it is.", "You can't edit that! The keyword '%k' has been locked against changes!"}},
+	{"heard", {"%s told me about %k on %d", "I learned that on %d, and i think it was %s that told me it.", "I think it was %s who said that, way back on %d...",  "%n: Back on %d, %s told me about %k"}},
 	{"forgot",   {"I forgot %k", "%k is gone from my mind, %n", "As you wish.", "It's history.", "Done.", "%k is no more.", "Consider it gone.", "It's vanished." }}
 };
 
 std::map<std::string, std::string> emoji = {
 	{"replies", ""},
-	{"dontknow", ":negative_squared_cross_mark:"},
-	{"notnew", ":negative_squared_cross_mark:"},
+	{"dontknow", "<:wc_rs:667695516737470494>"},
+	{"notnew", "<:wc_rs:667695516737470494>"},
 	{"confirm", ":white_check_mark:"},
-	{"locked", ":negative_squared_cross_mark:"},
-	{"forgot", ":white_check_mark:"}
+	{"locked", "<:wc_rs:667695516737470494>"},
+	{"forgot", ":white_check_mark:"},
+	{"heard", ":white_check_mark:"}
 };
 
 void copy_to_def(const infodef &source, infodef &dest)
@@ -187,12 +189,16 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			std::string key = removepunct(matches[1]);
 			reply = get_def(key);
 			if (reply.found) {
-				char timestamp[255];
-				reply.found = false;
-				tm* _tm = gmtime(&reply.whenset);
-				strftime(timestamp, sizeof(timestamp), "%H:%M:%S %d-%b-%Y", _tm);
-				EmbedWithFields("Fact Information", {{"Key", escape_json(reply.key)}, {"Set By", escape_json(reply.setby)},{"Set Date", escape_json(timestamp)}, {"Value", "```" + escape_json(reply.value) + "```"}}, channelID);
-				return "";
+				if (mentioned && reply.key.length() + reply.value.length() < 800) {
+					char timestamp[255];
+					reply.found = false;
+					tm* _tm = gmtime(&reply.whenset);
+					strftime(timestamp, sizeof(timestamp), "%H:%M:%S %d-%b-%Y", _tm);
+					EmbedWithFields("Fact Information", {{"Key", escape_json(reply.key)}, {"Set By", escape_json(reply.setby)},{"Set Date", escape_json(timestamp)}, {"Value", "```" + escape_json(reply.value) + "```"}}, channelID);
+					return "";
+				} else {
+					rpllist = "heard";
+				}
 			} else {
 				reply.key = key;
 				rpllist = "dontknow";
@@ -238,7 +244,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			def.found = true;
 			if (reply.found) {
 				std::string e = escape_json(reply.value);
-				if (e.length() < 1020 && reply.key.length() < 254) {
+				if (mentioned && e.length() < 1020 && reply.key.length() < 254) {
 					/* Send a fancy embed if its not excessively too long */
 					EmbedWithFields("Literal Definition", {{"Key", escape_json(reply.key)}, {"Value", "```" + escape_json(reply.value) + "```"}}, channelID);
 					return "";
