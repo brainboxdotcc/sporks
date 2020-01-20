@@ -4,7 +4,7 @@ Remember you can still find my original perl/botnix version of Sporks on IRC at 
 
 ## Project and System status
 
-![Discord](https://img.shields.io/discord/537746810471448576?label=discord) ![CircleCI](https://img.shields.io/circleci/build/github/braindigitalis/botnix-discord-cpp/master) ![Dashboard](https://img.shields.io/website?down_color=red&label=dashboard&url=https%3A%2F%2Fsporks.gg)
+![Discord](https://img.shields.io/discord/537746810471448576?label=discord) ![CircleCI](https://img.shields.io/circleci/build/github/brainboxdotcc/sporks/master) ![Dashboard](https://img.shields.io/website?down_color=red&label=dashboard&url=https%3A%2F%2Fsporks.gg)
 
 [Service Status](https://status.sporks.gg)
 
