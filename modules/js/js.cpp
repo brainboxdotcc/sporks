@@ -42,7 +42,16 @@ std::unordered_map<int64_t, duk_context*> &contexts = emptyref;
 std::unordered_map<int64_t, size_t> total_allocated;
 static Bot* botref;
 
-const uint64_t timeout = 10;
+
+
+const size_t max_allocated_unvoted = 256 * 1024;
+const size_t max_allocated_voted = 512 * 1024;
+const uint64_t timeout_unvoted = 10;
+const uint64_t timeout_voted = 20;
+
+
+
+uint64_t timeout = timeout_unvoted;
 const uint32_t message_limit = 5;
 
 uint32_t message_total = 0;
@@ -74,7 +83,7 @@ struct alloc_hdr {
 	} u;
 };
 
-static size_t max_allocated = 256 * 1024;  /* 256kB sandbox */
+static size_t max_allocated = max_allocated_unvoted;  /* 256kB sandbox */
 
 
 class ExitException : public std::exception {
@@ -572,6 +581,18 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	}
 	current_guild = &c->get_guild();
 
+	/* Check if a user has a current vote in the system that is valid for the past day. If they do, boost their quotas for cpu time and ram usage. */
+	db::resultset vrs = db::query("SELECT * FROM `infobot_votes` WHERE vote_time > now() - INTERVAL 1 DAY AND snowflake_id = '?'", {c->get_owner()});
+	if (vrs.size() > 0) {
+		/* User has voted, increase their allowances */
+		timeout = timeout_voted;
+		max_allocated = max_allocated_voted;
+	} else {
+		/* Standard allowances */
+		timeout = timeout_unvoted;
+		max_allocated = max_allocated_unvoted;
+	}
+
 	auto iter = code.find(channel_id);
 	duk_context* ctx;
 	program v;
@@ -813,7 +834,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 12$";
+	std::string version = "$ModVer 13$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
