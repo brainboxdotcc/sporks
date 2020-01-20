@@ -582,7 +582,7 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	current_guild = &c->get_guild();
 
 	/* Check if a user has a current vote in the system that is valid for the past day. If they do, boost their quotas for cpu time and ram usage. */
-	db::resultset vrs = db::query("SELECT * FROM `infobot_votes` WHERE vote_time > now() - INTERVAL 1 DAY AND snowflake_id = '?'", {c->get_owner()});
+	db::resultset vrs = db::query("SELECT * FROM `infobot_votes` WHERE vote_time > now() - INTERVAL 1 DAY AND snowflake_id = '?'", {std::to_string(current_guild->get_owner())});
 	if (vrs.size() > 0) {
 		/* User has voted, increase their allowances */
 		timeout = timeout_voted;
@@ -834,7 +834,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 13$";
+	std::string version = "$ModVer 14$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
