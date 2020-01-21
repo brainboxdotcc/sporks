@@ -55,7 +55,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 11$";
+		std::string version = "$ModVer 12$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -221,7 +221,9 @@ public:
 		}
 		aegis::channel* channel = bot->core.find_channel(channelID);
 		if (channel) {
-			channel->create_message_embed("", embed_json);
+			if (bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
+				channel->create_message_embed("", embed_json);
+			}
 		} else {
 			bot->core.log->error("Invalid channel {} passed to EmbedSimple", channelID);
 		}	

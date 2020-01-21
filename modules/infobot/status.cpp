@@ -53,7 +53,7 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 		statusfield("Approx. Fact Count", Comma(facts)),
 		statusfield("Total Servers", Comma(servers)),
 		statusfield("Online Users", Comma(users)),
-		statusfield("User Queue", Comma(qs.users)),
+		statusfield("Queue State", "U:"+Comma(qs.users)+", G:"+Comma(qs.guilds)),
 		statusfield("Uptime", std::string(uptime)),
 		statusfield("Shards", Comma(bot->core.shard_max_count)),
 		statusfield("","")
@@ -79,8 +79,10 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 	}
 	aegis::channel* channel = bot->core.find_channel(channelID);
 	if (channel) {
-		channel->create_message_embed("", embed_json);
-		bot->sent_messages++;
+		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
+			channel->create_message_embed("", embed_json);
+			bot->sent_messages++;
+		}
 	}
 }
 

@@ -42,8 +42,12 @@ int InfobotModule::random(int min, int max)
 QueueStats InfobotModule::GetQueueStats() {
 	QueueStats q;
 	q.users = 0;
+	q.guilds = 0;
 	if (bot->counters.find("userqueue") != bot->counters.end()) {
 		q.users = bot->counters["userqueue"];
+	}
+	if (bot->counters.find("guildqueue") != bot->counters.end()) {
+		q.guilds = bot->counters["guildqueue"];
 	}
 
 	return q;
@@ -54,11 +58,8 @@ void InfobotModule::Input(QueueItem &query)
 	/* Process anything in the inputs queue */
 	bool has_item = false;
 	/* Block to encapsulate lock_guard for input queue */
-	json channel_settings;
-	do {
-		std::lock_guard<std::mutex> hash_lock(bot->channel_hash_mutex);
-		channel_settings = getSettings(bot, query.channelID, query.serverID);
-	} while(false);
+	json channel_settings = getSettings(bot, query.channelID, query.serverID);
+
 	/* Process the input through to infobot backend if:
 	 * A) the bot is directly mentioned, or,
 	 * B) Learning is enabled for the channel (default for all channels)
@@ -131,7 +132,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 13$";
+	std::string version = "$ModVer 14$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 

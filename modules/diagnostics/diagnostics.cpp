@@ -84,7 +84,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 20$";
+		std::string version = "$ModVer 21$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -143,7 +143,10 @@ public:
 
 						aegis::channel* c = bot->core.find_channel(msg.get_channel_id().get());
 						if (c) {
-							c->create_message(s.str());
+							if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == c->get_guild().get_id()) {
+								c->create_message(s.str());
+								bot->sent_messages++;
+							}
 						}
 						
 					} else if (lowercase(subcommand) == "load") {
@@ -159,7 +162,7 @@ public:
 						/* Unload a module */
 						std::string modfile;
 						tokens >> modfile;
-						if (modfile == "module_diagnostics,so") {
+						if (modfile == "module_diagnostics.so") {
 							EmbedSimple("I suppose you think that's funny, dont you? *I'm sorry. can't do that, dave.*", msg.get_channel_id().get());
 						} else {
 							if (bot->Loader->Unload(modfile)) {
@@ -185,7 +188,10 @@ public:
 						std::string result = exec("top -b -n1 -d0 | head -n7 && top -b -n1 -d0 -H | grep \"./bot\\|run.sh\" | grep -v grep | grep -v perl");
 						aegis::channel* c = bot->core.find_channel(msg.get_channel_id().get());
 						if (c) {
-							c->create_message("```" + result + "```");
+							if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == c->get_guild().get_id()) {
+								c->create_message("```" + result + "```");
+								bot->sent_messages++;
+							}
 						}
 					} else if (lowercase(subcommand) == "lock") {
 						std::string keyword;
@@ -291,7 +297,10 @@ public:
 						w << "```";
 						aegis::channel *channel = bot->core.find_channel(msg.get_channel_id());
 						if (channel) {
-							channel->create_message(w.str());
+							if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
+								channel->create_message(w.str());
+								bot->sent_messages++;
+							}
 						}
 					} else {
 						/* Invalid command */

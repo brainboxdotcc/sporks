@@ -79,10 +79,12 @@ enum Implementation
  * is running an event.
  */
 #define FOREACH_MOD(y,x) { \
-	while (!Loader || Loader->busy) { \
-		std::this_thread::sleep_for(std::chrono::milliseconds(10)); \
+	std::vector<Module*> list_to_call; \
+	{ \
+		std::lock_guard l(Loader->mtx); \
+		list_to_call = Loader->EventHandlers[y]; \
 	} \
-	for (auto _i = Loader->EventHandlers[y].begin(); _i != Loader->EventHandlers[y].end(); ++_i) \
+	for (auto _i = list_to_call.begin(); _i != list_to_call.end(); ++_i) \
 	{ \
 		try \
 		{ \
@@ -134,12 +136,9 @@ class ModuleLoader {
 	ModMap ModuleList;
 
 	std::string lasterror;
-
 public:
 	/* Module loader mutex */
 	std::mutex mtx;
-
-	bool busy;
 
 	/* An array of vectors indicating which modules are watching which events */
 	std::vector<Module*> EventHandlers[I_END];

@@ -61,7 +61,7 @@ void setJSConfig(int64_t channel_id, std::string variable, std::string value)
 json getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 {
 	std::lock_guard<std::mutex> sql_lock(config_sql_mutex);
-	json settings = json::parse("{}");
+	json settings;
 	std::string cid = std::to_string(channel_id);
 
 	aegis::channel* channel = bot->core.find_channel(channel_id);

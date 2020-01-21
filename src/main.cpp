@@ -43,7 +43,7 @@ json configdocument;
 /**
  * Constructor (creates threads, loads all modules)
  */
-Bot::Bot(bool development, aegis::core &aegiscore) : dev(development), thr_presence(nullptr), terminate(false), shard_init_count(0), core(aegiscore), sent_messages(0), received_messages(0) {
+Bot::Bot(bool development, bool testing, aegis::core &aegiscore) : dev(development), test(testing), thr_presence(nullptr), terminate(false), shard_init_count(0), core(aegiscore), sent_messages(0), received_messages(0) {
 	Loader = new ModuleLoader(this);
 	Loader->LoadAll();
 
@@ -84,6 +84,13 @@ std::string Bot::GetConfig(const std::string &name) {
  */
 bool Bot::IsDevMode() {
 	return dev;
+}
+
+/**
+ * Returns true if the bot is running in testing mode (live token, ignoring messages except on specific server)
+ */
+bool Bot::IsTestMode() {
+	return test;
 }
 
 /**
@@ -148,11 +155,8 @@ void Bot::onReady(aegis::gateway::events::ready ready) {
 void Bot::onMessage(aegis::gateway::events::message_create message) {
 
 	json settings;
-	{
-		std::lock_guard<std::mutex> input_lock(channel_hash_mutex);
-		settings = getSettings(this, message.msg.get_channel_id().get(), message.msg.get_guild_id().get());
-	};
-
+	settings = getSettings(this, message.msg.get_channel_id().get(), message.msg.get_guild_id().get());
+	
 	/* Ignore self, and bots */
 	if (message.msg.get_user().get_id() != user.id && message.msg.get_user().is_bot() == false) {
 
@@ -218,11 +222,13 @@ void Bot::onRestEnd(std::chrono::steady_clock::time_point start_time, uint16_t c
 int main(int argc, char** argv) {
 
 	int dev = 0;	/* Note: getopt expects ints, this is actually treated as bool */
+	int test = 0;
 
 	/* Parse command line parameters using getopt() */
 	struct option longopts[] =
 	{
-		{ "dev",	   no_argument,		&dev,	1  },
+		{ "dev",	no_argument,		&dev,	1  },
+		{ "test",	no_argument,		&test,	1  },
 		{ 0, 0, 0, 0 }
 	};
 
@@ -237,7 +243,7 @@ int main(int argc, char** argv) {
 			case '?':
 			default:
 				std::cerr << "Unknown parameter '" << argv[optind - 1] << "'" << std::endl;
-				std::cerr << "Usage: %s [--dev]" << std::endl;
+				std::cerr << "Usage: %s [--dev] [--test]" << std::endl;
 				exit(1);
 			break;
 		}
@@ -263,7 +269,7 @@ int main(int argc, char** argv) {
 		aegis_bot.wsdbg = false;
 
 		/* Bot class handles application logic */
-		Bot client(dev, aegis_bot);
+		Bot client(dev, test, aegis_bot);
 
 		/* Attach events to the Bot class methods from aegis::core */
 		aegis_bot.set_on_message_create(std::bind(&Bot::onMessage, &client, std::placeholders::_1));

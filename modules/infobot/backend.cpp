@@ -113,13 +113,17 @@ void InfobotModule::ProcessEmbed(const std::string &embed_json, int64_t channelI
 	}
 	catch (const std::exception &e) {
 		if (channel) {
-			channel->create_message("<:sporks_error:664735896251269130> I can't make an **embed** from this: ```js\n" + cleaned_json + "\n```**Error:** ``" + e.what() + "``");
-			bot->sent_messages++;
+			if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
+				channel->create_message("<:sporks_error:664735896251269130> I can't make an **embed** from this: ```js\n" + cleaned_json + "\n```**Error:** ``" + e.what() + "``");
+				bot->sent_messages++;
+			}
 		}
 	}
 	if (channel) {
-		channel->create_message_embed("", embed);
-		bot->sent_messages++;
+		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
+			channel->create_message_embed("", embed);
+			bot->sent_messages++;
+		}
 	}
 }
 

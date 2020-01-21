@@ -49,7 +49,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 13$";
+		std::string version = "$ModVer 14$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -114,14 +114,18 @@ public:
 			embed_json = json::parse(json);
 		}
 		catch (const std::exception &e) {
-			channel->create_message("<@" + std::to_string(authorid) + ">, herp derp, theres a malformed help file. Please contact a developer on the official support server: https://discord.gg/brainbox");
-			bot->sent_messages++;
+			if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
+				channel->create_message("<@" + std::to_string(authorid) + ">, herp derp, theres a malformed help file. Please contact a developer on the official support server: https://discord.gg/brainbox");
+				bot->sent_messages++;
+			}
 			bot->core.log->error("Malformed help file {}.json!", section);
 			return;
 		}
 
-		channel->create_message_embed("", embed_json);
-		bot->sent_messages++;
+		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
+			channel->create_message_embed("", embed_json);
+			bot->sent_messages++;
+		}
 	}
 };
 

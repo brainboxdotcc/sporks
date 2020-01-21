@@ -28,6 +28,7 @@ using json = nlohmann::json;
 
 struct QueueStats {
 	uint64_t users;
+	uint64_t guilds;
 };
 
 /**

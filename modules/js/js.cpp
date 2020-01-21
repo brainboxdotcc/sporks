@@ -158,9 +158,11 @@ static duk_ret_t js_create_message(duk_context *cx)
 			duk_push_error_object(cx, DUK_ERR_RANGE_ERROR, "Message limit reached");
 			return duk_throw(cx);
 		}
-		c->create_message(Sanitise(message));
+		if (!botref->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == c->get_guild().get_id()) {
+			c->create_message(Sanitise(message));
+			botref->sent_messages++;
+		}
 		message_total++;
-		botref->sent_messages++;
 		c_apis_suck->debug("JS create_message() on guild={}/channel={}: {}", current_guild->get_id(), id, message);
 	} else {
 		c_apis_suck->warn("JS create_message(): invalid channel id: {}", id);
@@ -259,9 +261,11 @@ static duk_ret_t js_create_embed(duk_context *cx)
 				duk_push_error_object(cx, DUK_ERR_RANGE_ERROR, "Message limit reached");
 				return duk_throw(cx);
 			}
-			c->create_message_embed("", embed);
+			if (!botref->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == c->get_guild().get_id()) {
+				c->create_message_embed("", embed);
+				botref->sent_messages++;
+			}
 			message_total++;
-			botref->sent_messages++;
 			c_apis_suck->debug("JS create_embed() on guild={}/channel={}: {}", current_guild->get_id(), id, j);
 		} catch (const std::exception &e) {
 			c_apis_suck->error("JS create_embed() JSON parse exception {}", e.what());
@@ -834,7 +838,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 14$";
+	std::string version = "$ModVer 15$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 

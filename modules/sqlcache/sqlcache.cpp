@@ -32,17 +32,20 @@
 
 class SQLCacheModule : public Module
 {
-	/* User queue processing thread */
+	/* Queue processing threads */
 	std::thread* thr_userqueue;
+	std::thread* thr_guildqueue;
 
-	/* Safety mutex for userqueue */
+	/* Safety mutexes */
 	std::mutex user_cache_mutex;
+	std::mutex guild_cache_mutex;
 
 	/* True if the thread is to terminate */
 	bool terminate;
 
 	/* Userqueue: a queue of users waiting to be written to SQL for the dashboard */
 	std::queue<aegis::gateway::objects::user> userqueue;
+	std::queue<aegis::gateway::objects::guild> guildqueue;
 public:
 
 	void SaveCachedUsersThread() {
@@ -72,24 +75,59 @@ public:
 		}
 	}
 
-	SQLCacheModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml), thr_userqueue(nullptr), terminate(false)
+	void SaveCachedGuildsThread() {
+		time_t last_message = time(NULL);
+		aegis::gateway::objects::guild gc;
+		while (!this->terminate) {
+			if (!guildqueue.empty()) {
+				{
+					std::lock_guard<std::mutex> user_cache_lock(guild_cache_mutex);
+					gc = guildqueue.front();
+					guildqueue.pop();
+					bot->counters["guildqueue"] = guildqueue.size();
+				};
+				for (auto i = gc.channels.begin(); i != gc.channels.end(); ++i) {
+					getSettings(bot, i->id.get(), gc.id.get());
+				}
+				for (auto i = gc.members.begin(); i != gc.members.end(); ++i) {
+					std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
+					userqueue.push(i->_user);
+					bot->counters["userqueue"] = userqueue.size();
+				}
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			} else {
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+			}
+			if (time(NULL) > last_message) {
+				if (guildqueue.size() > 0) {
+					bot->core.log->info("User guild size: {} objects", guildqueue.size());
+				}
+				last_message = time(NULL) + 60;
+			}
+		}
+	}
+
+	SQLCacheModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml), thr_userqueue(nullptr), thr_guildqueue(nullptr), terminate(false)
 	{
 		ml->Attach({ I_OnGuildCreate, I_OnPresenceUpdate, I_OnGuildMemberAdd, I_OnChannelCreate, I_OnChannelDelete, I_OnGuildDelete }, this);
 		bot->counters["userqueue"] = 0;
 		thr_userqueue = new std::thread(&SQLCacheModule::SaveCachedUsersThread, this);
+		thr_guildqueue = new std::thread(&SQLCacheModule::SaveCachedGuildsThread, this);
 	}
 
 	virtual ~SQLCacheModule()
 	{
 		terminate = true;
 		bot->DisposeThread(thr_userqueue);
+		bot->DisposeThread(thr_guildqueue);
 		bot->counters["userqueue"] = 0;
+		bot->counters["guildqueue"] = 0;
 	}
 
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 2$";
+		std::string version = "$ModVer 3$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -114,14 +152,10 @@ public:
 			}
 		);
 
-		for (auto i = gc.guild.channels.begin(); i != gc.guild.channels.end(); ++i) {
-			getSettings(bot, i->id.get(), gc.guild.id.get());
-		}
-
-		for (auto i = gc.guild.members.begin(); i != gc.guild.members.end(); ++i) {
-			std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
-			userqueue.push(i->_user);
-			bot->counters["userqueue"] = userqueue.size();
+		{
+			std::lock_guard<std::mutex> guild_cache_lock(guild_cache_mutex);
+			guildqueue.push(gc.guild);
+			bot->counters["guildqueue"] = guildqueue.size();
 		}
 
 		return true;

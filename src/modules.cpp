@@ -25,6 +25,7 @@
 #include <link.h>
 #include <dlfcn.h>
 #include <sstream>
+#include <sporks/stringops.h>
 
 /**
  * String versions of the enum Implementation values, for display only
@@ -70,7 +71,7 @@ const char* StringNames[I_END + 1] = {
 	"I_END"
 };
 
-ModuleLoader::ModuleLoader(Bot* creator) : bot(creator), busy(false)
+ModuleLoader::ModuleLoader(Bot* creator) : bot(creator)
 {
 	bot->core.log->info("Module loader initialising...");
 }
@@ -132,9 +133,9 @@ bool ModuleLoader::Load(const std::string &filename)
 
 	bot->core.log->info("Loading module \"{}\"", filename);
 
-	busy = true;
+	std::lock_guard l(mtx);
 
-	if (Modules.find(filename) == Modules.end() || Modules[filename].err) {
+	if (Modules.find(filename) == Modules.end()) {
 
 		char buffer[PATH_MAX + 1];
 		getcwd(buffer, PATH_MAX);
@@ -142,43 +143,41 @@ bool ModuleLoader::Load(const std::string &filename)
 
 		m.dlopen_handle = dlopen(full_module_spec.c_str(), RTLD_NOW | RTLD_LOCAL);
 		if (!m.dlopen_handle) {
-			m.err = dlerror();
-			Modules[filename] = m;
-			lasterror = m.err;
-			bot->core.log->error("Can't load module: {}", m.err);
-			busy = false;
+			lasterror = dlerror();
+			bot->core.log->error("Can't load module: {}", lasterror);
 			return false;
 		} else {
 			if (!GetSymbol(m, "init_module")) {
 				bot->core.log->error("Can't load module: {}", m.err ? m.err : "General error");
-				Modules[filename] = m;
-				lasterror = m.err ? m.err : "General error";
-				busy = false;
+				lasterror = (m.err ? m.err : "General error");
+				dlclose(m.dlopen_handle);
 				return false;
 			} else {
-				bot->core.log->debug("Module {} loaded", filename);
+				bot->core.log->debug("Module shared object {} loaded, symbol found", filename);
 				m.module_object = m.init(bot, this);
 				/* In the event of a missing module_init symbol, dlsym() returns a valid pointer to a function that returns -1 as its pointer. Why? I don't know.
 				 * FIXME find out why.
 				*/
 				if (!m.module_object || (uint64_t)m.module_object == 0xffffffffffffffff) {
 					bot->core.log->error("Can't load module: Invalid module pointer returned. No symbol?");
-					lasterror = "Not a Sporks module (symbol init_module not found)";
-					Modules[filename] = m;
-					busy = false;
+					m.err = "Not a module (symbol init_module not found)";
+					lasterror = m.err;
+					dlclose(m.dlopen_handle);
 					return false;
+				} else {
+					bot->core.log->debug("Module {} initialised", filename);
+					Modules[filename] = m;
+					ModuleList[filename] = m.module_object;
+					lasterror = "";
+					return true;
 				}
-				bot->core.log->debug("Module {} initialised", filename);
 			}
 		}
-		Modules[filename] = m;
-		ModuleList[filename] = m.module_object;
-		lasterror = "";
-		busy = false;
-		return true;
+	} else {
+		bot->core.log->debug("Module {} already loaded!", filename);
+		lasterror = "Module already loaded!";
+		return false;
 	}
-	busy = false;
-	return false;
 }
 
 /**
@@ -194,40 +193,49 @@ const std::string& ModuleLoader::GetLastError()
  */
 bool ModuleLoader::Unload(const std::string &filename)
 {
-	busy = true;
+	std::lock_guard l(mtx);
+
+	bot->core.log->debug("Unloading module {} ({}/{})", filename, Modules.size(), ModuleList.size());
 
 	auto m = Modules.find(filename);
 
 	if (m == Modules.end()) {
 		lasterror = "Module is not loaded";
-		busy = false;
 		return false;
 	}
 
-	ModuleNative mod = m->second;
+	ModuleNative& mod = m->second;
 
 	/* Remove attached events */
 	for (int j = I_BEGIN; j != I_END; ++j) {
-		std::remove(EventHandlers[j].begin(), EventHandlers[j].end(), mod.module_object);
+		auto p = std::find(EventHandlers[j].begin(), EventHandlers[j].end(), mod.module_object);
+		if (p != EventHandlers[j].end()) {
+			EventHandlers[j].erase(p);
+			bot->core.log->debug("Removed event {} from {}", StringNames[j], filename);
+		}
 	}
 	/* Remove module entry */
 	Modules.erase(m);
-
+	
 	auto v = ModuleList.find(filename);
 	if (v != ModuleList.end()) {
 		ModuleList.erase(v);
+		bot->core.log->debug("Removed {} from module list", filename);
 	}
-
+	
 	if (mod.module_object) {
+		bot->core.log->debug("Module {} dtor", filename);
 		delete mod.module_object;
 	}
-
+	
 	/* Remove module from memory */
 	if (mod.dlopen_handle) {
+		bot->core.log->debug("Module {} dlclose()", filename);
 		dlclose(mod.dlopen_handle);
 	}
 
-	busy = false;
+	bot->core.log->debug("New module counts: {}/{}", Modules.size(), ModuleList.size());
+
 	return true;
 }
 
@@ -522,7 +530,9 @@ void Module::EmbedSimple(const std::string &message, int64_t channelID)
 	}
 	aegis::channel* channel = bot->core.find_channel(channelID);
 	if (channel) {
-		channel->create_message_embed("", embed_json);
+		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
+			channel->create_message_embed("", embed_json);
+		}
 	} else {
 		bot->core.log->error("Invalid channel {} passed to EmbedSimple", channelID);
 	}

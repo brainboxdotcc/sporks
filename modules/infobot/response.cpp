@@ -38,10 +38,8 @@ void InfobotModule::Output(QueueItem &done) {
 	PCRE url_sanitise("^https?://", true);
 
 	json channel_settings;
-	{
-		std::lock_guard<std::mutex> hash_lock(bot->channel_hash_mutex);
-		channel_settings = getSettings(bot, done.channelID, done.serverID);
-	};
+	channel_settings = getSettings(bot, done.channelID, done.serverID);
+
 	if (done.mentioned || settings::IsTalkative(channel_settings)) {
 		try {
 			std::string message = trim(done.message);
@@ -72,9 +70,11 @@ void InfobotModule::Output(QueueItem &done) {
 			message = ReplaceString(message, "<s>", "|");
 			aegis::channel* channel = bot->core.find_channel(done.channelID);
 			if (channel) {
-				bot->core.log->info("<{} ({}/{})> {}", bot->user.username, done.serverID, done.channelID, message);
-				channel->create_message(message);
-				bot->sent_messages++;
+				if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == done.serverID) {
+					bot->core.log->info("<{} ({}/{})> {}", bot->user.username, done.serverID, done.channelID, message);
+					channel->create_message(message);
+					bot->sent_messages++;
+				}
 			}
 		}
 		catch (std::exception e) {

@@ -53,6 +53,9 @@ class Bot {
 
 	/* True if bot is running in development mode */
 	bool dev;
+
+	/* True if bot is running in testing mode */
+	bool test;
 	
 	/* Threads */
 	std::thread* thr_presence;
@@ -68,10 +71,6 @@ class Bot {
 	void SetSignals();
 
 public:
-
-        /* Thread safety for caches and queues */
-	std::mutex channel_hash_mutex;
-
 	/* Aegis core */
 	aegis::core &core;
 
@@ -84,10 +83,11 @@ public:
 	uint64_t sent_messages;
 	uint64_t received_messages;
 
-	Bot(bool development, aegis::core &aegiscore);
+	Bot(bool development, bool testing, aegis::core &aegiscore);
 	virtual ~Bot();
 
 	bool IsDevMode();
+	bool IsTestMode();
 
 	ModuleLoader* Loader;
 
