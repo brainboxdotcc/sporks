@@ -100,8 +100,6 @@ bool Bot::IsTestMode() {
  * SaveCachedUsersThread().
  */
 void Bot::onServer(aegis::gateway::events::guild_create gc) {
-
-	core.log->info("Adding server #{}: {}", gc.guild.id.get(), gc.guild.name);
 	FOREACH_MOD(I_OnGuildCreate, OnGuildCreate(gc));
 }
 
@@ -136,7 +134,6 @@ int64_t Bot::getID() {
  */
 void Bot::onReady(aegis::gateway::events::ready ready) {
 	this->user = ready.user;
-	core.log->info("Ready! Online as {}#{} ({})", this->user.username, this->user.discriminator, this->getID());
 	FOREACH_MOD(I_OnReady, OnReady(ready));
 
 	/* Event broadcast when all shards are ready */
@@ -154,11 +151,11 @@ void Bot::onReady(aegis::gateway::events::ready ready) {
  */
 void Bot::onMessage(aegis::gateway::events::message_create message) {
 
-	json settings;
-	settings = getSettings(this, message.msg.get_channel_id().get(), message.msg.get_guild_id().get());
-	
 	/* Ignore self, and bots */
 	if (message.msg.get_user().get_id() != user.id && message.msg.get_user().is_bot() == false) {
+
+		json settings;
+		settings = getSettings(this, message.msg.get_channel_id().get(), message.msg.get_guild_id().get());
 
 		received_messages++;
 
@@ -223,18 +220,26 @@ int main(int argc, char** argv) {
 
 	int dev = 0;	/* Note: getopt expects ints, this is actually treated as bool */
 	int test = 0;
+	int members = 0;
 
 	/* Parse command line parameters using getopt() */
 	struct option longopts[] =
 	{
-		{ "dev",	no_argument,		&dev,	1  },
-		{ "test",	no_argument,		&test,	1  },
+		{ "dev",		no_argument,		&dev,		1 },
+		{ "test",		no_argument,		&test,		1 },
+		{ "memberintent",	no_argument,		&members,	1 },
 		{ 0, 0, 0, 0 }
 	};
+
+	/* These are our default intents for the bot, basically just receive messages, see reactions to the messages and see who's in our guilds */
+	uint32_t intents = aegis::intent::Guilds | aegis::intent::GuildMessages | aegis::intent::GuildMessageReactions;
 
 	/* Yes, getopt is ugly, but what you gonna do... */
 	int index;
 	char arg;
+
+	/* opterr is an extern int. Doesn't smell of thread safety to me, bad GNU bad! */
+	opterr = 0;
 	while ((arg = getopt_long_only(argc, argv, "", longopts, &index)) != -1) {
 		switch (arg) {
 			case 0:
@@ -242,11 +247,19 @@ int main(int argc, char** argv) {
 			break;
 			case '?':
 			default:
-				std::cerr << "Unknown parameter '" << argv[optind - 1] << "'" << std::endl;
-				std::cerr << "Usage: %s [--dev] [--test]" << std::endl;
+				std::cerr << "Unknown parameter '" << argv[optind - 1] << "'\n";
+				std::cerr << "Usage: " << argv[0] << " [-dev] [-test] [-members]\n\n";
+				std::cerr << "-dev:     Run using development token\n";
+				std::cerr << "-test:    Run using live token, but eat all outbound messages except on test server\n";
+				std::cerr << "-members: Issue a GUILD_MEMBERS intent on shard registration\n";
 				exit(1);
 			break;
 		}
+	}
+
+	/* This will eventually need approval from discord HQ, so make sure it's a command line parameter we have to explicitly enable */
+	if (members) {
+		intents |= aegis::intent::GuildMembers;
 	}
 
 	std::ifstream configfile("../config.json");
@@ -265,7 +278,13 @@ int main(int argc, char** argv) {
 	while (true) {
 
 		/* Aegis core routes websocket events and does all the API magic */
-		aegis::core aegis_bot(aegis::create_bot_t().file_logging(true).log_level(spdlog::level::trace).token(token).force_shard_count(dev ? 1 : 10));
+		aegis::core aegis_bot(aegis::create_bot_t()
+			.file_logging(true)
+			.log_level(spdlog::level::trace)
+			.token(token)
+			.force_shard_count(dev ? 1 : 10)
+			.intents(intents)
+		);
 		aegis_bot.wsdbg = false;
 
 		/* Bot class handles application logic */
