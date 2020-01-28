@@ -55,7 +55,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 13$";
+		std::string version = "$ModVer 14$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -205,7 +205,7 @@ public:
 			statusfield("", "")
 		};
 		s << "{\"title\":\"Settings for this channel\",\"color\":16767488,";
-		s << "\"footer\":{\"link\":\"https;\\/\\/www.botnix.org\\/\",\"text\":\"Powered by Botnix 2.0 with the infobot and discord modules\",\"icon_url\":\"https:\\/\\/www.botnix.org\\/images\\/botnix.png\"},\"fields\":[";
+		s << "\"footer\":{\"text\":\"Powered by Sporks!\",\"icon_url\":\"https://sporks.gg/images/sporks_2020.png\"},\"fields\":[";
 		for (int i = 0; statusfields[i].name != ""; ++i) {
 			s << "{\"name\":\"" +  statusfields[i].name + "\",\"value\":\"" + statusfields[i].value + "\", \"inline\": false}";
 			if (statusfields[i + 1].name != "") {
