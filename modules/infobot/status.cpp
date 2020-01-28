@@ -56,19 +56,14 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 		statusfield("Queue State", "U:"+Comma(qs.users)+", G:"+Comma(qs.guilds)),
 		statusfield("Uptime", std::string(uptime)),
 		statusfield("Shards", Comma(bot->core.shard_max_count)),
-		statusfield("Test Mode", bot->IsTestMode() ? "Yes" : "No"),
-		statusfield("Developer Mode", bot->IsDevMode() ? "Yes" : "No"),
-		statusfield("Member Intent", bot->HasMemberIntents() ? "Yes" : "No"),
+		statusfield("Test Mode", bot->IsTestMode() ? ":white_check_mark: Yes" : "<:wc_rs:667695516737470494> No"),
+		statusfield("Developer Mode", bot->IsDevMode() ? ":white_check_mark: Yes" : "<:wc_rs:667695516737470494> No"),
+		statusfield("Member Intent", bot->HasMemberIntents() ? ":white_check_mark: Yes" : "<:wc_rs:667695516737470494> No"),
 		statusfield("","")
 	};
 
 	s << "{\"title\":\"" << bot->user.username;
 	s << " status";
-	if (bot->IsTestMode()) {
-		s << " (test mode)";
-	} else if (bot->IsDevMode()) {
-		s << " (development mode)";
-	}
 	s << "\",\"color\":16767488,\"url\":\"https:\\/\\/sporks.gg\\/\\/\",\"image\":{\"url\":\"https:\\/\\/sporks.gg\\/graphs\\/daylearned.php?now=" << time(NULL);
 	s << "\"},\"footer\":{\"link\":\"https;\\/\\/sporks.gg\\/\",\"text\":\"Powered by Sporks!\",\"icon_url\":\"https:\\/\\/sporks.gg\\/images\\/sporks_2020.png\"},\"fields\":[";
 	for (int i = 0; statusfields[i].name != ""; ++i) {
