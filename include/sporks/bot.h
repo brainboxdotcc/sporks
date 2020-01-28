@@ -56,7 +56,10 @@ class Bot {
 
 	/* True if bot is running in testing mode */
 	bool test;
-	
+
+	/* True if the bot has member intents */
+	bool memberintents;
+
 	/* Threads */
 	std::thread* thr_presence;
 
@@ -83,11 +86,12 @@ public:
 	uint64_t sent_messages;
 	uint64_t received_messages;
 
-	Bot(bool development, bool testing, aegis::core &aegiscore);
+	Bot(bool development, bool testing, bool intents, aegis::core &aegiscore);
 	virtual ~Bot();
 
 	bool IsDevMode();
 	bool IsTestMode();
+	bool HasMemberIntents();
 
 	ModuleLoader* Loader;
 

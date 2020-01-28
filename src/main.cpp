@@ -43,7 +43,7 @@ json configdocument;
 /**
  * Constructor (creates threads, loads all modules)
  */
-Bot::Bot(bool development, bool testing, aegis::core &aegiscore) : dev(development), test(testing), thr_presence(nullptr), terminate(false), shard_init_count(0), core(aegiscore), sent_messages(0), received_messages(0) {
+Bot::Bot(bool development, bool testing, bool intents, aegis::core &aegiscore) : dev(development), test(testing), memberintents(intents), thr_presence(nullptr), terminate(false), shard_init_count(0), core(aegiscore), sent_messages(0), received_messages(0) {
 	Loader = new ModuleLoader(this);
 	Loader->LoadAll();
 
@@ -91,6 +91,13 @@ bool Bot::IsDevMode() {
  */
 bool Bot::IsTestMode() {
 	return test;
+}
+
+/** 
+ * Returns true if the bot has member intents enabled, "GUILD_MEMBERS" which will eventually require discord HQ approval process.
+ */
+bool Bot::HasMemberIntents() {
+	return memberintents;
 }
 
 /**
@@ -225,9 +232,9 @@ int main(int argc, char** argv) {
 	/* Parse command line parameters using getopt() */
 	struct option longopts[] =
 	{
-		{ "dev",		no_argument,		&dev,		1 },
-		{ "test",		no_argument,		&test,		1 },
-		{ "memberintent",	no_argument,		&members,	1 },
+		{ "dev",	no_argument,		&dev,		1 },
+		{ "test",	no_argument,		&test,		1 },
+		{ "members",	no_argument,		&members,	1 },
 		{ 0, 0, 0, 0 }
 	};
 
@@ -288,7 +295,7 @@ int main(int argc, char** argv) {
 		aegis_bot.wsdbg = false;
 
 		/* Bot class handles application logic */
-		Bot client(dev, test, aegis_bot);
+		Bot client(dev, test, members, aegis_bot);
 
 		/* Attach events to the Bot class methods from aegis::core */
 		aegis_bot.set_on_message_create(std::bind(&Bot::onMessage, &client, std::placeholders::_1));
