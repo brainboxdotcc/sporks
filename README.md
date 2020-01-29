@@ -56,10 +56,10 @@ run.sh will restart the bot executable continually if it dies.
 
 ## Command line parameters
 
-    ./bot [--dev]
+    ./bot [--dev|--test] [--members]
 
 | Argument        | Meaning                                                |
 | --------------- |------------------------------------------------------- |
-| --dev           | Run using the development token in the config file     |
+| --dev           | Run using the development token in the config file. Mutually exclusive with ``--test``     |
 | --test          | Run using the live token in the config file, but squelch all outbound messages unless they originate from the test server (also defined in the config file)  |
 | --members       | Send a GUILD_MEMBERS intent when identifying to the discord gateway |
