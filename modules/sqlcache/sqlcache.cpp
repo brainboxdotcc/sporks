@@ -98,7 +98,12 @@ public:
 						roles_str.append(std::to_string(n->get())).append(",");
 					}
 					roles_str = roles_str.substr(0, roles_str.length() - 1);
-					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles) VALUES(?, ?, '?', '?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?'", {std::to_string(i->_user.id.get()), std::to_string(gc.id.get()), i->nick, roles_str, i->nick, roles_str});
+					std::string dashboard = "0";
+					if (gc.owner_id == i->_user.id) {
+						/* Server owner */
+						dashboard = "1";
+					}
+					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {std::to_string(i->_user.id.get()), std::to_string(gc.id.get()), i->nick, roles_str, dashboard, i->nick, roles_str, dashboard});
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			} else {
@@ -133,7 +138,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 5$";
+		std::string version = "$ModVer 6$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
