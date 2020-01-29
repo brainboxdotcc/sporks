@@ -93,6 +93,7 @@ public:
 					std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
 					userqueue.push(i->_user);
 					bot->counters["userqueue"] = userqueue.size();
+					db::query("INSERT INTO infobot_membership (member_id, guild_id) VALUES(?, ?)", {std::to_string(i->_user.id.get()), std::to_string(gc.id.get())});
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			} else {
@@ -109,7 +110,7 @@ public:
 
 	SQLCacheModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml), thr_userqueue(nullptr), thr_guildqueue(nullptr), terminate(false)
 	{
-		ml->Attach({ I_OnGuildCreate, I_OnPresenceUpdate, I_OnGuildMemberAdd, I_OnChannelCreate, I_OnChannelDelete, I_OnGuildDelete }, this);
+		ml->Attach({ I_OnGuildCreate, I_OnPresenceUpdate, I_OnGuildMemberAdd, I_OnChannelCreate, I_OnChannelDelete, I_OnGuildDelete, I_OnGuildMemberRemove }, this);
 		bot->counters["userqueue"] = 0;
 		thr_userqueue = new std::thread(&SQLCacheModule::SaveCachedUsersThread, this);
 		thr_guildqueue = new std::thread(&SQLCacheModule::SaveCachedGuildsThread, this);
@@ -127,7 +128,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 3$";
+		std::string version = "$ModVer 4$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -186,6 +187,12 @@ public:
 		return true;
 	}
 
+	virtual bool OnGuildMemberRemove(const modevent::guild_member_remove &gmr)
+	{
+		db::query("DELETE FROM infobot_membership WHERE member_id = '?'", {std::to_string(gmr.user.id.get())});
+		return true;
+	}
+
 	virtual bool OnGuildMemberAdd(const modevent::guild_member_add &gma)
 	{
 		std::string userid = std::to_string(gma.member._user.id.get());
@@ -210,6 +217,7 @@ public:
 	{
 		db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
 		db::query("DELETE FROM infobot_shard_map WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
+		db::query("DELETE FROM infobot_membership WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
 		return true;
 	}
 };
