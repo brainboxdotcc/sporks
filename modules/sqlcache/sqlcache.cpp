@@ -138,7 +138,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 6$";
+		std::string version = "$ModVer 7$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -208,8 +208,20 @@ public:
 	virtual bool OnGuildMemberAdd(const modevent::guild_member_add &gma)
 	{
 		std::string userid = std::to_string(gma.member._user.id.get());
-		std::string bot = gma.member._user.is_bot() ? "1" : "0";
-		db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar, bot, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar});		
+		std::string _bot = gma.member._user.is_bot() ? "1" : "0";
+		std::string roles_str;
+		aegis::guild* g = bot->core.find_guild(gma.member.guild_id.get());
+		for (auto n = gma.member.roles.begin(); n != gma.member.roles.end(); ++n) {
+			roles_str.append(std::to_string(n->get())).append(",");
+		}
+		roles_str = roles_str.substr(0, roles_str.length() - 1);
+		std::string dashboard = "0";
+		if (g->get_owner() == gma.member._user.id) {
+			/* Server owner */
+			dashboard = "1";
+		}		
+		db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar, _bot, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar});
+		db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {userid, std::to_string(gma.member.guild_id.get()), gma.member.nick, roles_str, dashboard, gma.member.nick, roles_str, dashboard});
 		return true;
 	}
 
