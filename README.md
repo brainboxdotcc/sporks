@@ -61,5 +61,5 @@ run.sh will restart the bot executable continually if it dies.
 | Argument        | Meaning                                                |
 | --------------- |------------------------------------------------------- |
 | --dev           | Run using the development token in the config file     |
-
-
+| --test          | Run using the live token in the config file, but squelch all outbound messages unless they originate from the test server (also defined in the config file)  |
+| --members       | Send a GUILD_MEMBERS intent when identifying to the discord gateway |
