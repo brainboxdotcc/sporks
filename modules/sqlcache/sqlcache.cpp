@@ -93,7 +93,12 @@ public:
 					std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
 					userqueue.push(i->_user);
 					bot->counters["userqueue"] = userqueue.size();
-					db::query("INSERT INTO infobot_membership (member_id, guild_id) VALUES(?, ?)", {std::to_string(i->_user.id.get()), std::to_string(gc.id.get())});
+					std::string roles_str;
+					for (auto n = i->roles.begin(); n != i->roles.end(); ++n) {
+						roles_str.append(std::to_string(n->get())).append(",");
+					}
+					roles_str = roles_str.substr(0, roles_str.length() - 1);
+					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles) VALUES(?, ?, '?', '?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?'", {std::to_string(i->_user.id.get()), std::to_string(gc.id.get()), i->nick, roles_str, i->nick, roles_str});
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			} else {
@@ -128,7 +133,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 4$";
+		std::string version = "$ModVer 5$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -139,17 +144,19 @@ public:
 
 	virtual bool OnGuildCreate(const modevent::guild_create &gc)
 	{
-		db::query("INSERT INTO infobot_shard_map (guild_id, shard_id, name, icon, unavailable) VALUES('?','?','?','?','?') ON DUPLICATE KEY UPDATE shard_id = '?', name = '?', icon = '?', unavailable = '?'",
+		db::query("INSERT INTO infobot_shard_map (guild_id, shard_id, name, icon, unavailable, owner_id) VALUES('?','?','?','?','?','?') ON DUPLICATE KEY UPDATE shard_id = '?', name = '?', icon = '?', unavailable = '?', owner_id = '?'",
 			{
 				std::to_string(gc.guild.id.get()),
 				std::to_string(gc.shard.get_id()),
 				gc.guild.name,
 				gc.guild.icon,
 				std::to_string(gc.guild.unavailable),
+				std::to_string(gc.guild.owner_id.get()),
 				std::to_string(gc.shard.get_id()),
 				gc.guild.name,
 				gc.guild.icon,
-				std::to_string(gc.guild.unavailable)
+				std::to_string(gc.guild.unavailable),
+				std::to_string(gc.guild.owner_id.get())
 			}
 		);
 
