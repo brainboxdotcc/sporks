@@ -1,22 +1,6 @@
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
-DELIMITER $$
-CREATE DEFINER=`admin`@`localhost` PROCEDURE `check_max` (IN `_guild_id` BIGINT(20) UNSIGNED)  READS SQL DATA
-    SQL SECURITY INVOKER
-    COMMENT 'Throws an error if the guild_id has more than 100 kv pairs'
-BEGIN
-DECLARE ERR_STATUS_NOT_VALID CONDITION FOR SQLSTATE '45000';
-DECLARE matches INT(11) UNSIGNED;
-SELECT COUNT(keyname) INTO matches FROM infobot_javascript_kv WHERE infobot_javascript_kv.guild_id = _guild_id;
-IF matches > 1024 THEN
-    SET @text = CONCAT('No more KV storage allowed for guild id ', new.guild_id);
-    SIGNAL ERR_STATUS_NOT_VALID SET MESSAGE_TEXT = @text;
-END IF;
-END$$
-
-DELIMITER ;
-
 CREATE TABLE `infobot` (
   `value` longtext DEFAULT NULL,
   `word` enum('is','can','are','has','cant','r','will','was','can''t','had','aren''t','might','may','arent') NOT NULL DEFAULT 'is',
@@ -25,6 +9,11 @@ CREATE TABLE `infobot` (
   `locked` tinyint(1) UNSIGNED NOT NULL DEFAULT 0,
   `key_word` varchar(768) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `infobot_cpu_graph` (
+  `logdate` datetime NOT NULL DEFAULT current_timestamp(),
+  `percent` decimal(7,4) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='stores details of cpu use for the bot';
 
 CREATE TABLE `infobot_discord_counts` (
   `shard_id` bigint(20) UNSIGNED NOT NULL COMMENT 'Shard ID',
@@ -99,12 +88,21 @@ CREATE TRIGGER `update_check_max` BEFORE UPDATE ON `infobot_javascript_kv` FOR E
 $$
 DELIMITER ;
 
+CREATE TABLE `infobot_membership` (
+  `member_id` bigint(20) UNSIGNED NOT NULL,
+  `guild_id` bigint(20) UNSIGNED NOT NULL,
+  `nick` varchar(512) NOT NULL,
+  `roles` varchar(4096) NOT NULL,
+  `dashboard` tinyint(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Guild memberships';
+
 CREATE TABLE `infobot_shard_map` (
   `guild_id` bigint(20) UNSIGNED NOT NULL,
   `shard_id` int(10) UNSIGNED NOT NULL,
   `name` varchar(512) NOT NULL,
   `icon` varchar(200) NOT NULL,
-  `unavailable` tinyint(1) UNSIGNED NOT NULL DEFAULT 0
+  `unavailable` tinyint(1) UNSIGNED NOT NULL DEFAULT 0,
+  `owner_id` bigint(20) UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `infobot_shard_status` (
@@ -127,6 +125,18 @@ CREATE TABLE `infobot_votes` (
   `rolegiven` tinyint(1) UNSIGNED NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `infobot_vote_counters` (
+  `snowflake_id` bigint(20) UNSIGNED NOT NULL,
+  `vote_count` bigint(20) UNSIGNED NOT NULL DEFAULT 0,
+  `last_vote` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Counters of votes cast';
+
+CREATE TABLE `infobot_vote_links` (
+  `site` varchar(80) NOT NULL,
+  `vote_url` varchar(256) NOT NULL,
+  `sortorder` float NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Voting URLs for the sites which have webhooks';
+
 CREATE TABLE `infobot_web_requests` (
   `channel_id` bigint(20) UNSIGNED NOT NULL,
   `guild_id` bigint(20) UNSIGNED NOT NULL,
@@ -137,13 +147,57 @@ CREATE TABLE `infobot_web_requests` (
   `returndata` longtext DEFAULT NULL,
   `statuscode` char(3) NOT NULL DEFAULT '000'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='List of queued web requests';
+CREATE TABLE `vw_guild_members` (
+`id` bigint(20) unsigned
+,`username` varchar(750)
+,`discriminator` char(4)
+,`avatar` varchar(256)
+,`bot` tinyint(1) unsigned
+,`modified` timestamp
+,`guild_id` bigint(20) unsigned
+,`shard_id` int(10) unsigned
+,`name` varchar(512)
+,`icon` varchar(200)
+,`unavailable` tinyint(1) unsigned
+,`owner_id` bigint(20) unsigned
+,`nick` varchar(512)
+,`dashboard` tinyint(1)
+,`roles` varchar(4096)
+);
+CREATE TABLE `vw_infobot_active_voters` (
+`snowflake_id` bigint(20) unsigned
+,`username` varchar(750)
+,`discriminator` char(4)
+,`origin` varchar(50)
+,`vote_time` timestamp
+,`vote_count` decimal(20,0)
+);
+CREATE TABLE `vw_infobot_vote_counts` (
+`snowflake_id` bigint(20) unsigned
+,`user` text
+,`vote_count` bigint(20) unsigned
+,`last_vote` datetime
+);
+DROP TABLE IF EXISTS `vw_guild_members`;
+
+CREATE VIEW `vw_guild_members`  AS  select `infobot_discord_user_cache`.`id` AS `id`,`infobot_discord_user_cache`.`username` AS `username`,`infobot_discord_user_cache`.`discriminator` AS `discriminator`,`infobot_discord_user_cache`.`avatar` AS `avatar`,`infobot_discord_user_cache`.`bot` AS `bot`,`infobot_discord_user_cache`.`modified` AS `modified`,`infobot_shard_map`.`guild_id` AS `guild_id`,`infobot_shard_map`.`shard_id` AS `shard_id`,`infobot_shard_map`.`name` AS `name`,`infobot_shard_map`.`icon` AS `icon`,`infobot_shard_map`.`unavailable` AS `unavailable`,`infobot_shard_map`.`owner_id` AS `owner_id`,`infobot_membership`.`nick` AS `nick`,`infobot_membership`.`dashboard` AS `dashboard`,`infobot_membership`.`roles` AS `roles` from ((`infobot_membership` join `infobot_discord_user_cache` on(`infobot_discord_user_cache`.`id` = `infobot_membership`.`member_id`)) join `infobot_shard_map` on(`infobot_shard_map`.`guild_id` = `infobot_membership`.`guild_id`)) ;
+DROP TABLE IF EXISTS `vw_infobot_active_voters`;
+
+CREATE VIEW `vw_infobot_active_voters`  AS  select `infobot_votes`.`snowflake_id` AS `snowflake_id`,`infobot_discord_user_cache`.`username` AS `username`,`infobot_discord_user_cache`.`discriminator` AS `discriminator`,`infobot_votes`.`origin` AS `origin`,`infobot_votes`.`vote_time` AS `vote_time`,coalesce((select `infobot_vote_counters`.`vote_count` from `infobot_vote_counters` where `infobot_votes`.`snowflake_id` = `infobot_vote_counters`.`snowflake_id`),1) AS `vote_count` from (`infobot_discord_user_cache` left join `infobot_votes` on(`infobot_votes`.`snowflake_id` = `infobot_discord_user_cache`.`id`)) where `infobot_votes`.`vote_time` >= current_timestamp() - interval 1 day order by `infobot_votes`.`id` desc ;
+DROP TABLE IF EXISTS `vw_infobot_vote_counts`;
+
+CREATE VIEW `vw_infobot_vote_counts`  AS  select `infobot_vote_counters`.`snowflake_id` AS `snowflake_id`,coalesce(concat(`infobot_discord_user_cache`.`username`,'#',`infobot_discord_user_cache`.`discriminator`),'<unknown>') AS `user`,`infobot_vote_counters`.`vote_count` AS `vote_count`,`infobot_vote_counters`.`last_vote` AS `last_vote` from (`infobot_vote_counters` left join `infobot_discord_user_cache` on(`infobot_vote_counters`.`snowflake_id` = `infobot_discord_user_cache`.`id`)) ;
 
 
 ALTER TABLE `infobot`
   ADD PRIMARY KEY (`key_word`),
   ADD KEY `word_idx` (`word`),
   ADD KEY `locked_idx` (`locked`),
-  ADD KEY `setby_idx` (`setby`);
+  ADD KEY `setby_idx` (`setby`),
+  ADD KEY `whenset` (`whenset`);
+
+ALTER TABLE `infobot_cpu_graph`
+  ADD PRIMARY KEY (`logdate`);
 
 ALTER TABLE `infobot_discord_counts`
   ADD PRIMARY KEY (`shard_id`,`dev`),
@@ -176,8 +230,15 @@ ALTER TABLE `infobot_discord_user_cache`
 ALTER TABLE `infobot_javascript_kv`
   ADD PRIMARY KEY (`guild_id`,`keyname`);
 
+ALTER TABLE `infobot_membership`
+  ADD PRIMARY KEY (`member_id`,`guild_id`),
+  ADD KEY `member_id` (`member_id`),
+  ADD KEY `guild_id` (`guild_id`),
+  ADD KEY `dashboard` (`dashboard`);
+
 ALTER TABLE `infobot_shard_map`
-  ADD PRIMARY KEY (`guild_id`);
+  ADD PRIMARY KEY (`guild_id`),
+  ADD KEY `owner_id` (`owner_id`);
 
 ALTER TABLE `infobot_shard_status`
   ADD PRIMARY KEY (`id`),
@@ -192,9 +253,19 @@ ALTER TABLE `infobot_votes`
   ADD KEY `origin` (`origin`),
   ADD KEY `rolegiven` (`rolegiven`);
 
+ALTER TABLE `infobot_vote_counters`
+  ADD PRIMARY KEY (`snowflake_id`),
+  ADD KEY `last_vote` (`last_vote`),
+  ADD KEY `vote_count` (`vote_count`);
+
+ALTER TABLE `infobot_vote_links`
+  ADD PRIMARY KEY (`site`),
+  ADD KEY `sortorder` (`sortorder`);
+
 
 ALTER TABLE `infobot_discord_list_sites`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
 ALTER TABLE `infobot_votes`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
