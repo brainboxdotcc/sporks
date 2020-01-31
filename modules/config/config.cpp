@@ -55,7 +55,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 14$";
+		std::string version = "$ModVer 15$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -109,7 +109,7 @@ public:
 		j["learningdisabled"] = learningdisabled;
 		j["ignores"] = settings::GetIgnoreList(csettings);
 	
-		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {j.dump(), std::to_string(channelID)});
+		db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {j.dump(), channelID});
 	
 		EmbedSimple("Setting **'" + variable + "'** " + (state ? "enabled" : "disabled") + " on <#" + std::to_string(channelID) + ">", channelID);
 	}
@@ -151,7 +151,7 @@ public:
 			j["talkative"] = settings::IsTalkative(csettings);
 			j["learningdisabled"] = settings::IsLearningDisabled(csettings);
 			j["ignores"] = currentlist;
-			db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {j.dump(), std::to_string(channelID)});
+			db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {j.dump(), channelID});
 			EmbedSimple(std::string("Added **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** to the ignore list for <#" + std::to_string(channelID) + ">: " + userlist, channelID);
 		} else if (operation == "del") {
 			/* Remove ignore entries */
@@ -173,7 +173,7 @@ public:
 			j["talkative"] = settings::IsTalkative(csettings);
 			j["learningdisabled"] = settings::IsLearningDisabled(csettings);
 			j["ignores"] = currentlist;
-			db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {j.dump(), std::to_string(channelID)});
+			db::query("UPDATE infobot_discord_settings SET settings = '?' WHERE id = ?", {j.dump(), channelID});
 			EmbedSimple(std::string("Deleted **") + std::to_string(mentions.size()) + " user" + (mentions.size() > 1 ? "s" : "") + "** from the ignore list for <#" + std::to_string(channelID) + ">: " + userlist, channelID);
 		} else if (operation == "list") {
 			/* List ignore entries */

@@ -229,6 +229,9 @@ int main(int argc, char** argv) {
 	int test = 0;
 	int members = 0;
 
+	/* Set this specifically so that stringstreams don't do weird things on other locales printing decimal numbers for SQL */
+	std::setlocale(LC_ALL, "en_GB.UTF-8");
+
 	/* Parse command line parameters using getopt() */
 	struct option longopts[] =
 	{

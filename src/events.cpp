@@ -21,15 +21,6 @@
 #include <aegis.hpp>
 #include <sporks/bot.h>
 #include <sporks/includes.h>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <mutex>
-#include <sys/types.h>
-#include <sys/sysinfo.h>
-#include <sporks/database.h>
-#include <sporks/config.h>
-#include <sporks/stringops.h>
 #include <sporks/modules.h>
 
 void Bot::onTypingStart (aegis::gateway::events::typing_start obj)

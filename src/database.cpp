@@ -22,12 +22,12 @@
 #include <mysql/mysql.h>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 
 namespace db {
 
 	MYSQL connection;
 	std::mutex db_mutex;
-	std::map<std::string, MYSQL_STMT*> prepared_cache;
 
 	/**
 	 * Connect to mysql database, returns false if there was an error.
@@ -62,7 +62,7 @@ namespace db {
 	 * For example: db::query("UPDATE foo SET bar = '?' WHERE id = '?'", {"baz", "3"});
 	 * Returns a resultset of the results as rows. Avoid returning massive resultsets if you can.
 	 */
-	resultset query(const std::string &format, std::vector<std::string> parameters) {
+	resultset query(const std::string &format, const paramlist &parameters) {
 
 		/**
 		 * One DB handle can't query the database from multiple threads at the same time.
@@ -70,42 +70,32 @@ namespace db {
 		 */
 		std::lock_guard<std::mutex> db_lock(db_mutex);
 
+		std::vector<std::string> escaped_parameters;
+
 		resultset rv;
 
-		if (prepared_cache.find(format) == prepared_cache.end()) {
-			MYSQL_STMT* p_statement = mysql_stmt_init(&connection);
-			if (p_statement) {
-				mysql_stmt_prepare(p_statement, format.c_str(), format.length());
-				prepared_cache[format] = p_statement;
-			}
-		}
-		auto statement_iter = prepared_cache.find(format)->second;
-
-		MYSQL_BIND bound_parameters[parameters.size()];
-
-		for (size_t p = 0; p < parameters.size(); ++p) {
-			bind[p].buffer_type = MYSQL_TYPE_VARCHAR;
-			bind[p].buffer = parameters[p].c_str();
-		}
-		mysql_stmt_bind_param(stmt, bind);
-
-
 		/**
-		 * Escape all parameters properly
+		 * Escape all parameters properly from a vector of std::variant
 		 */
-		for (unsigned int i = 0; i < parameters.size(); ++i) {
+		for (const auto& param : parameters) {
 			/* Worst case scenario: Every character becomes two, plus NULL terminator*/
-			char out[parameters[i].length() * 2 + 1];
-			/* Some moron thought it was a great idea for mysql_real_escape_string to return an unsigned but use -1 to indicate error.
-			 * This stupid cast below is the actual recommended error check from the reference manual. Seriously stupud.
-			 */
-			if (mysql_real_escape_string(&connection, out, parameters[i].c_str(), parameters[i].length()) == (unsigned long)-1) {
-				/* At this point 'rv' always contains an empty set. Really, we should never see this error anyway but
-				 * it's always better to error check everything.
+			std::visit([parameters, &escaped_parameters](const auto &p) {
+				std::ostringstream v;
+				v << p;
+				std::string s_param(v.str());
+				char out[s_param.length() * 2 + 1];
+				/* Some moron thought it was a great idea for mysql_real_escape_string to return an unsigned but use -1 to indicate error.
+				 * This stupid cast below is the actual recommended error check from the reference manual. Seriously stupid.
 				 */
-				return rv;
-			}
-			parameters[i] = out;
+				if (mysql_real_escape_string(&connection, out, s_param.c_str(), s_param.length()) != (unsigned long)-1) {
+					escaped_parameters.push_back(out);
+				}
+			}, param);
+		}
+
+		if (parameters.size() != escaped_parameters.size()) {
+			std::cerr << "SQL error: Parameter wasn't escaped; error " << mysql_errno(&connection) << " on query: " << format << std::endl;
+			return rv;
 		}
 
 		unsigned int param = 0;
@@ -119,8 +109,8 @@ namespace db {
 		 */
 		for (auto v = format.begin(); v != format.end(); ++v) {
 			if (*v == '?') {
-				querystring.append(parameters[param]);
-				if (param != parameters.size() - 1) {
+				querystring.append(escaped_parameters[param]);
+				if (param != escaped_parameters.size() - 1) {
 					param++;
 				}
 			} else {
@@ -160,7 +150,7 @@ namespace db {
 			/**
 			 * In properly written code, this should never happen. Famous last words.
 			 */
-			std::cout << "SQL error: " << mysql_errno(&connection) << " on query: " << querystring << std::endl;
+			std::cerr << "SQL error: " << mysql_errno(&connection) << " on query: " << querystring << std::endl;
 		}
 		return rv;
 	}

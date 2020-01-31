@@ -59,9 +59,8 @@ public:
 					userqueue.pop();
 					bot->counters["userqueue"] = userqueue.size();
 				};
-				std::string userid = std::to_string(u.id.get());
 				std::string bot = u.is_bot() ? "1" : "0";
-				db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, u.username, u.discriminator, u.avatar, bot, u.username, u.discriminator, u.avatar});
+				db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {u.id.get(), u.username, u.discriminator, u.avatar, bot, u.username, u.discriminator, u.avatar});
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			} else {
 				std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -103,7 +102,7 @@ public:
 						/* Server owner */
 						dashboard = "1";
 					}
-					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {std::to_string(i->_user.id.get()), std::to_string(gc.id.get()), i->nick, roles_str, dashboard, i->nick, roles_str, dashboard});
+					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {i->_user.id.get(), gc.id.get(), i->nick, roles_str, dashboard, i->nick, roles_str, dashboard});
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			} else {
@@ -138,7 +137,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 7$";
+		std::string version = "$ModVer 8$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -151,17 +150,17 @@ public:
 	{
 		db::query("INSERT INTO infobot_shard_map (guild_id, shard_id, name, icon, unavailable, owner_id) VALUES('?','?','?','?','?','?') ON DUPLICATE KEY UPDATE shard_id = '?', name = '?', icon = '?', unavailable = '?', owner_id = '?'",
 			{
-				std::to_string(gc.guild.id.get()),
-				std::to_string(gc.shard.get_id()),
+				gc.guild.id.get(),
+				gc.shard.get_id(),
 				gc.guild.name,
 				gc.guild.icon,
-				std::to_string(gc.guild.unavailable),
-				std::to_string(gc.guild.owner_id.get()),
-				std::to_string(gc.shard.get_id()),
+				gc.guild.unavailable,
+				gc.guild.owner_id.get(),
+				gc.shard.get_id(),
 				gc.guild.name,
 				gc.guild.icon,
-				std::to_string(gc.guild.unavailable),
-				std::to_string(gc.guild.owner_id.get())
+				gc.guild.unavailable,
+				gc.guild.owner_id.get()
 			}
 		);
 
@@ -182,17 +181,17 @@ public:
 			const aegis::shards::shard* shard = i->get();
 			db::query("INSERT INTO infobot_shard_status (id, connected, online, uptime, transfer, transfer_compressed) VALUES('?','?','?','?','?','?') ON DUPLICATE KEY UPDATE connected = '?', online = '?', uptime = '?', transfer = '?', transfer_compressed = '?'",
 				{
-					std::to_string(shard->get_id()),
-					std::to_string(shard->is_connected()),
-					std::to_string(shard->is_online()),
-					std::to_string(shard->uptime()),
-					std::to_string(shard->get_transfer_u()),
-					std::to_string(shard->get_transfer()),
-					std::to_string(shard->is_connected()),
-					std::to_string(shard->is_online()),
-					std::to_string(shard->uptime()),
-					std::to_string(shard->get_transfer_u()),
-					std::to_string(shard->get_transfer())
+					shard->get_id(),
+					shard->is_connected(),
+					shard->is_online(),
+					shard->uptime(),
+					shard->get_transfer_u(),
+					shard->get_transfer(),
+					shard->is_connected(),
+					shard->is_online(),
+					shard->uptime(),
+					shard->get_transfer_u(),
+					shard->get_transfer()
 				}
 			);
 		}
@@ -201,14 +200,13 @@ public:
 
 	virtual bool OnGuildMemberRemove(const modevent::guild_member_remove &gmr)
 	{
-		db::query("DELETE FROM infobot_membership WHERE member_id = '?'", {std::to_string(gmr.user.id.get())});
+		db::query("DELETE FROM infobot_membership WHERE member_id = '?'", {gmr.user.id.get()});
 		return true;
 	}
 
 	virtual bool OnGuildMemberAdd(const modevent::guild_member_add &gma)
 	{
-		std::string userid = std::to_string(gma.member._user.id.get());
-		std::string _bot = gma.member._user.is_bot() ? "1" : "0";
+		bool _bot = gma.member._user.is_bot();
 		std::string roles_str;
 		aegis::guild* g = bot->core.find_guild(gma.member.guild_id.get());
 		for (auto n = gma.member.roles.begin(); n != gma.member.roles.end(); ++n) {
@@ -220,8 +218,8 @@ public:
 			/* Server owner */
 			dashboard = "1";
 		}		
-		db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {userid, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar, _bot, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar});
-		db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {userid, std::to_string(gma.member.guild_id.get()), gma.member.nick, roles_str, dashboard, gma.member.nick, roles_str, dashboard});
+		db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {gma.member._user.id.get(), gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar, _bot, gma.member._user.username, gma.member._user.discriminator, gma.member._user.avatar});
+		db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {gma.member._user.id.get(), gma.member.guild_id.get(), gma.member.nick, roles_str, dashboard, gma.member.nick, roles_str, dashboard});
 		return true;
 	}
 
@@ -233,15 +231,15 @@ public:
 
 	virtual bool OnChannelDelete(const modevent::channel_delete cd)
 	{
-		db::query("DELETE FROM infobot_discord_settings WHERE id = '?'", {std::to_string(cd.channel.id.get())});
+		db::query("DELETE FROM infobot_discord_settings WHERE id = '?'", {cd.channel.id.get()});
 		return true;
 	}
 
 	virtual bool OnGuildDelete(const modevent::guild_delete gd)
 	{
-		db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
-		db::query("DELETE FROM infobot_shard_map WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
-		db::query("DELETE FROM infobot_membership WHERE guild_id = '?'", {std::to_string(gd.guild_id.get())});
+		db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {gd.guild_id.get()});
+		db::query("DELETE FROM infobot_shard_map WHERE guild_id = '?'", {gd.guild_id.get()});
+		db::query("DELETE FROM infobot_membership WHERE guild_id = '?'", {gd.guild_id.get()});
 		return true;
 	}
 };
