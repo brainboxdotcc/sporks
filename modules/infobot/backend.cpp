@@ -409,7 +409,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 				return "";
 			}
 
-			if (matches[1] == "embed") {
+			if (matches[1] == "embed" && mentioned) {
 				ProcessEmbed(ReplaceString(ml_reply, "<embed>", ""), channelID);
 				def.found = false;
 				return "";
