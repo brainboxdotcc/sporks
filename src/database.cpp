@@ -27,13 +27,23 @@ namespace db {
 
 	MYSQL connection;
 	std::mutex db_mutex;
+	std::map<std::string, MYSQL_STMT*> prepared_cache;
 
 	/**
 	 * Connect to mysql database, returns false if there was an error.
 	 */
 	bool connect(const std::string &host, const std::string &user, const std::string &pass, const std::string &db, int port) {
-		mysql_init(&connection);
-		return mysql_real_connect(&connection, host.c_str(), user.c_str(), pass.c_str(), db.c_str(), port, NULL, CLIENT_MULTI_RESULTS | CLIENT_MULTI_STATEMENTS);
+		std::lock_guard<std::mutex> db_lock(db_mutex);
+		if (mysql_init(&connection) != nullptr) {
+			my_bool reconnect = 1;
+			if (mysql_options(&connection, MYSQL_OPT_RECONNECT, &reconnect) == 0) {
+				return mysql_real_connect(&connection, host.c_str(), user.c_str(), pass.c_str(), db.c_str(), port, NULL, CLIENT_MULTI_RESULTS | CLIENT_MULTI_STATEMENTS);
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
 	}
 
 	/**
@@ -41,6 +51,7 @@ namespace db {
 	 * If there's an error, there isn't much we can do about it anyway.
 	 */
 	bool close() {
+		std::lock_guard<std::mutex> db_lock(db_mutex);
 		mysql_close(&connection);
 		return true;
 	}
@@ -61,13 +72,39 @@ namespace db {
 
 		resultset rv;
 
+		if (prepared_cache.find(format) == prepared_cache.end()) {
+			MYSQL_STMT* p_statement = mysql_stmt_init(&connection);
+			if (p_statement) {
+				mysql_stmt_prepare(p_statement, format.c_str(), format.length());
+				prepared_cache[format] = p_statement;
+			}
+		}
+		auto statement_iter = prepared_cache.find(format)->second;
+
+		MYSQL_BIND bound_parameters[parameters.size()];
+
+		for (size_t p = 0; p < parameters.size(); ++p) {
+			bind[p].buffer_type = MYSQL_TYPE_VARCHAR;
+			bind[p].buffer = parameters[p].c_str();
+		}
+		mysql_stmt_bind_param(stmt, bind);
+
+
 		/**
 		 * Escape all parameters properly
 		 */
 		for (unsigned int i = 0; i < parameters.size(); ++i) {
 			/* Worst case scenario: Every character becomes two, plus NULL terminator*/
 			char out[parameters[i].length() * 2 + 1];
-			mysql_real_escape_string(&connection, out, parameters[i].c_str(), parameters[i].length());
+			/* Some moron thought it was a great idea for mysql_real_escape_string to return an unsigned but use -1 to indicate error.
+			 * This stupid cast below is the actual recommended error check from the reference manual. Seriously stupud.
+			 */
+			if (mysql_real_escape_string(&connection, out, parameters[i].c_str(), parameters[i].length()) == (unsigned long)-1) {
+				/* At this point 'rv' always contains an empty set. Really, we should never see this error anyway but
+				 * it's always better to error check everything.
+				 */
+				return rv;
+			}
 			parameters[i] = out;
 		}
 
