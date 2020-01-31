@@ -470,7 +470,7 @@ infodef get_def(const std::string &key)
 uint64_t get_phrase_count()
 {
 	/* Don't use `SELECT COUNT(*)` here. It will take seconds to complete, as opposed to `SHOW TABLE STATUS` which returns near-instantly. */
-	db::resultset r = db::query("show table status like '?'", {"infobot"});
+	db::resultset r = db::query("show table status like '?'", {std::string("infobot")});
 	return r.size() > 0 ? from_string<uint64_t>(r[0]["Rows"], std::dec) : 0;
 }
 
