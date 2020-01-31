@@ -147,38 +147,6 @@ CREATE TABLE `infobot_web_requests` (
   `returndata` longtext DEFAULT NULL,
   `statuscode` char(3) NOT NULL DEFAULT '000'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='List of queued web requests';
-CREATE TABLE `vw_guild_members` (
-`id` bigint(20) unsigned
-,`username` varchar(750)
-,`discriminator` char(4)
-,`avatar` varchar(256)
-,`bot` tinyint(1) unsigned
-,`modified` timestamp
-,`guild_id` bigint(20) unsigned
-,`shard_id` int(10) unsigned
-,`name` varchar(512)
-,`icon` varchar(200)
-,`unavailable` tinyint(1) unsigned
-,`owner_id` bigint(20) unsigned
-,`nick` varchar(512)
-,`dashboard` tinyint(1)
-,`roles` varchar(4096)
-);
-CREATE TABLE `vw_infobot_active_voters` (
-`snowflake_id` bigint(20) unsigned
-,`username` varchar(750)
-,`discriminator` char(4)
-,`origin` varchar(50)
-,`vote_time` timestamp
-,`vote_count` decimal(20,0)
-);
-CREATE TABLE `vw_infobot_vote_counts` (
-`snowflake_id` bigint(20) unsigned
-,`user` text
-,`vote_count` bigint(20) unsigned
-,`last_vote` datetime
-);
-DROP TABLE IF EXISTS `vw_guild_members`;
 
 CREATE VIEW `vw_guild_members`  AS  select `infobot_discord_user_cache`.`id` AS `id`,`infobot_discord_user_cache`.`username` AS `username`,`infobot_discord_user_cache`.`discriminator` AS `discriminator`,`infobot_discord_user_cache`.`avatar` AS `avatar`,`infobot_discord_user_cache`.`bot` AS `bot`,`infobot_discord_user_cache`.`modified` AS `modified`,`infobot_shard_map`.`guild_id` AS `guild_id`,`infobot_shard_map`.`shard_id` AS `shard_id`,`infobot_shard_map`.`name` AS `name`,`infobot_shard_map`.`icon` AS `icon`,`infobot_shard_map`.`unavailable` AS `unavailable`,`infobot_shard_map`.`owner_id` AS `owner_id`,`infobot_membership`.`nick` AS `nick`,`infobot_membership`.`dashboard` AS `dashboard`,`infobot_membership`.`roles` AS `roles` from ((`infobot_membership` join `infobot_discord_user_cache` on(`infobot_discord_user_cache`.`id` = `infobot_membership`.`member_id`)) join `infobot_shard_map` on(`infobot_shard_map`.`guild_id` = `infobot_membership`.`guild_id`)) ;
 DROP TABLE IF EXISTS `vw_infobot_active_voters`;
