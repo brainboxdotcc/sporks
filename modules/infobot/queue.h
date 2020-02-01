@@ -44,6 +44,8 @@ class QueueItem
 	int64_t serverID;
 	std::string username;
 	std::string message;
+	std::string original_username;
+	std::string original_message;
 	bool mentioned;
 };
 

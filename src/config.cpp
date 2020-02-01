@@ -91,7 +91,7 @@ json getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 
 	if (r.empty()) {
 		/* No settings for this channel, create an entry */
-		db::query("INSERT INTO infobot_discord_settings (id, parent_id, guild_id, name, settings) VALUES(?, ?, ?, '?', '?')", {channel_id, parent_id, guild_id, name, "{}"});
+		db::query("INSERT INTO infobot_discord_settings (id, parent_id, guild_id, name, settings) VALUES(?, ?, ?, '?', '?')", {channel_id, parent_id, guild_id, name, std::string("{}")});
 		r = db::query("SELECT settings FROM infobot_discord_settings WHERE id = ?", {channel_id});
 
 	} else if (name != r[0].find("name")->second || parent_id != r[0].find("parent_id")->second) {

@@ -84,7 +84,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 21$";
+		std::string version = "$ModVer 22$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -109,9 +109,12 @@ public:
 
 		if (mentioned && diagnosticmessage->Match(clean_message, param)) {
 
+			aegis::gateway::objects::message msg = message.msg;
 			std::stringstream tokens(trim(param[2]));
 			std::string subcommand;
 			tokens >> subcommand;
+
+			bot->core.log->info("SUDO: <{}> {}", msg.get_user().get_username(), clean_message);
 
 			/* Get owner snowflake id from config file */
 			int64_t owner_id = from_string<int64_t>(Bot::GetConfig("owner"), std::dec);

@@ -71,6 +71,8 @@ void InfobotModule::Output(QueueItem &done) {
 			aegis::channel* channel = bot->core.find_channel(done.channelID);
 			if (channel) {
 				if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == done.serverID) {
+					// this doesnt make it to here. fix it later.
+					bot->core.log->info("<{}> {}", done.original_username, done.original_message);
 					bot->core.log->info("<{} ({}/{})> {}", bot->user.username, done.serverID, done.channelID, message);
 					channel->create_message(message);
 					bot->sent_messages++;

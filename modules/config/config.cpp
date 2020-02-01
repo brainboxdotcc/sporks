@@ -55,7 +55,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 15$";
+		std::string version = "$ModVer 16$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -235,7 +235,7 @@ public:
 	void DoConfig(const std::vector<std::string> &param, int64_t channelID, const aegis::gateway::objects::message& message) {
 
 		if (!HasPermission(channelID, message)) {
-			EmbedSimple("Access denied: You need to be a server owner, have the \"administrator\" permission. or have the \"manage messages\" permission on this channel to edit its configuration.", channelID);
+			EmbedSimple("Access denied: You need to be a server owner, have the 'administrator' permission. or have the 'manage messages' permission on this channel to edit its configuration.", channelID);
 			return;
 		}
 
@@ -273,6 +273,7 @@ public:
 		std::string botusername = bot->user.username;
 		aegis::gateway::objects::message msg = message.msg;
 		if (mentioned && configmessage->Match(clean_message, param)) {
+			bot->core.log->info("CMD: <{}> {}", msg.get_user().get_username(), clean_message);
 			DoConfig(param, msg.get_channel_id().get(), msg);
 			return false;
 		}

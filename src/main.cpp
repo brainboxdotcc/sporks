@@ -189,8 +189,6 @@ void Bot::onMessage(aegis::gateway::events::message_create message) {
 			}
 		}
 
-		core.log->info("<{}> {}", message.msg.get_user().get_username(), mentions_removed);
-
 		std::string botusername = this->user.username;
 
 		/* Remove bot's nickname from start of message, if it's there */

@@ -132,7 +132,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 14$";
+	std::string version = "$ModVer 15$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -156,10 +156,12 @@ bool InfobotModule::OnMessage(const modevent::message_create &message, const std
 
 	QueueItem query;
 	query.message = clean_message;
+	query.original_message = clean_message;
 	query.channelID = msg.channel.get_id().get();
 	query.serverID = msg.msg.get_guild_id().get();
 	query.username = msg.msg.get_user().get_username();
 	query.mentioned = mentioned;
+	query.original_username = message.get_user().get_username();
 	Input(query);
 
 	return true;
