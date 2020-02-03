@@ -42,9 +42,9 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 	sprintf(uptime, "%d day%s, %02d:%02d:%02d", days, (days != 1 ? "s" : ""), hours, minutes, seconds);
 
 	char startstr[256];
-	tm* _tm;
-	_tm = gmtime(&startup);
-	strftime(startstr, 255, "%c", _tm);
+	tm _tm;
+	gmtime_r(&startup, &_tm);
+	strftime(startstr, 255, "%c", &_tm);
 
 	const statusfield statusfields[] = {
 		statusfield("Database Changes", Comma(db_changes)),

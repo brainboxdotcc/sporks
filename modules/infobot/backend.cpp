@@ -223,8 +223,9 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 				if (mentioned && reply.key.length() + reply.value.length() < 800) {
 					char timestamp[255];
 					reply.found = false;
-					tm* _tm = gmtime(&reply.whenset);
-					strftime(timestamp, sizeof(timestamp), "%H:%M:%S %d-%b-%Y", _tm);
+					tm _tm;
+					gmtime_r(&reply.whenset, &_tm);
+					strftime(timestamp, sizeof(timestamp), "%H:%M:%S %d-%b-%Y", &_tm);
 					EmbedWithFields("Fact Information", {{"Key", escape_json(reply.key)}, {"Set By", escape_json(reply.setby)},{"Set Date", escape_json(timestamp)}, {"Value", "```" + escape_json(reply.value) + "```"}}, channelID);
 					return "";
 				} else {
@@ -365,8 +366,9 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			s_reply = expand(getreply(replies[rpllist]), usernick, reply.whenset, mynick, randuser);
 
 			char timestr[256];
-			tm* _tm = gmtime(&reply.whenset);
-			strftime(timestr, 255, "%c", _tm);
+			tm _tm;
+			gmtime_r(&reply.whenset, &_tm);
+			strftime(timestr, 255, "%c", &_tm);
 
 			s_reply = ReplaceString(s_reply, "%k", reply.key);
 			s_reply = ReplaceString(s_reply, "%w", reply.word);
@@ -493,9 +495,9 @@ void del_def(const std::string &key)
 std::string expand(std::string str, const std::string &nick, time_t timeval, const std::string &mynick, const std::string &randuser)
 {
 	char timestr[256];
-	tm* _tm;
-	_tm = gmtime(&timeval);
-	strftime(timestr, 255, "%c", _tm);
+	tm _tm;
+	gmtime_r(&timeval, &_tm);
+	strftime(timestr, 255, "%c", &_tm);
 
 	str = ReplaceString(str, "<me>", mynick);
 	str = ReplaceString(str, "<who>", nick);

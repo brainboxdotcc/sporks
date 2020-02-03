@@ -49,7 +49,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 14$";
+		std::string version = "$ModVer 15$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -100,9 +100,9 @@ public:
 		}
 		std::string json((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 
-		tm* _tm;
-		_tm = gmtime(&timeval);
-		strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", _tm);
+		tm _tm;
+		gmtime_r(&timeval, &_tm);
+		strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &_tm);
 
 		json = ReplaceString(json, ":section:" , section);
 		json = ReplaceString(json, ":user:", botusername);

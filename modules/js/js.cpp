@@ -717,7 +717,6 @@ bool JS::run(int64_t channel_id, const std::unordered_map<std::string, json> &va
 	} else {
 		settings::setJSConfig(channel_id, "last_error", "");
 	}
-	log->debug("Executed JS on channel {}", channel_id);
 	if (!exited) {
 		duk_pop(ctx);
 	}
@@ -838,7 +837,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 15$";
+	std::string version = "$ModVer 16$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
