@@ -481,8 +481,8 @@ void set_def(std::string key, const std::string &value, const std::string &word,
 	key = lowercase(key);
 	db::query("INSERT INTO infobot (key_word,value,word,setby,whenset,locked) VALUES ('?','?','?','?','?','?') ON DUPLICATE KEY UPDATE value = '?', word = '?', setby = '?', whenset = '?', locked = '?'",
 	{
-		key, value, word, setby, when, locked ? "1" : "0",
-		value, word, setby, when, locked ? "1" : "0"
+		key, value, word, setby, when, locked,
+		value, word, setby, when, locked
 	});
 
 }
