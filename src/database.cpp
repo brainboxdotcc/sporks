@@ -28,6 +28,7 @@ namespace db {
 
 	MYSQL connection;
 	std::mutex db_mutex;
+	std::string _error;
 
 	/**
 	 * Connect to mysql database, returns false if there was an error.
@@ -39,9 +40,11 @@ namespace db {
 			if (mysql_options(&connection, MYSQL_OPT_RECONNECT, &reconnect) == 0) {
 				return mysql_real_connect(&connection, host.c_str(), user.c_str(), pass.c_str(), db.c_str(), port, NULL, CLIENT_MULTI_RESULTS | CLIENT_MULTI_STATEMENTS);
 			} else {
+				_error = "Couldn't set mysql_options()";
 				return false;
 			}
 		} else {
+			_error = "mysql_init() failed";
 			return false;
 		}
 	}
@@ -54,6 +57,10 @@ namespace db {
 		std::lock_guard<std::mutex> db_lock(db_mutex);
 		mysql_close(&connection);
 		return true;
+	}
+
+	const std::string& error() {
+		return _error;
 	}
 
 	/**
@@ -94,7 +101,7 @@ namespace db {
 		}
 
 		if (parameters.size() != escaped_parameters.size()) {
-			std::cerr << "SQL error: Parameter wasn't escaped; error " << mysql_errno(&connection) << " on query: " << format << std::endl;
+			_error = "Parameter wasn't escaped; error: " + std::string(mysql_error(&connection));
 			return rv;
 		}
 
@@ -150,7 +157,8 @@ namespace db {
 			/**
 			 * In properly written code, this should never happen. Famous last words.
 			 */
-			std::cerr << "SQL error: " << mysql_errno(&connection) << " on query: " << querystring << std::endl;
+			_error = mysql_error(&connection);
+			std::cerr << "SQL error: " << _error << " on query: " << querystring << std::endl;
 		}
 		return rv;
 	}

@@ -84,7 +84,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 22$";
+		std::string version = "$ModVer 23$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -199,13 +199,77 @@ public:
 					} else if (lowercase(subcommand) == "lock") {
 						std::string keyword;
 						std::getline(tokens, keyword);
+						keyword = trim(keyword);
 						db::query("UPDATE infobot SET locked = 1 WHERE key_word = '?'", {keyword});
 						EmbedSimple("**Locked** key word: " + keyword, msg.get_channel_id().get());
 					} else if (lowercase(subcommand) == "unlock") {
 						std::string keyword;
 						std::getline(tokens, keyword);
+						keyword = trim(keyword);
 						db::query("UPDATE infobot SET locked = 0 WHERE key_word = '?'", {keyword});
 						EmbedSimple("**Unlocked** key word: " + keyword, msg.get_channel_id().get());
+					} else if (lowercase(subcommand) == "sql") {
+						std::string sql;
+						std::getline(tokens, sql);
+						sql = trim(sql);
+						db::resultset rs = db::query(sql, {});
+						std::stringstream w;
+						if (rs.size() == 0) {
+							if (db::error() != "") {
+								EmbedSimple("SQL Error: " + db::error(), msg.get_channel_id().get());
+							} else {
+								EmbedSimple("Successfully executed, no rows returned.", msg.get_channel_id().get());
+							}
+						} else {
+							w << "- " << sql << std::endl;
+							auto check = rs[0].begin();
+							w << "+ Rows Returned: " << rs.size() << std::endl;
+							for (auto name = rs[0].begin(); name != rs[0].end(); ++name) {
+								if (name == rs[0].begin()) {
+									w << "  ╭";
+								}
+								w << "────────────────────";
+								check = name;
+								w << (++check != rs[0].end() ? "┬" : "╮\n");
+							}
+							w << "  ";
+							for (auto name = rs[0].begin(); name != rs[0].end(); ++name) {
+								w << fmt::format("│{:20}", name->first.substr(0, 20));
+							}
+							w << "│" << std::endl;
+							for (auto name = rs[0].begin(); name != rs[0].end(); ++name) {
+								if (name == rs[0].begin()) {
+									w << "  ├";
+								}
+								w << "────────────────────";
+								check = name;
+								w << (++check != rs[0].end() ? "┼" : "┤\n");
+							}
+							for (auto row : rs) {
+								if (w.str().length() < 1900) {
+									w << "  ";
+									for (auto field : row) {
+										w << fmt::format("│{:20}", field.second.substr(0, 20));
+									}
+									w << "│" << std::endl;
+								}
+							}
+							for (auto name = rs[0].begin(); name != rs[0].end(); ++name) {
+								if (name == rs[0].begin()) {
+									w << "  ╰";
+								}
+								w << "────────────────────";
+								check = name;
+								w << (++check != rs[0].end() ? "┴" : "╯\n");
+							}
+							aegis::channel* c = bot->core.find_channel(msg.get_channel_id().get());
+							if (c) {
+								if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == c->get_guild().get_id()) {
+									c->create_message("```diff\n" + w.str() + "```");
+									bot->sent_messages++;
+								}
+							}
+						}
 					} else if (lowercase(subcommand) == "reconnect") {
 						uint32_t snum = 0;
 						tokens >> snum;
@@ -236,7 +300,14 @@ public:
 						/* Note: exit here will restart, because we run the bot via run.sh which restarts the bot on quit. */
 						exit(0);
 					} else if (lowercase(subcommand) == "ping") {
-						EmbedSimple(fmt::format("**Pong!** REST Response time: {0:f} ms", microseconds_ping / 1000, 4), msg.get_channel_id().get());
+						aegis::channel* c = bot->core.find_channel(msg.get_channel_id().get());
+						if (c) {
+							std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+							aegis::gateway::objects::message m = c->create_message("Pinging...", msg.get_channel_id().get()).get();
+							double microseconds_ping = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count();
+							m.delete_message();
+							EmbedSimple(fmt::format("**Pong!** REST Response time: {:.3f} ms", microseconds_ping / 1000, 4), msg.get_channel_id().get());
+						}
 					} else if (lowercase(subcommand) == "lookup") {
 						int64_t gnum = 0;
 						tokens >> gnum;
