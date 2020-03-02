@@ -69,7 +69,8 @@ public:
 	DiagnosticsModule(Bot* instigator, ModuleLoader* ml) : Module(instigator, ml)
 	{
 		ml->Attach({ I_OnMessage, I_OnRestEnd }, this);
-		diagnosticmessage = new PCRE("^sudo(|\\s+(.+?))$", true);
+		diagnosticmessage = new PCRE("^sudo(\\s+(.+?))$", true);
+
 
 		for (uint32_t i = 0; i < bot->core.get_shard_mgr().shard_max_count; ++i) {
 			shards.push_back({});
@@ -84,7 +85,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 23$";
+		std::string version = "$ModVer 24$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -107,7 +108,7 @@ public:
 
 		shards[message.shard.get_id()].last_message = std::chrono::steady_clock::now();
 
-		if (mentioned && diagnosticmessage->Match(clean_message, param)) {
+		if (mentioned && diagnosticmessage->Match(clean_message, param) && param.size() >= 3) {
 
 			aegis::gateway::objects::message msg = message.msg;
 			std::stringstream tokens(trim(param[2]));
