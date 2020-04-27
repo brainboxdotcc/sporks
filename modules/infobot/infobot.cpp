@@ -161,7 +161,7 @@ bool InfobotModule::OnMessage(const modevent::message_create &message, const std
 	query.serverID = msg.msg.get_guild_id().get();
 	query.username = msg.msg.get_user().get_username();
 	query.mentioned = mentioned;
-	query.original_username = message.get_user().get_username();
+	query.original_username = msg.msg.get_user().get_username();
 	Input(query);
 
 	return true;

@@ -257,7 +257,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			}
 		}
 		// status command
-		else if (level >= ADDRESSED_BY_NICKNAME && PCRE("^status\\?*$", true).Match(text)) {
+		else if (mentioned && level >= ADDRESSED_BY_NICKNAME && PCRE("^status\\?*$", true).Match(text)) {
 			
 			time_t diff = bot->core.uptime() / 1000;
 			int seconds = diff % 60;
