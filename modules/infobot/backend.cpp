@@ -412,6 +412,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			}
 
 			if (matches[1] == "embed" && mentioned) {
+				ml_reply = expand(ml_reply, usernick, reply.whenset, mynick, randuser);
 				ProcessEmbed(ReplaceString(ml_reply, "<embed>", ""), channelID);
 				def.found = false;
 				return "";
@@ -495,14 +496,19 @@ void del_def(const std::string &key)
 std::string expand(std::string str, const std::string &nick, time_t timeval, const std::string &mynick, const std::string &randuser)
 {
 	char timestr[256];
+	char currentstr[256];
 	tm _tm;
+	time_t now = time(NULL);
 	gmtime_r(&timeval, &_tm);
 	strftime(timestr, 255, "%c", &_tm);
+	strftime(currentstr, 255, "%c", localtime(&now));
+
 
 	str = ReplaceString(str, "<me>", mynick);
 	str = ReplaceString(str, "<who>", nick);
 	str = ReplaceString(str, "<random>", randuser);
 	str = ReplaceString(str, "<date>", std::string(timestr));
+	str = ReplaceString(str, "<now>", std::string(currentstr));
 
 	std::vector<std::string> m;
 	while (PCRE("<list:(.+?)>", true).Match(str, m)) {
