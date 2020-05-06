@@ -184,7 +184,7 @@ std::string removepunct(std::string word)
 }
 
 /* Process input from discord and produce a response, returning it as a string, or if talkative this function may directly generate an embed and send it */
-std::string InfobotModule::infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def, bool mentioned)
+std::string InfobotModule::infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def, bool mentioned, bool talkative)
 {
 	/* Default reply level for the command is NOT_ADDRESSED which doesn't generate any feedback to the user */
 	reply_level level = NOT_ADDRESSED;
@@ -220,7 +220,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			reply = get_def(key);
 			if (reply.found) {
 				/* Bot was mentioned and reply and key are short enough to fit in the embed fields */
-				if (mentioned && reply.key.length() + reply.value.length() < 800) {
+				if ((mentioned || talkative) && reply.key.length() + reply.value.length() < 800) {
 					char timestamp[255];
 					reply.found = false;
 					tm _tm;
@@ -257,7 +257,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			}
 		}
 		// status command
-		else if (mentioned && level >= ADDRESSED_BY_NICKNAME && PCRE("^status\\?*$", true).Match(text)) {
+		else if ((mentioned || talkative) && level >= ADDRESSED_BY_NICKNAME && PCRE("^status\\?*$", true).Match(text)) {
 			
 			time_t diff = bot->core.uptime() / 1000;
 			int seconds = diff % 60;
@@ -281,7 +281,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 			if (reply.found) {
 				std::string e = escape_json(reply.value);
 				/* If bot is mentioned and key length and reply length short enough, send as a nice embed */
-				if (mentioned && e.length() < 1020 && reply.key.length() < 254) {
+				if ((mentioned || talkative) && e.length() < 1020 && reply.key.length() < 254) {
 					/* Send a fancy embed if its not excessively too long */
 					EmbedWithFields("Literal Definition", {{"Key", escape_json(reply.key)}, {"Value", "```" + escape_json(reply.value) + "```"}}, channelID);
 					return "";
@@ -411,7 +411,7 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 				return "";
 			}
 
-			if (matches[1] == "embed" && mentioned) {
+			if (matches[1] == "embed" && (mentioned || talkative)) {
 				ml_reply = expand(ml_reply, usernick, reply.whenset, mynick, randuser);
 				ProcessEmbed(ReplaceString(ml_reply, "<embed>", ""), channelID);
 				def.found = false;

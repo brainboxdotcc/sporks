@@ -53,7 +53,7 @@ class InfobotModule : public Module
 	QueueStats GetQueueStats();
 
 	void infobot_init();
-	std::string infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def, bool mentioned);
+	std::string infobot_response(std::string mynick, std::string otext, std::string usernick, std::string randuser, int64_t channelID, infodef &def, bool mentioned, bool talkative);
 
 	void ProcessEmbed(const std::string &embed_json, int64_t channelID);
 	void EmbedWithFields(const std::string &title, std::map<std::string, std::string> fields, int64_t channelID);
