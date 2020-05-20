@@ -49,7 +49,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 15$";
+		std::string version = "$ModVer 16$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -82,7 +82,6 @@ public:
 	 */
 	void GetHelp(const std::string &section, int64_t channelID, const std::string &botusername, int64_t botid, const std::string &author, int64_t authorid, bool dm)
 	{
-		bool found = true;
 		json embed_json;
 		char timestamp[256];
 		time_t timeval = time(NULL);
@@ -95,7 +94,6 @@ public:
 	
 		std::ifstream t("../help/" + section + ".json");
 		if (!t) {
-			found = dm = false;
 			t = std::ifstream("../help/error.json");
 		}
 		std::string json((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());

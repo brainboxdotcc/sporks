@@ -23,6 +23,6 @@ ulimit -c unlimited
 while true;
 do
 	./bot -members
-	../mail-core-file.sh `pwd`
+	../mail-core-file.sh $(pwd)
 done
 

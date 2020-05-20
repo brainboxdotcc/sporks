@@ -85,7 +85,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 24$";
+		std::string version = "$ModVer 25$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -103,7 +103,6 @@ public:
 	virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 	{
 		std::vector<std::string> param;
-		std::string botusername = bot->user.username;
 		aegis::gateway::objects::message msg = message.msg;
 
 		shards[message.shard.get_id()].last_message = std::chrono::steady_clock::now();

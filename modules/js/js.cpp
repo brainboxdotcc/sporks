@@ -284,8 +284,8 @@ void do_web_request(const std::string &reqtype, const std::string &url, const st
 		db::resultset rs = db::query("SELECT count(channel_id) AS count2 FROM infobot_web_requests WHERE guild_id = ?", {std::to_string(current_context)});
 		if (rs[0]["count2"] == "0") {
 			c_apis_suck->debug("JS web request created on guild={}/channel={}: {}", current_guild->get_id(), current_context, url);
-			db::resultset rs = db::query("INSERT INTO infobot_web_requests (channel_id, guild_id, url, type, postdata, callback) VALUES('?','?','?','?','?','?')",
-					{std::to_string(current_context), std::to_string(current_guild->get_id()), url, reqtype, postdata, callback});
+			db::query("INSERT INTO infobot_web_requests (channel_id, guild_id, url, type, postdata, callback) VALUES('?','?','?','?','?','?')",
+				{std::to_string(current_context), std::to_string(current_guild->get_id()), url, reqtype, postdata, callback});
 		}
 	}
 }
@@ -458,7 +458,7 @@ static duk_ret_t js_delete(duk_context *cx)
 	}
 	std::string keyname = duk_get_string(cx, -1);
 	std::string guild_id = std::to_string(current_guild->get_id());
-	db::resultset rs = db::query("DELETE FROM infobot_javascript_kv WHERE guild_id = ? AND keyname = '?'", {guild_id, keyname});
+	db::query("DELETE FROM infobot_javascript_kv WHERE guild_id = ? AND keyname = '?'", {guild_id, keyname});
 	return 0;
 }
 
@@ -770,7 +770,6 @@ void *sandbox_alloc(void *udata, duk_size_t size) {
 static void *sandbox_realloc(void *udata, void *ptr, duk_size_t size) {
 	alloc_hdr *hdr;
 	size_t old_size;
-	void *t;
 
 	auto iter = total_allocated.find(current_context);
 
@@ -793,7 +792,8 @@ static void *sandbox_realloc(void *udata, void *ptr, duk_size_t size) {
 				return NULL;
 			}
 
-			t = realloc((void *) hdr, size + sizeof(alloc_hdr));
+			void* t = realloc((void *) hdr, size + sizeof(alloc_hdr));
+
 			if (!t) {
 				return NULL;
 			}
@@ -837,7 +837,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 16$";
+	std::string version = "$ModVer 17$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 

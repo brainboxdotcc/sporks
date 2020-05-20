@@ -55,7 +55,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 16$";
+		std::string version = "$ModVer 17$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -216,7 +216,7 @@ public:
 		try {
 			embed_json = json::parse(s.str());
 		}
-		catch (std::exception e) {
+		catch (const std::exception &e) {
 			bot->core.log->error("Config show for channel ID {}, invalid json: {}", channelID, s.str());
 		}
 		aegis::channel* channel = bot->core.find_channel(channelID);
@@ -270,7 +270,6 @@ public:
 	virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 	{
 		std::vector<std::string> param;
-		std::string botusername = bot->user.username;
 		aegis::gateway::objects::message msg = message.msg;
 		if (mentioned && configmessage->Match(clean_message, param)) {
 			bot->core.log->info("CMD: <{}> {}", msg.get_user().get_username(), clean_message);
