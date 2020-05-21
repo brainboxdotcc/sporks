@@ -769,7 +769,6 @@ void *sandbox_alloc(void *udata, duk_size_t size) {
 
 static void *sandbox_realloc(void *udata, void *ptr, duk_size_t size) {
 	alloc_hdr *hdr;
-	size_t old_size;
 
 	auto iter = total_allocated.find(current_context);
 
@@ -780,7 +779,7 @@ static void *sandbox_realloc(void *udata, void *ptr, duk_size_t size) {
 
 	if (ptr) {
 		hdr = (alloc_hdr *) (((char *) ptr) - sizeof(alloc_hdr));
-		old_size = hdr->u.sz;
+		size_t old_size = hdr->u.sz;
 
 		if (size == 0) {
 			iter->second -= old_size;
@@ -837,7 +836,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 17$";
+	std::string version = "$ModVer 18$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
