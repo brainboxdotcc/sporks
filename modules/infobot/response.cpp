@@ -79,7 +79,7 @@ void InfobotModule::Output(QueueItem &done) {
 				}
 			}
 		}
-		catch (std::exception e) {
+		catch (const std::exception &e) {
 			bot->core.log->error("Can't send message to channel id {}, (talkative={},mentioned={}), error is: {}", done.channelID, settings::IsTalkative(channel_settings), done.mentioned, e.what());
 		}
 	}
