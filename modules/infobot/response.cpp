@@ -64,8 +64,7 @@ void InfobotModule::Output(QueueItem &done) {
 			 * Note these are still stored as-is in the database as they arent harmful
 			 * on other mediums such as IRC.
 			 */
-			message = ReplaceString(message, "@everyone", "@‎everyone");
-			message = ReplaceString(message, "@here", "@‎here");
+			message = ReplaceString(message, "@", "@‎");
 			message = ReplaceString(message, "<br>", "\n");
 			message = ReplaceString(message, "<s>", "|");
 			aegis::channel* channel = bot->core.find_channel(done.channelID);
