@@ -46,6 +46,11 @@
 			"name": "<:javascript:667272799240585236> Programming",
 			"value": "[Adding your own JavaScript to Sporks](https://github.com/brainboxdotcc/sporks/wiki/Programming-Reference)\n<:blank:667278047006949386>",
 			"inline": true
+		},
+		{
+			"name": ":robot: Beep? Boop!",
+			"value": "[Did you know I made another bot too? Check it out here!](https://triviabot.co.uk)\n<:blank:667278047006949386>",
+			"inline": false
 		}
 	],
 	"description": ""
