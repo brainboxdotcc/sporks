@@ -5,6 +5,7 @@ Remember you can still find my original perl/botnix version of Sporks on IRC at 
 ## Project and System status
 
 ![Discord](https://img.shields.io/discord/537746810471448576?label=discord) ![CircleCI](https://img.shields.io/circleci/build/github/brainboxdotcc/sporks/master) ![Dashboard](https://img.shields.io/website?down_color=red&label=dashboard&url=https%3A%2F%2Fsporks.gg)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fbrainboxdotcc%2Fsporks.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fbrainboxdotcc%2Fsporks?ref=badge_shield)
 
 [Service Status](https://status.sporks.gg)
 
@@ -63,3 +64,7 @@ run.sh will restart the bot executable continually if it dies.
 | --dev           | Run using the development token in the config file. Mutually exclusive with ``--test``     |
 | --test          | Run using the live token in the config file, but squelch all outbound messages unless they originate from the test server (also defined in the config file)  |
 | --members       | Send a GUILD_MEMBERS intent when identifying to the discord gateway |
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fbrainboxdotcc%2Fsporks.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fbrainboxdotcc%2Fsporks?ref=badge_large)
