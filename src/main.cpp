@@ -182,7 +182,6 @@ void Bot::onMessage(const dpp::message_create_t &message) {
 		bool mentioned = false;
 		std::string mentions_removed = message.msg->content;
 		std::vector<std::string> stringmentions;
-		/* XXX FIXME
 		for (auto m = message.msg->mentions.begin(); m != message.msg->mentions.end(); ++m) {
 			stringmentions.push_back(std::to_string(*m));
 			dpp::user* u = dpp::find_user(*m);
@@ -193,7 +192,7 @@ void Bot::onMessage(const dpp::message_create_t &message) {
 			if (*m == user.id) {
 				mentioned = true;
 			}
-		}*/
+		}
 
 		std::string botusername = this->user.username;
 

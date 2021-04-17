@@ -60,7 +60,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 18$";
+		std::string version = "$ModVer 19$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -74,15 +74,18 @@ public:
 	 */
 	bool HasPermission(int64_t channelID, const dpp::message &message) {
 		dpp::guild* g = dpp::find_guild(message.guild_id);
-		if (g) {
+		dpp::channel* c = dpp::find_channel(channelID);
+		if (!message.author) {
+			return false;
+		}
+		if (g && c) {
 			if (g->owner_id == message.author->id) {
 				/* Server owner */
 				return true;
 			}
 			/* Has manage messages or admin permissions */
-			/* XXX FIXME */
-			/*aegis::permission perms = g->get_permissions(bot->core.find_user(message.author.id), bot->core.find_channel(channelID));
-			return (perms.can_manage_messages() || perms.is_admin());*/
+			uint64_t p = c->get_user_permissions(message.author);
+			return ((p & dpp::p_manage_messages) || (p * dpp::p_administrator));
 		}
 		return false;
 	}
@@ -131,13 +134,15 @@ public:
 		std::string userlist;
 		std::vector<uint64_t> currentlist = settings::GetIgnoreList(csettings);
 		std::vector<uint64_t> mentions;
-		// XXX FIXME
-		/*for (auto i = message.mentions.begin(); i != message.mentions.end(); ++i) {
+		for (auto i = message.mentions.begin(); i != message.mentions.end(); ++i) {
 			if (*i != bot->user.id) {
-				mentions.push_back(i->get());
-				userlist += " " + dpp::find_user(*i)->get_username();
+				mentions.push_back(*i);
+				dpp::user* u = dpp::find_user(*i);
+				if (u) {
+					userlist += " " + u->username;
+				}
 			}
-		}*/
+		}
 	
 		if (mentions.size() == 0 && operation != "list") {
 			EmbedSimple("You need to refer to the users to add or remove using mentions.", channelID);

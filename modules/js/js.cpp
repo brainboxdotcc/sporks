@@ -348,24 +348,25 @@ static duk_ret_t js_find_user(duk_context *cx)
 		return 0;
 	}
 	std::string id = duk_get_string(cx, -1);
-	/* XXX FIXME
-	 * dpp::user* u = current_guild->find_member(from_string<int64_t>(id, std::dec));
-	if (u) {
-		std::string nickname = u->get_name(current_guild->id);
-		duk_build_object(cx, {
-			{ "id", std::to_string(u->id) },
-			{ "username", u->get_username() },
-			{ "discriminator", std::to_string(u->get_discriminator()) },
-			{ "avatar", u->get_avatar() },
-			{ "mention", u->get_mention() },
-			{ "full_name", u->get_full_name() },
-			{ "nickname", nickname }
-		}, {
-			{ "bot", u->is_bot() },
-			{ "mfa_enabled", u->is_mfa_enabled() }
-		});
-		return 1;
-	}*/
+	auto i = current_guild->members.find(from_string<uint64_t>(id, std::dec));
+	if (i != current_guild->members.end()) {
+		dpp::user* u = dpp::find_user(i->second->user_id);
+		if (u) {
+			std::string nickname = i->second->get_nickname();
+			duk_build_object(cx, {
+				{ "id", std::to_string(u->id) },
+				{ "username", u->username },
+				{ "discriminator", std::to_string(u->discriminator) },
+				{ "avatar", u->avatar.to_string() },
+				{ "mention", "<@" + std::to_string(u->id) + ">" },
+				{ "nickname", nickname }
+			}, {
+				{ "bot", u->is_bot() },
+				{ "mfa_enabled", u->is_mfa_enabled() }
+			});
+			return 1;
+		}
+	}
 	return 0;
 }
 
@@ -381,11 +382,6 @@ static duk_ret_t js_find_username(duk_context *cx)
 		return 0;
 	}
 	std::string username = lowercase(std::string(duk_get_string(cx, -1)));
-	/* Yeah this sucks and is O(n). Until aegis provides a better way of looking up a guild member by
-	 * anything other than snowflake id, this will have to do
-	 *
-	 * XXX FIXME DPP can do this better
-	 */
 	for (auto u = current_guild->members.begin(); u != current_guild->members.end(); ++u) {
 		dpp::user* us = dpp::find_user(u->second->user_id);
 		if (us && lowercase(us->username) == username) {
@@ -847,7 +843,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 19$";
+	std::string version = "$ModVer 20$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -878,9 +874,7 @@ bool JSModule::OnMessage(const dpp::message_create_t &message, const std::string
 			jsonstore["guild"] = guild;
 		}
 		jsonstore["channel"] = chan;
-		// XXX FIXME
-		//dpp::gateway::objects::to_json(jsonstore["message"], msg);
-		//dpp::gateway::objects::to_json(jsonstore["author"], *msg.author);
+		jsonstore["message"] = json::parse(msg.build_json(true));
 		jsonstore["message"]["id"] = std::to_string(msg.id);
 		jsonstore["message"]["nonce"] = msg.nonce;
 		jsonstore["mentions"] = stringmentions;
