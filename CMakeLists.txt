@@ -31,7 +31,7 @@ include_directories( "include" )
 
 target_link_libraries(bot dl dpp spdlog crypto ssl mysqlclient pcre ${ZLIB_LIBRARIES})
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -g -O3 -fPIC -rdynamic -DAEGIS_PROFILING")
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 
 target_link_libraries(bot)
 
