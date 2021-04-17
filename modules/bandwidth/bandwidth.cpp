@@ -49,7 +49,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 2$";
+		std::string version = "$ModVer 3$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -63,9 +63,12 @@ public:
 		half++;
 		/* This method is called every 30 seconds, so we want every alternating call to get a 60 second timer */
 		if (half % 2 == 0) {
-			//uint64_t bandwidth_websocket = bot->core.get_shard_transfer();
-			//XXX FIXME
 			uint64_t bandwidth_websocket = 0;
+			auto& shards = bot->core->get_shards();
+			for (auto i = shards.begin(); i != shards.end(); ++i) {
+				dpp::DiscordClient* shard = i->second;
+				bandwidth_websocket += shard->GetBytesIn() + shard->GetBytesOut();
+			}
 			uint64_t bandwidth_last_60_seconds = bandwidth_websocket - last_bandwidth_websocket;
 			last_bandwidth_websocket = bandwidth_websocket;
 	
