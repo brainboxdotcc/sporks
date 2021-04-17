@@ -18,7 +18,6 @@
  *
  ************************************************************************************/
 
-#include <aegis.hpp>
 #include <sstream>
 #include <iostream>
 #include <ctime>
@@ -26,7 +25,11 @@
 #include <sporks/regex.h>
 #include <sporks/stringops.h>
 #include <sporks/statusfield.h>
+#include <fmt/format.h>
+#include <nlohmann/json.hpp>
 #include "infobot.h"
+
+using json = nlohmann::json;
 
 /**
  * Report status to discord as a pretty embed
@@ -87,9 +90,14 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 			dpp::message m;
 			m.channel_id = channel->id;
 			m.embeds.push_back(&embed_json);
-			bot->core->message_create(m);
+			this->bot->core->log(dpp::ll_debug, fmt::format("json: {}", m.build_json(false)));
+			bot->core->message_create(m, [this](const dpp::confirmation_callback_t & state) {
+				this->bot->core->log(dpp::ll_debug, fmt::format("http status: {} http body: {}", state.http_info.status, state.http_info.body));
+			});
 			bot->sent_messages++;
 		}
+	} else {
+		bot->core->log(dpp::ll_error, fmt::format("Invalid channel id for status: {}", channelID));
 	}
 }
 

@@ -27,7 +27,11 @@
 #include <sporks/modules.h>
 #include <iostream>
 #include <sstream>
+#include <fmt/format.h>
+#include <nlohmann/json.hpp>
 #include "backend.h"
+
+using json = nlohmann::json;
 
 int InfobotModule::random(int min, int max)
 {
@@ -132,7 +136,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 18$";
+	std::string version = "$ModVer 19$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 

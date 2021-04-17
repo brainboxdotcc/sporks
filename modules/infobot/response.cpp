@@ -30,6 +30,8 @@
 #include <sporks/config.h>
 #include <sporks/stringops.h>
 #include <sporks/modules.h>
+#include <fmt/format.h>
+#include <nlohmann/json.hpp>
 #include "infobot.h"
 
 /**
