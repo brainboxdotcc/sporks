@@ -18,6 +18,8 @@
  *
  ************************************************************************************/
 
+#include <dpp/dpp.h>
+#include <fmt/format.h>
 #include <string>
 #include <mutex>
 #include <string>
@@ -67,19 +69,19 @@ void InfobotModule::Output(QueueItem &done) {
 			message = ReplaceString(message, "@", "@‎");
 			message = ReplaceString(message, "<br>", "\n");
 			message = ReplaceString(message, "<s>", "|");
-			aegis::channel* channel = bot->core.find_channel(done.channelID);
+			dpp::channel* channel = dpp::find_channel(done.channelID);
 			if (channel) {
 				if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == done.serverID) {
 					// this doesnt make it to here. fix it later.
-					bot->core.log->info("<{}> {}", done.original_username, done.original_message);
-					bot->core.log->info("<{} ({}/{})> {}", bot->user.username, done.serverID, done.channelID, message);
-					channel->create_message(message);
+					bot->core->log(dpp::ll_info, fmt::format("<{}> {}", done.original_username, done.original_message));
+					bot->core->log(dpp::ll_info, fmt::format("<{} ({}/{})> {}", bot->user.username, done.serverID, done.channelID, message));
+					bot->core->message_create(dpp::message(channel->id, message));
 					bot->sent_messages++;
 				}
 			}
 		}
 		catch (const std::exception &e) {
-			bot->core.log->error("Can't send message to channel id {}, (talkative={},mentioned={}), error is: {}", done.channelID, settings::IsTalkative(channel_settings), done.mentioned, e.what());
+			bot->core->log(dpp::ll_error, fmt::format("Can't send message to channel id {}, (talkative={},mentioned={}), error is: {}", done.channelID, settings::IsTalkative(channel_settings), done.mentioned, e.what()));
 		}
 	}
 }

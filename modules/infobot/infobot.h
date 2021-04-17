@@ -17,7 +17,8 @@
  * limitations under the License.
  *
  ************************************************************************************/
-
+#include <dpp/dpp.h>
+#include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -64,8 +65,8 @@ public:
 	virtual std::string GetVersion();
 	virtual std::string GetDescription();
 
-	virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
-	virtual bool OnGuildCreate(const modevent::guild_create &gc);
+	virtual bool OnMessage(const dpp::message_create_t &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions);
+	virtual bool OnGuildCreate(const dpp::guild_create_t &gc);
 
 	/**
 	 * Random integer in range

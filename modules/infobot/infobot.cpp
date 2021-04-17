@@ -132,7 +132,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 17$";
+	std::string version = "$ModVer 18$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -141,27 +141,30 @@ std::string InfobotModule::GetDescription()
 	return "Infobot learning and responses";
 }
 
-bool InfobotModule::OnGuildCreate(const modevent::guild_create &gc)
+bool InfobotModule::OnGuildCreate(const dpp::guild_create_t &gc)
 {
-	this->nickList[gc.guild.id.get()] = std::vector<std::string>();
-	for (auto i = gc.guild.members.begin(); i != gc.guild.members.end(); ++i) {
-		this->nickList[gc.guild.id.get()].push_back(i->_user.username);
+	this->nickList[gc.created->id] = std::vector<std::string>();
+	for (auto i = gc.created->members.begin(); i != gc.created->members.end(); ++i) {
+		dpp::user* u = dpp::find_user(i->second->user_id);
+		if (u) {
+			this->nickList[gc.created->id].push_back(u->username);
+		}
 	}
 	return true;
 }
 
-bool InfobotModule::OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
+bool InfobotModule::OnMessage(const dpp::message_create_t &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 {
-	modevent::message_create msg = message;
+	dpp::message_create_t msg = message;
 
 	QueueItem query;
 	query.message = clean_message;
 	query.original_message = clean_message;
-	query.channelID = msg.channel.get_id().get();
-	query.serverID = msg.msg.get_guild_id().get();
-	query.username = msg.msg.get_user().get_username();
+	query.channelID = msg.msg->channel_id;
+	query.serverID = msg.msg->guild_id;
+	query.username = msg.msg->author ? msg.msg->author->username : "";
 	query.mentioned = mentioned;
-	query.original_username = msg.msg.get_user().get_username();
+	query.original_username = query.username;
 	Input(query);
 
 	return true;

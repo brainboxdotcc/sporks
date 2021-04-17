@@ -18,6 +18,7 @@
  *
  ************************************************************************************/
 
+#include <fmt/format.h>
 #include <sporks/bot.h>
 #include <sporks/modules.h>
 #include <string>
@@ -48,7 +49,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 1$";
+		std::string version = "$ModVer 2$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -62,7 +63,9 @@ public:
 		half++;
 		/* This method is called every 30 seconds, so we want every alternating call to get a 60 second timer */
 		if (half % 2 == 0) {
-			uint64_t bandwidth_websocket = bot->core.get_shard_transfer();
+			//uint64_t bandwidth_websocket = bot->core.get_shard_transfer();
+			//XXX FIXME
+			uint64_t bandwidth_websocket = 0;
 			uint64_t bandwidth_last_60_seconds = bandwidth_websocket - last_bandwidth_websocket;
 			last_bandwidth_websocket = bandwidth_websocket;
 	

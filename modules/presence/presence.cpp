@@ -47,7 +47,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 6$";
+		std::string version = "$ModVer 7$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -73,18 +73,21 @@ public:
 
 	virtual bool OnPresenceUpdate()
 	{
-		int64_t servers = bot->core.get_guild_count();
-		int64_t users = bot->core.get_member_count();
-		int64_t channel_count = bot->core.channels.size();
+		int64_t users = 0, channel_count = 0, servers = 0;
+		for (auto & s : bot->core->get_shards()) {
+			users += s.second->GetMemberCount();
+			channel_count += s.second->GetChannelCount();
+			servers += s.second->GetGuildCount();
+		}
 		int64_t ram = GetRSS();
 
 		db::resultset rs_fact = db::query("show table status like '?'", {std::string("infobot")});
-		bot->core.update_presence(Comma(from_string<size_t>(rs_fact[0]["Rows"], std::dec)) + " facts, on " + Comma(servers) + " servers with " + Comma(users) + " users across " + Comma(bot->core.shard_max_count) + " shards", aegis::gateway::objects::activity::Watching);
+		bot->core->set_presence(dpp::presence(dpp::ps_online, dpp::at_custom, Comma(from_string<size_t>(rs_fact[0]["Rows"], std::dec)) + " facts, on " + Comma(servers) + " servers with " + Comma(users) + " users across " + Comma(bot->core->get_shards().size()) + " shards"));
 		db::query("INSERT INTO infobot_discord_counts (shard_id, dev, user_count, server_count, shard_count, channel_count, sent_messages, received_messages, memory_usage) VALUES('?','?','?','?','?','?','?','?','?') ON DUPLICATE KEY UPDATE user_count = '?', server_count = '?', shard_count = '?', channel_count = '?', sent_messages = '?', received_messages = '?', memory_usage = '?'",
 			{
-				0, bot->IsDevMode(), users, servers, bot->core.shard_max_count,
+				0, bot->IsDevMode(), users, servers, bot->core->get_shards().size(),
 				channel_count, bot->sent_messages, bot->received_messages, ram,
-				users, servers, bot->core.shard_max_count,
+				users, servers, bot->core->get_shards().size(),
 				channel_count, bot->sent_messages, bot->received_messages, ram
 			}
 		);
