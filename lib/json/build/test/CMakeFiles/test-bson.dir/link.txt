@@ -1,1 +1,0 @@
-/usr/bin/c++     CMakeFiles/test-bson.dir/src/unit-bson.cpp.o CMakeFiles/catch_main.dir/src/unit.cpp.o  -o test-bson 

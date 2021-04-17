@@ -143,7 +143,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 9$";
+		std::string version = "$ModVer 10$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -207,7 +207,8 @@ public:
 
 	virtual bool OnGuildMemberRemove(const dpp::guild_member_remove_t &gmr)
 	{
-		db::query("DELETE FROM infobot_membership WHERE member_id = '?'", {gmr.removed->id});
+		if (gmr.removed)
+			db::query("DELETE FROM infobot_membership WHERE member_id = '?'", {gmr.removed->id});
 		return true;
 	}
 
