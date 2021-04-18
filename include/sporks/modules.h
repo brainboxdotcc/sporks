@@ -196,7 +196,7 @@ public:
 	virtual std::string GetVersion();
 	virtual std::string GetDescription();
 
-	/* Aegis events */
+	/* D++ events */
 	virtual bool OnChannelCreate(const dpp::channel_create_t &channel);
 	virtual bool OnReady(const dpp::ready_t &ready);
 	virtual bool OnChannelDelete(const dpp::channel_delete_t &channel);

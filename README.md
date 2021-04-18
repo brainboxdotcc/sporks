@@ -1,5 +1,5 @@
 # Sporks, the backchatting, learning, scriptable discord bot
-This github project contains the source code for Sporks, the learning, scriptable Discord chat bot, written in C++ using the aegis.cpp library.
+This github project contains the source code for Sporks, the learning, scriptable Discord chat bot, written in C++ using the D++ library.
 Remember you can still find my original perl/botnix version of Sporks on IRC at irc.chatspike.net!
 
 ## Project and System status
@@ -22,14 +22,11 @@ Currently only Linux is supported, but other UNIX-style platforms should build a
 
 * [cmake](https://cmake.org/) (version 3.13+)
 * [g++](https://gcc.gnu.org) (version 8+)
-* [aegis.cpp](https://github.com/zeroxs/aegis.cpp) (development branch)
-* [asio](https://think-async.com/Asio/) (included with aegis.cpp)
-* [websocketpp](https://github.com/zaphoyd/websocketpp) (included with aegis.cpp)
-* [nlohmann::json](https://github.com/nlohmann/json) (included with aegis.cpp)
+* [D++](https://github.com/brainboxdotcc/DPP) (master branch)
+* [nlohmann::json](https://github.com/nlohmann/json) (included with D++)
 * [duktape](https://github.com/svaarala/duktape) (master branch)
 * [PCRE](https://www.pcre.org/) (whichever -dev package comes with your OS)
 * [MySQL Client Libraries](https://dev.mysql.com/downloads/c-api/) (whichever -dev package comes with your OS)
-* [ZLib](https://www.zlib.net/) (whichever -dev package comes with your OS)
  
 ## Building
 

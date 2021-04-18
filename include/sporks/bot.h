@@ -67,7 +67,7 @@ class Bot {
 	void SetSignals();
 
 public:
-	/* Aegis core */
+	/* D++ cluster */
 	class dpp::cluster* core;
 
 	/* Generic named counters */
