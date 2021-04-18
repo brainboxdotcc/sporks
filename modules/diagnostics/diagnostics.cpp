@@ -86,7 +86,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 29$";
+		std::string version = "$ModVer 30$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -277,11 +277,12 @@ public:
 						dpp::channel* c = dpp::find_channel(msg.channel_id);
 						if (c) {
 							std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
-							bot->core->message_create(dpp::message(msg.channel_id, "Pinging..."), [&msg, this, start_time](const dpp::confirmation_callback_t & state) {
+							dpp::snowflake cid = msg.channel_id;
+							bot->core->message_create(dpp::message(msg.channel_id, "Pinging..."), [cid, this, start_time](const dpp::confirmation_callback_t & state) {
 								double microseconds_ping = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count();
 								dpp::snowflake mid = (std::get<dpp::message>(state.value)).id;
-								this->bot->core->message_delete(mid, msg.channel_id);
-								this->EmbedSimple(fmt::format("**Pong!** REST Response time: {:.3f} ms", microseconds_ping / 1000, 4), msg.channel_id);
+								this->bot->core->message_delete(mid, cid);
+								this->EmbedSimple(fmt::format("**Pong!** REST Response time: {:.3f} ms", microseconds_ping / 1000, 4), cid);
 							});
 						}
 					} else if (lowercase(subcommand) == "lookup") {

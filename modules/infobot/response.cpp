@@ -73,10 +73,9 @@ void InfobotModule::Output(QueueItem &done) {
 			message = ReplaceString(message, "<s>", "|");
 			dpp::channel* channel = dpp::find_channel(done.channelID);
 			if (channel) {
+				bot->core->log(dpp::ll_info, fmt::format("<{}> {}", done.original_username, done.original_message));
+				bot->core->log(dpp::ll_info, fmt::format("<{} ({}/{})> {}", bot->user.username, done.serverID, done.channelID, message));
 				if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == done.serverID) {
-					// this doesnt make it to here. fix it later.
-					bot->core->log(dpp::ll_info, fmt::format("<{}> {}", done.original_username, done.original_message));
-					bot->core->log(dpp::ll_info, fmt::format("<{} ({}/{})> {}", bot->user.username, done.serverID, done.channelID, message));
 					bot->core->message_create(dpp::message(channel->id, message));
 					bot->sent_messages++;
 				}
