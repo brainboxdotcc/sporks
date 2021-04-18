@@ -18,10 +18,14 @@
  *
  ************************************************************************************/
 
+#define SPDLOG_FMT_EXTERNAL
 #include <dpp/dpp.h>
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/async.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 #include <sporks/bot.h>
 #include <sporks/includes.h>
 #include <iostream>
@@ -284,13 +288,46 @@ int main(int argc, char** argv) {
 	/* It's go time! */
 	while (true) {
 		dpp::cluster bot(token, intents, dev ? 1 : 2, 0, 1, true);
-		Bot client(dev, test, members, &bot);
 
-		bot.on_log([&bot](const dpp::log_t & event) {
-			if (event.severity >= dpp::ll_debug) {
-				std::cout << dpp::utility::current_date_time() << " [" << dpp::utility::loglevel(event.severity) << "] " << event.message << "\n";
+		/* Set up spdlog logger */
+		std::shared_ptr<spdlog::logger> log;
+		spdlog::init_thread_pool(8192, 2);
+		std::vector<spdlog::sink_ptr> sinks;
+		auto stdout_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt >();
+		auto rotating = std::make_shared<spdlog::sinks::rotating_file_sink_mt>("sporks.log", 1024 * 1024 * 5, 10);
+		sinks.push_back(stdout_sink);
+		sinks.push_back(rotating);
+		log = std::make_shared<spdlog::async_logger>("test", sinks.begin(), sinks.end(), spdlog::thread_pool(), spdlog::async_overflow_policy::block);
+		spdlog::register_logger(log);
+		log->set_pattern("%^%Y-%m-%d %H:%M:%S.%e [%L] [th#%t]%$ : %v");
+		log->set_level(spdlog::level::level_enum::debug);	
+
+		/* Integrate spdlog logger to D++ log events */
+		bot.on_log([&bot, &log](const dpp::log_t & event) {
+			switch (event.severity) {
+				case dpp::ll_trace:
+					log->trace("{}", event.message);
+				break;
+				case dpp::ll_debug:
+					log->debug("{}", event.message);
+				break;
+				case dpp::ll_info:
+					log->info("{}", event.message);
+				break;
+				case dpp::ll_warning:
+					log->warn("{}", event.message);
+				break;
+				case dpp::ll_error:
+					log->error("{}", event.message);
+				break;
+				case dpp::ll_critical:
+				default:
+					log->critical("{}", event.message);
+				break;
 			}
 		});
+
+		Bot client(dev, test, members, &bot);
 
 		/* Attach events to the Bot class methods */
 		bot.on_message_create(std::bind(&Bot::onMessage, &client, std::placeholders::_1));
