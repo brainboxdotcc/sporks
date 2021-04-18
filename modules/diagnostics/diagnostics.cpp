@@ -46,7 +46,7 @@ int64_t GetRSS() {
 		}
 	}
 	self_status.close();
-	return ram;
+	return ram * 1024;
 }
 
 
@@ -86,7 +86,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 28$";
+		std::string version = "$ModVer 29$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
