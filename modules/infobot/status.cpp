@@ -37,8 +37,13 @@ using json = nlohmann::json;
 void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, uint64_t db_changes, uint64_t questions, uint64_t facts, time_t startup, int64_t channelID) {
 	std::stringstream s;
 
-	int64_t servers = dpp::get_guild_cache()->count();
-	int64_t users = dpp::get_user_cache()->count();
+	uint64_t servers = dpp::get_guild_cache()->count();
+	uint64_t users = dpp::get_user_cache()->count();
+	uint64_t members = 0;
+	for (auto & s : bot->core->get_shards()) {
+		members += s.second->GetMemberCount();
+	}
+
 
 	QueueStats qs = this->GetQueueStats();
 	char uptime[32];
@@ -55,7 +60,8 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 		statusfield("Questions", Comma(questions)),
 		statusfield("Approx. Fact Count", Comma(facts)),
 		statusfield("Total Servers", Comma(servers)),
-		statusfield("Online Users", Comma(users)),
+		statusfield("Unique Users", Comma(users)),
+		statusfield("Members", Comma(members)),
 		statusfield("Queue State", "U:"+Comma(qs.users)+", G:"+Comma(qs.guilds)),
 		statusfield("Uptime", std::string(uptime)),
 		statusfield("Shards", Comma(bot->core->get_shards().size())),
