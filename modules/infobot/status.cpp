@@ -88,11 +88,9 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 	if (channel) {
 		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->guild_id) {
 			dpp::message m;
-			m.channel_id = channel->id;
+			m.channel_id = channelID;
 			m.embeds.push_back(&embed_json);
-			this->bot->core->log(dpp::ll_debug, fmt::format("json: {}", m.build_json(false)));
 			bot->core->message_create(m, [this](const dpp::confirmation_callback_t & state) {
-				this->bot->core->log(dpp::ll_debug, fmt::format("http status: {} http body: {}", state.http_info.status, state.http_info.body));
 			});
 			bot->sent_messages++;
 		}

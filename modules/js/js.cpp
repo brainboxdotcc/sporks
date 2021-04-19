@@ -593,8 +593,10 @@ bool JS::run(uint64_t channel_id, const std::unordered_map<std::string, json> &v
 
 	current_guild = dpp::find_guild(c->guild_id);
 
-	if (current_guild == nullptr)
+	if (current_guild == nullptr) {
+		core->log(dpp::ll_error, fmt::format("JS::run() Can't find guild {}", c->guild_id));
 		return false;
+	}
 
 	/* Check if a user has a current vote in the system that is valid for the past day. If they do, boost their quotas for cpu time and ram usage. */
 	db::resultset vrs = db::query("SELECT * FROM `infobot_votes` WHERE vote_time > now() - INTERVAL 1 DAY AND snowflake_id = '?'", {std::to_string(current_guild->owner_id)});
@@ -617,7 +619,7 @@ bool JS::run(uint64_t channel_id, const std::unordered_map<std::string, json> &v
 
 	if (iter == code.end() || settings::getJSConfig(channel_id, "dirty") == "1") {
 
-		core->log(dpp::ll_error, fmt::format("create new context for channel {} due to reload request", channel_id));
+		core->log(dpp::ll_info, fmt::format("create new context for channel {} due to reload request", channel_id));
 		std::string source = settings::getJSConfig(channel_id, "script");
 		std::string name = std::to_string(channel_id) + ".js";
 		v.name = name;
@@ -847,7 +849,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 21$";
+	std::string version = "$ModVer 22$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -886,6 +888,7 @@ bool JSModule::OnMessage(const dpp::message_create_t &message, const std::string
 		jsonstore["channel"]["guild_id"] = std::to_string(msg.guild_id);
 		jsonstore["author"]["id"] = std::to_string(msg.author->id);
 		jsonstore["author"]["guild_id"] = jsonstore["channel"]["guild_id"];
+
 		js->run(c->id, jsonstore);
 		return !js->hasReplied();
 	}

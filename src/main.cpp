@@ -167,8 +167,12 @@ void Bot::onReady(const dpp::ready_t& ready) {
  */
 void Bot::onMessage(const dpp::message_create_t &message) {
 
+	if (!message.msg->author) {
+		core->log(dpp::ll_info, fmt::format("Message dropped, no author: {}", message.msg->content));
+		return;
+	}
 	/* Ignore self, and bots */
-	if (message.msg->author && message.msg->author->id != user.id && message.msg->author->is_bot() == false) {
+	if (message.msg->author->id != user.id && message.msg->author->is_bot() == false) {
 
 		json settings;
 		settings = getSettings(this, message.msg->channel_id, message.msg->guild_id);
