@@ -22,7 +22,7 @@ ulimit -c unlimited
 # run repeatedly until ctrl+c
 while true;
 do
-	./bot -members
+	 LD_LIBRARY_PATH=/usr/lib:/usr/local/lib ./bot -members
 	../mail-core-file.sh $(pwd)
 done
 
