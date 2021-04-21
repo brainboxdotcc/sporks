@@ -20,7 +20,6 @@
 
 
 #pragma once
-#include <aegis.hpp>
 #include <string>
 #include <cstdint>
 

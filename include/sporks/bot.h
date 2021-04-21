@@ -22,13 +22,6 @@
  * swamping botnix with telnet connections and commands (like the PHP version has potential
  * to do by accident!) and outputs similarly queued to prevent flooding discord.
  *
- * There are two caching mechanisms for discord data, first is aegis itself, and the
- * second level is a mysql databse, which exists to feed information to the dashboard
- * website and give some persistence to the data. Note that from the bot's perspective
- * this data is write-only and the bot will only ever look at the data in aegis, and
- * from the website's perspective this data is read-only and it will look to the discord
- * API for authentication and current server list of a user.
- *
  * All major parts of this bot are modular, and can be hot-reloaded on the fly to prevent
  * having to restart the shards. Please see the modules directory for source code.
  *
@@ -36,7 +29,7 @@
 
 #pragma once
 
-#include <aegis.hpp>
+#include <dpp/dpp.h>
 #include <vector>
 #include <string>
 #include <mutex>
@@ -74,19 +67,19 @@ class Bot {
 	void SetSignals();
 
 public:
-	/* Aegis core */
-	aegis::core &core;
+	/* D++ cluster */
+	class dpp::cluster* core;
 
 	/* Generic named counters */
 	std::map<std::string, uint64_t> counters;
 
 	/* The bot's user details from ready event */
-	aegis::gateway::objects::user user;
+	dpp::user user;
 
 	uint64_t sent_messages;
 	uint64_t received_messages;
 
-	Bot(bool development, bool testing, bool intents, aegis::core &aegiscore);
+	Bot(bool development, bool testing, bool intents, dpp::cluster* dppcluster);
 	virtual ~Bot();
 
 	bool IsDevMode();
@@ -101,43 +94,41 @@ public:
 	/* Shorthand to get bot's user id */
 	int64_t getID();
 
-	void onReady(aegis::gateway::events::ready ready);
-	void onServer(aegis::gateway::events::guild_create gc);
-	void onMember(aegis::gateway::events::guild_member_add gma);
-	void onChannel(aegis::gateway::events::channel_create channel);
-	void onMessage(aegis::gateway::events::message_create message);
-	void onChannelDelete(aegis::gateway::events::channel_delete cd);
-	void onServerDelete(aegis::gateway::events::guild_delete gd);
-	void onRestEnd(std::chrono::steady_clock::time_point start_time, uint16_t code);
-	void onTypingStart (aegis::gateway::events::typing_start obj);
-	void onMessageUpdate (aegis::gateway::events::message_update obj);
-	void onMessageDelete (aegis::gateway::events::message_delete obj);
-	void onMessageDeleteBulk (aegis::gateway::events::message_delete_bulk obj);
-	void onGuildUpdate (aegis::gateway::events::guild_update obj);
-	void onMessageReactionAdd (aegis::gateway::events::message_reaction_add obj);
-	void onMessageReactionRemove (aegis::gateway::events::message_reaction_remove obj);
-	void onMessageReactionRemoveAll (aegis::gateway::events::message_reaction_remove_all obj);
-	void onUserUpdate (aegis::gateway::events::user_update obj);
-	void onResumed (aegis::gateway::events::resumed obj);
-	void onChannelUpdate (aegis::gateway::events::channel_update obj);
-	void onChannelPinsUpdate (aegis::gateway::events::channel_pins_update obj);
-	void onGuildBanAdd (aegis::gateway::events::guild_ban_add obj);
-	void onGuildBanRemove (aegis::gateway::events::guild_ban_remove obj);
-	void onGuildEmojisUpdate (aegis::gateway::events::guild_emojis_update obj);
-	void onGuildIntegrationsUpdate (aegis::gateway::events::guild_integrations_update obj);
-	void onGuildMemberRemove (aegis::gateway::events::guild_member_remove obj);
-	void onGuildMemberUpdate (aegis::gateway::events::guild_member_update obj);
-	void onGuildMembersChunk (aegis::gateway::events::guild_members_chunk obj);
-	void onGuildRoleCreate (aegis::gateway::events::guild_role_create obj);
-	void onGuildRoleUpdate (aegis::gateway::events::guild_role_update obj);
-	void onGuildRoleDelete (aegis::gateway::events::guild_role_delete obj);
-	void onPresenceUpdate (aegis::gateway::events::presence_update obj);
-	void onVoiceStateUpdate (aegis::gateway::events::voice_state_update obj);
-	void onVoiceServerUpdate (aegis::gateway::events::voice_server_update obj);
-	void onWebhooksUpdate (aegis::gateway::events::webhooks_update obj);
+	void onReady(const dpp::ready_t &ready);
+	void onServer(const dpp::guild_create_t &gc);
+	void onMember(const dpp::guild_member_add_t &gma);
+	void onChannel(const dpp::channel_create_t &channel);
+	void onMessage(const dpp::message_create_t &message);
+	void onChannelDelete(const dpp::channel_delete_t &cd);
+	void onServerDelete(const dpp::guild_delete_t &gd);
+	void onTypingStart (const dpp::typing_start_t &event);
+	void onMessageUpdate (const dpp::message_update_t &event);
+	void onMessageDelete (const dpp::message_delete_t &event);
+	void onMessageDeleteBulk (const dpp::message_delete_bulk_t &event);
+	void onGuildUpdate (const dpp::guild_update_t &event);
+	void onMessageReactionAdd (const dpp::message_reaction_add_t &event);
+	void onMessageReactionRemove (const dpp::message_reaction_remove_t &event);
+	void onMessageReactionRemoveAll (const dpp::message_reaction_remove_all_t &event);
+	void onUserUpdate (const dpp::user_update_t &event);
+	void onResumed (const dpp::resumed_t &event);
+	void onChannelUpdate (const dpp::channel_update_t &event);
+	void onChannelPinsUpdate (const dpp::channel_pins_update_t &event);
+	void onGuildBanAdd (const dpp::guild_ban_add_t &event);
+	void onGuildBanRemove (const dpp::guild_ban_remove_t &event);
+	void onGuildEmojisUpdate (const dpp::guild_emojis_update_t &event);
+	void onGuildIntegrationsUpdate (const dpp::guild_integrations_update_t &event);
+	void onGuildMemberRemove (const dpp::guild_member_remove_t &event);
+	void onGuildMemberUpdate (const dpp::guild_member_update_t &event);
+	void onGuildMembersChunk (const dpp::guild_members_chunk_t &event);
+	void onGuildRoleCreate (const dpp::guild_role_create_t &event);
+	void onGuildRoleUpdate (const dpp::guild_role_update_t &event);
+	void onGuildRoleDelete (const dpp::guild_role_delete_t &event);
+	void onPresenceUpdate (const dpp::presence_update_t &event);
+	void onVoiceStateUpdate (const dpp::voice_state_update_t &event);
+	void onVoiceServerUpdate (const dpp::voice_server_update_t &event);
+	void onWebhooksUpdate (const dpp::webhooks_update_t &event);
 
 	static std::string GetConfig(const std::string &name);
 
 	static void SetSignal(int signal);
 };
-

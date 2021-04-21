@@ -18,6 +18,8 @@
  *
  ************************************************************************************/
 
+#include <nlohmann/json.hpp>
+#include <fmt/format.h>
 #include <sporks/bot.h>
 #include <sporks/database.h>
 #include <sporks/stringops.h>
@@ -30,6 +32,7 @@
 #include <stdlib.h>
 
 std::mutex config_sql_mutex;
+using json = nlohmann::json;
 
 namespace settings {
 
@@ -63,29 +66,29 @@ json getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 	std::lock_guard<std::mutex> sql_lock(config_sql_mutex);
 	json settings;
 
-	aegis::channel* channel = bot->core.find_channel(channel_id);
+	dpp::channel* channel = dpp::find_channel(channel_id);
 
 	if (!channel) {
-		bot->core.log->error("WTF, find_channel({}) returned nullptr!", channel_id);
+		bot->core->log(dpp::ll_error, fmt::format("WTF, find_channel({}) returned nullptr!", channel_id));
 		return settings;
 	}
 
 	/* DM channels dont have settings */
-	if (channel->get_type() == aegis::gateway::objects::channel::channel_type::DirectMessage) {
+	if (channel->is_dm()) {
 		return settings;
 	}
 
 	/* Retrieve from db */
 	db::resultset r = db::query("SELECT settings, parent_id, name FROM infobot_discord_settings WHERE id = ?", {channel_id});
 
-	std::string parent_id = std::to_string(channel->get_parent_id().get());
-	std::string name = channel->get_name();
+	std::string parent_id = std::to_string(channel->parent_id);
+	std::string name = channel->name;
 
 	if (parent_id == "" || parent_id == "0") {
 		parent_id = "NULL";
 	}
 
-	if (channel->get_type() == aegis::gateway::objects::channel::channel_type::Text) {
+	if (channel->is_text_channel()) {
 		name = std::string("#") + name;
 	}
 
@@ -104,7 +107,7 @@ json getSettings(Bot* bot, int64_t channel_id, int64_t guild_id)
 	try {
 		settings = json::parse(j);
 	} catch (const std::exception &e) {
-		bot->core.log->error("Can't parse settings for channel {}, id {}, json settings were: {}", channel->get_name(), channel_id, j);
+		bot->core->log(dpp::ll_error, fmt::format("Can't parse settings for channel {}, id {}, json settings were: {}", channel->name, channel_id, j));
 	}
 
 	return settings;

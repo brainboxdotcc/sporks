@@ -21,8 +21,8 @@
 #pragma once
 #include <string>
 #include <deque>
-#include <aegis.hpp>
 #include <unordered_map>
+#include <dpp/json_fwd.hpp>
 
 using json = nlohmann::json;
 

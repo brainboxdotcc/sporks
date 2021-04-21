@@ -26,8 +26,12 @@
 #include <sporks/regex.h>
 #include <sporks/database.h>
 #include <sporks/stringops.h>
+#include <fmt/format.h>
+#include <nlohmann/json.hpp>
 #include "backend.h"
 #include "infobot.h"
+
+using json = nlohmann::json;
 
 infostats stats;
 
@@ -102,7 +106,7 @@ void InfobotModule::ProcessEmbed(const std::string &embed_json, int64_t channelI
 	/* Put unicode zero-width spaces in @everyone and @here */
 	cleaned_json = ReplaceString(cleaned_json, "@everyone", "@‎everyone");
 	cleaned_json = ReplaceString(cleaned_json, "@here", "@‎here");
-	aegis::channel* channel = bot->core.find_channel(channelID);
+	dpp::channel* channel = dpp::find_channel(channelID);
 	try {
 		/* Remove code markdown from the start and end of the code block if there is any */
 		std::string s = ReplaceString(cleaned_json, "```js", "");
@@ -113,15 +117,18 @@ void InfobotModule::ProcessEmbed(const std::string &embed_json, int64_t channelI
 	}
 	catch (const std::exception &e) {
 		if (channel) {
-			if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
-				channel->create_message("<:sporks_error:664735896251269130> I can't make an **embed** from this: ```js\n" + cleaned_json + "\n```**Error:** ``" + e.what() + "``");
+			if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->guild_id) {
+				bot->core->message_create(dpp::message(channel->id, "<:sporks_error:664735896251269130> I can't make an **embed** from this: ```js\n" + cleaned_json + "\n```**Error:** ``" + e.what() + "``"));
 				bot->sent_messages++;
 			}
 		}
 	}
 	if (channel) {
-		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
-			channel->create_message_embed("", embed);
+		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->guild_id) {
+			dpp::message m;
+			m.channel_id = channel->id;
+			m.embeds.push_back(dpp::embed(&embed));
+			bot->core->message_create(m);
 			bot->sent_messages++;
 		}
 	}
@@ -258,17 +265,10 @@ std::string InfobotModule::infobot_response(std::string mynick, std::string otex
 		}
 		// status command
 		else if ((mentioned || talkative) && level >= ADDRESSED_BY_NICKNAME && PCRE("^status\\?*$", true).Match(text)) {
-			
-			time_t diff = bot->core.uptime() / 1000;
-			int seconds = diff % 60;
-			diff /= 60;
-			int minutes = diff % 60;
-			diff /= 60;
-			int hours = diff % 24;
-			diff /= 24;
-			int days = diff;
+		
+			dpp::utility::uptime ut = bot->core->uptime();	
 
-			ShowStatus(days, hours, minutes, seconds, stats.modcount, stats.qcount, get_phrase_count(), stats.startup, channelID);
+			ShowStatus(ut.days, ut.hours, ut.mins, ut.secs, stats.modcount, stats.qcount, get_phrase_count(), stats.startup, channelID);
 			def.found = false;
 			return "";
 		}

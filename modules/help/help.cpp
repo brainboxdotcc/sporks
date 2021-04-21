@@ -18,6 +18,9 @@
  *
  ************************************************************************************/
 
+#include <dpp/dpp.h>
+#include <nlohmann/json.hpp>
+#include <fmt/format.h>
 #include <sporks/modules.h>
 #include <sporks/regex.h>
 #include <string>
@@ -26,6 +29,8 @@
 #include <streambuf>
 #include <sporks/stringops.h>
 #include <sporks/statusfield.h>
+
+using json = nlohmann::json;
 
 /**
  * Provides help commands from JSON files in the help directory
@@ -49,7 +54,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 16$";
+		std::string version = "$ModVer 17$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -61,17 +66,17 @@ public:
 	/**
 	 * Uses a regular expression to identify the help command and its single parameter
 	 */
-	virtual bool OnMessage(const modevent::message_create &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
+	virtual bool OnMessage(const dpp::message_create_t &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 	{
 		std::vector<std::string> param;
 		std::string botusername = bot->user.username;
-		aegis::gateway::objects::message msg = message.msg;
+		dpp::message msg = *(message.msg);
 		if (mentioned && helpmessage->Match(clean_message, param)) {
 			std::string section = "basic";
 			if (param.size() > 2) {
 				section = param[2];
 			}
-			GetHelp(section, message.msg.get_channel_id().get(), botusername, bot->user.id.get(), msg.get_user().get_username(), msg.get_user().get_id().get(), true);
+			GetHelp(section, msg.channel_id, botusername, bot->user.id, msg.author ? msg.author->username : "", msg.author ? msg.author->id : 0, true);
 			return false;
 		}
 		return true;
@@ -85,10 +90,10 @@ public:
 		json embed_json;
 		char timestamp[256];
 		time_t timeval = time(NULL);
-		aegis::channel* channel = bot->core.find_channel(channelID);
+		dpp::channel* channel = dpp::find_channel(channelID);
 
 		if (!channel) {
-			bot->core.log->error("Can't find channel {}!", channelID);
+			bot->core->log(dpp::ll_error, fmt::format("Can't find channel {}!", channelID));
 			return;
 		}
 	
@@ -96,32 +101,35 @@ public:
 		if (!t) {
 			t = std::ifstream("../help/error.json");
 		}
-		std::string json((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+		std::string _json((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 
 		tm _tm;
 		gmtime_r(&timeval, &_tm);
 		strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &_tm);
 
-		json = ReplaceString(json, ":section:" , section);
-		json = ReplaceString(json, ":user:", botusername);
-		json = ReplaceString(json, ":id:", std::to_string(botid));
-		json = ReplaceString(json, ":author:", author);
-		json = ReplaceString(json, ":ts:", timestamp);
+		_json = ReplaceString(_json, ":section:" , section);
+		_json = ReplaceString(_json, ":user:", botusername);
+		_json = ReplaceString(_json, ":id:", std::to_string(botid));
+		_json = ReplaceString(_json, ":author:", author);
+		_json = ReplaceString(_json, ":ts:", timestamp);
 	
 		try {
-			embed_json = json::parse(json);
+			embed_json = json::parse(_json);
 		}
 		catch (const std::exception &e) {
-			if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
-				channel->create_message("<@" + std::to_string(authorid) + ">, herp derp, theres a malformed help file. Please contact a developer on the official support server: https://discord.gg/brainbox");
+			if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->guild_id) {
+				bot->core->message_create(dpp::message(channel->id, "<@" + std::to_string(authorid) + ">, herp derp, theres a malformed help file. Please contact a developer on the official support server: https://discord.gg/brainbox"));
 				bot->sent_messages++;
 			}
-			bot->core.log->error("Malformed help file {}.json!", section);
+			bot->core->log(dpp::ll_error, fmt::format("Malformed help file {}.json!", section));
 			return;
 		}
 
-		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
-			channel->create_message_embed("", embed_json);
+		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->guild_id) {
+			dpp::message m;
+			m.embeds.push_back(dpp::embed(&embed_json));
+			m.channel_id = channel->id;
+			bot->core->message_create(m);
 			bot->sent_messages++;
 		}
 	}

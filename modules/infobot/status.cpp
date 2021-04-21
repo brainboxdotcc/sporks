@@ -18,7 +18,6 @@
  *
  ************************************************************************************/
 
-#include <aegis.hpp>
 #include <sstream>
 #include <iostream>
 #include <ctime>
@@ -26,7 +25,11 @@
 #include <sporks/regex.h>
 #include <sporks/stringops.h>
 #include <sporks/statusfield.h>
+#include <fmt/format.h>
+#include <nlohmann/json.hpp>
 #include "infobot.h"
+
+using json = nlohmann::json;
 
 /**
  * Report status to discord as a pretty embed
@@ -34,8 +37,13 @@
 void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, uint64_t db_changes, uint64_t questions, uint64_t facts, time_t startup, int64_t channelID) {
 	std::stringstream s;
 
-	int64_t servers = bot->core.get_guild_count();
-	int64_t users = bot->core.get_member_count();
+	uint64_t servers = dpp::get_guild_cache()->count();
+	uint64_t users = dpp::get_user_cache()->count();
+	uint64_t members = 0;
+	for (auto & s : bot->core->get_shards()) {
+		members += s.second->GetMemberCount();
+	}
+
 
 	QueueStats qs = this->GetQueueStats();
 	char uptime[32];
@@ -52,13 +60,16 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 		statusfield("Questions", Comma(questions)),
 		statusfield("Approx. Fact Count", Comma(facts)),
 		statusfield("Total Servers", Comma(servers)),
-		statusfield("Online Users", Comma(users)),
+		statusfield("Unique Users", Comma(users)),
+		statusfield("Members", Comma(members)),
 		statusfield("Queue State", "U:"+Comma(qs.users)+", G:"+Comma(qs.guilds)),
 		statusfield("Uptime", std::string(uptime)),
-		statusfield("Shards", Comma(bot->core.shard_max_count)),
+		statusfield("Shards", Comma(bot->core->get_shards().size())),
 		statusfield("Test Mode", bot->IsTestMode() ? ":white_check_mark: Yes" : "<:wc_rs:667695516737470494> No"),
 		statusfield("Developer Mode", bot->IsDevMode() ? ":white_check_mark: Yes" : "<:wc_rs:667695516737470494> No"),
 		statusfield("Member Intent", bot->HasMemberIntents() ? ":white_check_mark: Yes" : "<:wc_rs:667695516737470494> No"),
+		statusfield("Bot Version", "4.0"),
+		statusfield("Library", "<:D_:830553370792165376> [" + std::string(DPP_VERSION_TEXT) + "](https://github.com/brainboxdotcc/DPP)"),
 		statusfield("","")
 	};
 
@@ -79,14 +90,20 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 		embed_json = json::parse(s.str());
 	}
 	catch (const std::exception &e) {
-		bot->core.log->error("Malformed json created when reporting status: {}", s.str());
+		bot->core->log(dpp::ll_error, fmt::format("Malformed json created when reporting status: {}", s.str()));
 	}
-	aegis::channel* channel = bot->core.find_channel(channelID);
+	dpp::channel* channel = dpp::find_channel(channelID);
 	if (channel) {
-		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->get_guild().get_id()) {
-			channel->create_message_embed("", embed_json);
+		if (!bot->IsTestMode() || from_string<uint64_t>(Bot::GetConfig("test_server"), std::dec) == channel->guild_id) {
+			dpp::message m;
+			m.channel_id = channelID;
+			m.embeds.push_back(&embed_json);
+			bot->core->message_create(m, [this](const dpp::confirmation_callback_t & state) {
+			});
 			bot->sent_messages++;
 		}
+	} else {
+		bot->core->log(dpp::ll_error, fmt::format("Invalid channel id for status: {}", channelID));
 	}
 }
 
