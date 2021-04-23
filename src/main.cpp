@@ -154,7 +154,7 @@ void Bot::onReady(const dpp::ready_t& ready) {
 
 	/* Event broadcast when all shards are ready */
 	shard_init_count++;
-	if (shard_init_count == core->get_shards().size()) {
+	if (shard_init_count == core->get_shards().size() / numclusters) {
 		FOREACH_MOD(I_OnAllShardsReady, OnAllShardsReady());
 	}
 }
