@@ -108,7 +108,7 @@ public:
 						/* Server owner */
 						dashboard = "1";
 					}
-					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {i->second->user_id, gc.id, i->second->get_nickname(), roles_str, dashboard, i->second->get_nickname(), roles_str, dashboard});
+					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {i->second->user_id, gc.id, i->second->nickname, roles_str, dashboard, i->second->nickname, roles_str, dashboard});
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			} else {
@@ -230,7 +230,7 @@ public:
 			dashboard = "1";
 		}
 		db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {u->id, u->username, u->discriminator, u->avatar.to_string(), _bot, u->username, u->discriminator, u->avatar.to_string()});
-		db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {u->id, gma.added->guild_id, gma.added->get_nickname(), roles_str, dashboard, gma.added->get_nickname(), roles_str, dashboard});
+		db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {u->id, gma.added->guild_id, gma.added->nickname, roles_str, dashboard, gma.added->nickname, roles_str, dashboard});
 		return true;
 	}
 
