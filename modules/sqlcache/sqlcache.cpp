@@ -143,7 +143,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 10$";
+		std::string version = "$ModVer 11$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -214,6 +214,8 @@ public:
 
 	virtual bool OnGuildMemberAdd(const dpp::guild_member_add_t &gma)
 	{
+		if (!gma.added)
+			return true;
 		dpp::user* u = dpp::find_user(gma.added->user_id);
 		if (!u)
 			return true;
