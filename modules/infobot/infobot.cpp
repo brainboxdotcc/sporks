@@ -28,7 +28,7 @@
 #include <iostream>
 #include <sstream>
 #include <fmt/format.h>
-#include <nlohmann/json.hpp>
+#include <dpp/nlohmann/json.hpp>
 #include "backend.h"
 
 using json = nlohmann::json;

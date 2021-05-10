@@ -26,7 +26,7 @@
 #include <sporks/stringops.h>
 #include <sporks/statusfield.h>
 #include <fmt/format.h>
-#include <nlohmann/json.hpp>
+#include <dpp/nlohmann/json.hpp>
 #include "infobot.h"
 
 using json = nlohmann::json;

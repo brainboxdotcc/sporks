@@ -21,7 +21,7 @@
 #include "js.h"
 #include <dpp/dpp.h>
 #include <fmt/format.h>
-#include <nlohmann/json.hpp>
+#include <dpp/nlohmann/json.hpp>
 #include <sporks/bot.h>
 #include <sporks/config.h>
 #include <sporks/stringops.h>

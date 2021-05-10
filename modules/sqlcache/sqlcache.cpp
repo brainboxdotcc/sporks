@@ -19,7 +19,7 @@
  ************************************************************************************/
 
 #include <dpp/dpp.h>
-#include <nlohmann/json.hpp>
+#include <dpp/nlohmann/json.hpp>
 #include <fmt/format.h>
 #include <sporks/bot.h>
 #include <sporks/modules.h>
@@ -193,12 +193,12 @@ public:
 					shard->IsConnected(),
 					uptime,
 					shard->GetBytesIn() + shard->GetBytesOut(),
-					(int64_t)shard->GetDeompressedBytesIn() + shard->GetBytesOut(),
+					(int64_t)shard->GetDecompressedBytesIn() + shard->GetBytesOut(),
 					shard->IsConnected(),
 					shard->IsConnected(),
 					uptime,
 					shard->GetBytesIn() + shard->GetBytesOut(),
-					(int64_t)shard->GetDeompressedBytesIn() + shard->GetBytesOut()
+					(int64_t)shard->GetDecompressedBytesIn() + shard->GetBytesOut()
 				}
 			);
 		}

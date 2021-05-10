@@ -20,7 +20,7 @@
 
 #pragma once
 #include <dpp/dpp.h>
-#include <nlohmann/json.hpp>
+#include <dpp/nlohmann/json.hpp>
 #include <unordered_map>
 #include <string>
 #include <vector>

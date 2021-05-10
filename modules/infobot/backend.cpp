@@ -27,7 +27,7 @@
 #include <sporks/database.h>
 #include <sporks/stringops.h>
 #include <fmt/format.h>
-#include <nlohmann/json.hpp>
+#include <dpp/nlohmann/json.hpp>
 #include "backend.h"
 #include "infobot.h"
 
