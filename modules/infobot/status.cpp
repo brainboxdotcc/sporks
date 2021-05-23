@@ -41,7 +41,7 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 	uint64_t users = dpp::get_user_cache()->count();
 	uint64_t members = 0;
 	for (auto & s : bot->core->get_shards()) {
-		members += s.second->GetMemberCount();
+		members += s.second->get_member_count();
 	}
 
 

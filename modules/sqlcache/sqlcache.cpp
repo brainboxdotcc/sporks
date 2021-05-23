@@ -143,7 +143,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 11$";
+		std::string version = "$ModVer 12$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -183,22 +183,22 @@ public:
 	{
 		auto& shards = bot->core->get_shards();
 		for (auto i = shards.begin(); i != shards.end(); ++i) {
-			dpp::DiscordClient* shard = i->second;
-			dpp::utility::uptime up = shard->Uptime();
+			dpp::discord_client* shard = i->second;
+			dpp::utility::uptime up = shard->get_uptime();
 			uint64_t uptime = up.secs = (up.mins / 60) + (up.hours / 60 / 60) + (up.days / 60 / 60 / 24);
 			db::query("INSERT INTO infobot_shard_status (id, connected, online, uptime, transfer, transfer_compressed) VALUES('?','?','?','?','?','?') ON DUPLICATE KEY UPDATE connected = '?', online = '?', uptime = '?', transfer = '?', transfer_compressed = '?'",
 				{
 					shard->shard_id,
-					shard->IsConnected(),
-					shard->IsConnected(),
+					shard->is_connected(),
+					shard->is_connected(),
 					uptime,
-					shard->GetBytesIn() + shard->GetBytesOut(),
-					(int64_t)shard->GetDecompressedBytesIn() + shard->GetBytesOut(),
-					shard->IsConnected(),
-					shard->IsConnected(),
+					shard->get_bytes_in() + shard->get_bytes_out(),
+					(int64_t)shard->get_decompressed_bytes_in() + shard->get_bytes_out(),
+					shard->is_connected(),
+					shard->is_connected(),
 					uptime,
-					shard->GetBytesIn() + shard->GetBytesOut(),
-					(int64_t)shard->GetDecompressedBytesIn() + shard->GetBytesOut()
+					shard->get_bytes_in() + shard->get_bytes_out(),
+					(int64_t)shard->get_decompressed_bytes_in() + shard->get_bytes_out()
 				}
 			);
 		}
