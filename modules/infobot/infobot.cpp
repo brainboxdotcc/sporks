@@ -136,7 +136,7 @@ InfobotModule::~InfobotModule()
 std::string InfobotModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 19$";
+	std::string version = "$ModVer 20$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 
@@ -149,7 +149,7 @@ bool InfobotModule::OnGuildCreate(const dpp::guild_create_t &gc)
 {
 	this->nickList[gc.created->id] = std::vector<std::string>();
 	for (auto i = gc.created->members.begin(); i != gc.created->members.end(); ++i) {
-		dpp::user* u = dpp::find_user(i->second->user_id);
+		dpp::user* u = dpp::find_user(i->second.user_id);
 		if (u) {
 			this->nickList[gc.created->id].push_back(u->username);
 		}

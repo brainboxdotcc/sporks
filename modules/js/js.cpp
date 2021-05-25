@@ -350,9 +350,9 @@ static duk_ret_t js_find_user(duk_context *cx)
 	std::string id = duk_get_string(cx, -1);
 	auto i = current_guild->members.find(from_string<uint64_t>(id, std::dec));
 	if (i != current_guild->members.end()) {
-		dpp::user* u = dpp::find_user(i->second->user_id);
+		dpp::user* u = dpp::find_user(i->second.user_id);
 		if (u) {
-			std::string nickname = i->second->nickname;
+			std::string nickname = i->second.nickname;
 			duk_build_object(cx, {
 				{ "id", std::to_string(u->id) },
 				{ "username", u->username },
@@ -383,9 +383,9 @@ static duk_ret_t js_find_username(duk_context *cx)
 	}
 	std::string username = lowercase(std::string(duk_get_string(cx, -1)));
 	for (auto u = current_guild->members.begin(); u != current_guild->members.end(); ++u) {
-		dpp::user* us = dpp::find_user(u->second->user_id);
+		dpp::user* us = dpp::find_user(u->second.user_id);
 		if (us && lowercase(us->username) == username) {
-			std::string nickname = u->second->nickname;
+			std::string nickname = u->second.nickname;
 			duk_build_object(cx, {
 				{ "id", std::to_string(us->id) },
 				{ "username", us->username },
@@ -849,7 +849,7 @@ JSModule::~JSModule()
 std::string JSModule::GetVersion()
 {
 	/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-	std::string version = "$ModVer 22$";
+	std::string version = "$ModVer 23$";
 	return "1.0." + version.substr(8,version.length() - 9);
 }
 

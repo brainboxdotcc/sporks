@@ -92,23 +92,23 @@ public:
 					getSettings(bot, *i, gc.id);
 				}
 				for (auto i = gc.members.begin(); i != gc.members.end(); ++i) {
-					dpp::user* u = dpp::find_user(i->second->user_id);
+					dpp::user* u = dpp::find_user(i->second.user_id);
 					if (!u)
 						continue;
 					std::lock_guard<std::mutex> user_cache_lock(user_cache_mutex);
 					userqueue.push(*u);
 					bot->counters["userqueue"] = userqueue.size();
 					std::string roles_str;
-					for (auto n = i->second->roles.begin(); n != i->second->roles.end(); ++n) {
+					for (auto n = i->second.roles.begin(); n != i->second.roles.end(); ++n) {
 						roles_str.append(std::to_string(*n)).append(",");
 					}
 					roles_str = roles_str.substr(0, roles_str.length() - 1);
 					std::string dashboard = "0";
-					if (gc.owner_id == i->second->user_id) {
+					if (gc.owner_id == i->second.user_id) {
 						/* Server owner */
 						dashboard = "1";
 					}
-					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {i->second->user_id, gc.id, i->second->nickname, roles_str, dashboard, i->second->nickname, roles_str, dashboard});
+					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {i->second.user_id, gc.id, i->second.nickname, roles_str, dashboard, i->second.nickname, roles_str, dashboard});
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			} else {
@@ -143,7 +143,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 12$";
+		std::string version = "$ModVer 13$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -214,25 +214,25 @@ public:
 
 	virtual bool OnGuildMemberAdd(const dpp::guild_member_add_t &gma)
 	{
-		if (!gma.added)
+		if (!gma.added.user_id == 0)
 			return true;
-		dpp::user* u = dpp::find_user(gma.added->user_id);
+		dpp::user* u = dpp::find_user(gma.added.user_id);
 		if (!u)
 			return true;
 		bool _bot = u->is_bot();
 		std::string roles_str;
 		dpp::guild* g = dpp::find_guild(gma.adding_guild->id);
-		for (auto n = gma.added->roles.begin(); n != gma.added->roles.end(); ++n) {
+		for (auto n = gma.added.roles.begin(); n != gma.added.roles.end(); ++n) {
 			roles_str.append(std::to_string(*n)).append(",");
 		}
 		roles_str = roles_str.substr(0, roles_str.length() - 1);
 		std::string dashboard = "0";
-		if (g->owner_id == gma.added->user_id) {
+		if (g->owner_id == gma.added.user_id) {
 			/* Server owner */
 			dashboard = "1";
 		}
 		db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {u->id, u->username, u->discriminator, u->avatar.to_string(), _bot, u->username, u->discriminator, u->avatar.to_string()});
-		db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {u->id, gma.added->guild_id, gma.added->nickname, roles_str, dashboard, gma.added->nickname, roles_str, dashboard});
+		db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {u->id, gma.added.guild_id, gma.added.nickname, roles_str, dashboard, gma.added.nickname, roles_str, dashboard});
 		return true;
 	}
 
