@@ -60,7 +60,7 @@ public:
 	virtual std::string GetVersion()
 	{
 		/* NOTE: This version string below is modified by a pre-commit hook on the git repository */
-		std::string version = "$ModVer 19$";
+		std::string version = "$ModVer 20$";
 		return "1.0." + version.substr(8,version.length() - 9);
 	}
 
@@ -135,12 +135,9 @@ public:
 		std::vector<uint64_t> currentlist = settings::GetIgnoreList(csettings);
 		std::vector<uint64_t> mentions;
 		for (auto i = message.mentions.begin(); i != message.mentions.end(); ++i) {
-			if (*i != bot->user.id) {
-				mentions.push_back(*i);
-				dpp::user* u = dpp::find_user(*i);
-				if (u) {
-					userlist += " " + u->username;
-				}
+			if (i->first.id != bot->user.id) {
+				mentions.push_back(i->first.id);
+				userlist += " " + i->first.username;
 			}
 		}
 	
