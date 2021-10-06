@@ -69,7 +69,7 @@ void InfobotModule::ShowStatus(int days, int hours, int minutes, int seconds, ui
 		statusfield("Developer Mode", bot->IsDevMode() ? ":white_check_mark: Yes" : "<:wc_rs:667695516737470494> No"),
 		statusfield("Member Intent", bot->HasMemberIntents() ? ":white_check_mark: Yes" : "<:wc_rs:667695516737470494> No"),
 		statusfield("Bot Version", "4.0"),
-		statusfield("Library", "<:D_:830553370792165376> [" + std::string(DPP_VERSION_TEXT) + "](https://github.com/brainboxdotcc/DPP)"),
+		statusfield("Library", "[<:DPP1:847152435399360583><:DPP2:847152435343523881> " + std::string(DPP_VERSION_TEXT) + "](https://dpp.dev/)"),
 		statusfield("","")
 	};
 
