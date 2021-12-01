@@ -70,13 +70,13 @@ public:
 	{
 		std::vector<std::string> param;
 		std::string botusername = bot->user.username;
-		dpp::message msg = *(message.msg);
+		dpp::message msg = message.msg;
 		if (mentioned && helpmessage->Match(clean_message, param)) {
 			std::string section = "basic";
 			if (param.size() > 2) {
 				section = param[2];
 			}
-			GetHelp(section, msg.channel_id, botusername, bot->user.id, msg.author ? msg.author->username : "", msg.author ? msg.author->id : 0, true);
+			GetHelp(section, msg.channel_id, botusername, bot->user.id, msg.author.id ? msg.author.username : "", msg.author.id, true);
 			return false;
 		}
 		return true;

@@ -167,30 +167,30 @@ void Bot::onReady(const dpp::ready_t& ready) {
  */
 void Bot::onMessage(const dpp::message_create_t &message) {
 
-	if (!message.msg->author) {
-		core->log(dpp::ll_info, fmt::format("Message dropped, no author: {}", message.msg->content));
+	if (!message.msg.author.id) {
+		core->log(dpp::ll_info, fmt::format("Message dropped, no author: {}", message.msg.content));
 		return;
 	}
 	/* Ignore self, and bots */
-	if (message.msg->author->id != user.id && message.msg->author->is_bot() == false) {
+	if (message.msg.author.id != user.id && message.msg.author.is_bot() == false) {
 
 		json settings;
-		settings = getSettings(this, message.msg->channel_id, message.msg->guild_id);
+		settings = getSettings(this, message.msg.channel_id, message.msg.guild_id);
 
 		received_messages++;
 
 		/* Ignore anyone on ignore list */
 		std::vector<uint64_t> ignorelist = settings::GetIgnoreList(settings);
-		if (message.msg->author && std::find(ignorelist.begin(), ignorelist.end(), message.msg->author->id) != ignorelist.end()) {
-			core->log(dpp::ll_info, fmt::format("Message #{} dropped, user on channel ignore list", message.msg->id));
+		if (message.msg.author.id && std::find(ignorelist.begin(), ignorelist.end(), message.msg.author.id) != ignorelist.end()) {
+			core->log(dpp::ll_info, fmt::format("Message #{} dropped, user on channel ignore list", message.msg.id));
 			return;
 		}
 
 		/* Replace all mentions with raw nicknames */
 		bool mentioned = false;
-		std::string mentions_removed = message.msg->content;
+		std::string mentions_removed = message.msg.content;
 		std::vector<std::string> stringmentions;
-		for (auto m = message.msg->mentions.begin(); m != message.msg->mentions.end(); ++m) {
+		for (auto m = message.msg.mentions.begin(); m != message.msg.mentions.end(); ++m) {
 			stringmentions.push_back(std::to_string(m->first.id));
 			mentions_removed = ReplaceString(mentions_removed, std::string("<@") + std::to_string(m->first.id) + ">", m->first.username);
 			mentions_removed = ReplaceString(mentions_removed, std::string("<@!") + std::to_string(m->first.id) + ">", m->first.username);

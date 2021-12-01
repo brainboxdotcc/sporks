@@ -75,16 +75,16 @@ public:
 	bool HasPermission(int64_t channelID, const dpp::message &message) {
 		dpp::guild* g = dpp::find_guild(message.guild_id);
 		dpp::channel* c = dpp::find_channel(channelID);
-		if (!message.author) {
+		if (!message.author.id) {
 			return false;
 		}
 		if (g && c) {
-			if (g->owner_id == message.author->id) {
+			if (g->owner_id == message.author.id) {
 				/* Server owner */
 				return true;
 			}
 			/* Has manage messages or admin permissions */
-			uint64_t p = c->get_user_permissions(message.author);
+			uint64_t p = c->get_user_permissions(&message.author);
 			return ((p & dpp::p_manage_messages) || (p * dpp::p_administrator));
 		}
 		return false;
@@ -149,7 +149,7 @@ public:
 		/* Add ignore entries */
 		if (operation == "add") {
 			for (auto i = mentions.begin(); i != mentions.end(); ++i) {
-				if (*i != message.author->id) {
+				if (*i != message.author.id) {
 					currentlist.push_back(*i);
 				} else {
 					EmbedSimple("Foolish human, you can't ignore yourself!", channelID);
@@ -261,11 +261,11 @@ public:
 			tokens >> subcommand;
 
 			if (subcommand == "show") {
-				DoConfigShow(channelID, *(message.author));
+				DoConfigShow(channelID, message.author);
 			} else if (subcommand == "ignore") {
 				DoConfigIgnore(tokens, channelID, message);
 			} else if (subcommand == "set") {
-				DoConfigSet(tokens, channelID, *(message.author));
+				DoConfigSet(tokens, channelID, message.author);
 			} else {
 				EmbedSimple(std::string("Missing parameters for config command, please see ``@") + bot->user.username + " help config``", channelID);
 			}
@@ -282,9 +282,9 @@ public:
 	virtual bool OnMessage(const dpp::message_create_t &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 	{
 		std::vector<std::string> param;
-		dpp::message msg = *(message.msg);
+		dpp::message msg = message.msg;
 		if (mentioned && configmessage->Match(clean_message, param)) {
-			bot->core->log(dpp::ll_info, fmt::format("CMD: <{}> {}", msg.author->username, clean_message));
+			bot->core->log(dpp::ll_info, fmt::format("CMD: <{}> {}", msg.author.username, clean_message));
 			DoConfig(param, msg.channel_id, msg);
 			return false;
 		}

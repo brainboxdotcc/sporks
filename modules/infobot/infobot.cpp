@@ -164,9 +164,9 @@ bool InfobotModule::OnMessage(const dpp::message_create_t &message, const std::s
 	QueueItem query;
 	query.message = clean_message;
 	query.original_message = clean_message;
-	query.channelID = msg.msg->channel_id;
-	query.serverID = msg.msg->guild_id;
-	query.username = msg.msg->author ? msg.msg->author->username : "";
+	query.channelID = msg.msg.channel_id;
+	query.serverID = msg.msg.guild_id;
+	query.username = msg.msg.author.username;
 	query.mentioned = mentioned;
 	query.original_username = query.username;
 	Input(query);

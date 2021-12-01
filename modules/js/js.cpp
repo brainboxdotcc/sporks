@@ -861,7 +861,7 @@ std::string JSModule::GetDescription()
 bool JSModule::OnMessage(const dpp::message_create_t &message, const std::string& clean_message, bool mentioned, const std::vector<std::string> &stringmentions)
 {
 	std::unordered_map<std::string, json> jsonstore;
-	dpp::message msg = *(message.msg);
+	dpp::message msg = message.msg;
 
 	if (js->channelHasJS(msg.channel_id)) {
 
@@ -886,7 +886,7 @@ bool JSModule::OnMessage(const dpp::message_create_t &message, const std::string
 		jsonstore["mentions"] = stringmentions;
 		jsonstore["channel"]["id"] = std::to_string(c->id);
 		jsonstore["channel"]["guild_id"] = std::to_string(msg.guild_id);
-		jsonstore["author"]["id"] = std::to_string(msg.author->id);
+		jsonstore["author"]["id"] = std::to_string(msg.author.id);
 		jsonstore["author"]["guild_id"] = jsonstore["channel"]["guild_id"];
 
 		js->run(c->id, jsonstore);
