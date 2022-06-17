@@ -33,6 +33,7 @@
 #include <stdexcept>
 #include <string>
 #include <array>
+#include <unistd.h>
 
 int64_t GetRSS() {
 	int64_t ram = 0;

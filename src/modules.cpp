@@ -25,10 +25,12 @@
 #ifndef _GNU_SOURCE
 	#define _GNU_SOURCE
 #endif
+#include <unistd.h>
 #include <link.h>
 #include <dlfcn.h>
 #include <sstream>
 #include <sporks/stringops.h>
+#include <limits.h>
 
 using json = nlohmann::json;
 
