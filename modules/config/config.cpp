@@ -136,7 +136,8 @@ public:
 		std::vector<uint64_t> mentions;
 		for (auto i = message.mentions.begin(); i != message.mentions.end(); ++i) {
 			if (i->first.id != bot->user.id) {
-				mentions.push_back(i->first.id);
+				uint64_t m = i->first.id;
+				mentions.push_back(m);
 				userlist += " " + i->first.username;
 			}
 		}
