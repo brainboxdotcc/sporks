@@ -99,7 +99,7 @@ public:
 					userqueue.push(*u);
 					bot->counters["userqueue"] = userqueue.size();
 					std::string roles_str;
-					for (auto n = i->second.roles.begin(); n != i->second.roles.end(); ++n) {
+					for (auto n = i->second.get_roles().begin(); n != i->second.get_roles().end(); ++n) {
 						roles_str.append(std::to_string(*n)).append(",");
 					}
 					roles_str = roles_str.substr(0, roles_str.length() - 1);
@@ -108,7 +108,7 @@ public:
 						/* Server owner */
 						dashboard = "1";
 					}
-					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {i->second.user_id, gc.id, i->second.nickname, roles_str, dashboard, i->second.nickname, roles_str, dashboard});
+					db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {i->second.user_id, gc.id, i->second.get_nickname(), roles_str, dashboard, i->second.get_nickname(), roles_str, dashboard});
 				}
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			} else {
@@ -159,12 +159,12 @@ public:
 				gc.created->id,
 				(gc.created->id >> 22) % bot->core->get_shards().size(),
 				gc.created->name,
-				gc.created->icon.to_string(),
+				gc.created->icon.as_iconhash().to_string(),
 				gc.created->is_unavailable(),
 				gc.created->owner_id,
 				(gc.created->id >> 22) % bot->core->get_shards().size(),
 				gc.created->name,
-				gc.created->icon.to_string(),
+				gc.created->icon.as_iconhash().to_string(),
 				gc.created->is_unavailable(),
 				gc.created->owner_id
 			}
@@ -207,8 +207,7 @@ public:
 
 	virtual bool OnGuildMemberRemove(const dpp::guild_member_remove_t &gmr)
 	{
-		if (gmr.removed)
-			db::query("DELETE FROM infobot_membership WHERE member_id = '?'", {gmr.removed->id});
+		db::query("DELETE FROM infobot_membership WHERE member_id = '?'", {gmr.removed.id});
 		return true;
 	}
 
@@ -222,7 +221,7 @@ public:
 		bool _bot = u->is_bot();
 		std::string roles_str;
 		dpp::guild* g = dpp::find_guild(gma.adding_guild->id);
-		for (auto n = gma.added.roles.begin(); n != gma.added.roles.end(); ++n) {
+		for (auto n = gma.added.get_roles().begin(); n != gma.added.get_roles().end(); ++n) {
 			roles_str.append(std::to_string(*n)).append(",");
 		}
 		roles_str = roles_str.substr(0, roles_str.length() - 1);
@@ -232,7 +231,7 @@ public:
 			dashboard = "1";
 		}
 		db::query("INSERT INTO infobot_discord_user_cache (id, username, discriminator, avatar, bot) VALUES(?, '?', '?', '?', ?) ON DUPLICATE KEY UPDATE username = '?', discriminator = '?', avatar = '?'", {u->id, u->username, u->discriminator, u->avatar.to_string(), _bot, u->username, u->discriminator, u->avatar.to_string()});
-		db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {u->id, gma.added.guild_id, gma.added.nickname, roles_str, dashboard, gma.added.nickname, roles_str, dashboard});
+		db::query("INSERT INTO infobot_membership (member_id, guild_id, nick, roles, dashboard) VALUES(?, ?, '?', '?','?') ON DUPLICATE KEY UPDATE nick = '?', roles = '?', dashboard = '?'", {u->id, gma.added.guild_id, gma.added.get_nickname(), roles_str, dashboard, gma.added.get_nickname(), roles_str, dashboard});
 		return true;
 	}
 
@@ -244,15 +243,15 @@ public:
 
 	virtual bool OnChannelDelete(const dpp::channel_delete_t& cd)
 	{
-		db::query("DELETE FROM infobot_discord_settings WHERE id = '?'", {cd.deleted->id});
+		db::query("DELETE FROM infobot_discord_settings WHERE id = '?'", {cd.deleted.id});
 		return true;
 	}
 
 	virtual bool OnGuildDelete(const dpp::guild_delete_t& gd)
 	{
-		db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {gd.deleted->id});
-		db::query("DELETE FROM infobot_shard_map WHERE guild_id = '?'", {gd.deleted->id});
-		db::query("DELETE FROM infobot_membership WHERE guild_id = '?'", {gd.deleted->id});
+		db::query("DELETE FROM infobot_discord_settings WHERE guild_id = '?'", {gd.deleted.id});
+		db::query("DELETE FROM infobot_shard_map WHERE guild_id = '?'", {gd.deleted.id});
+		db::query("DELETE FROM infobot_membership WHERE guild_id = '?'", {gd.deleted.id});
 		return true;
 	}
 };
